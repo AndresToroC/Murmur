@@ -1,40 +1,57 @@
 # Murmur
 
-Murmur (antes NocheSonora) es una app Android que registra los sonidos relevantes de la noche (ronquidos, habla dormido, tos y otros), ignora el silencio y el ruido de fondo constante, y permite revisarlos y escucharlos a la mañana siguiente. Todo es local: el APK no declara `INTERNET`.
+**A private sleep sound recorder for Android.** Murmur listens through the night, keeps only the sounds that matter (snoring, sleep talking, coughing and other noises), ignores silence and steady background noise, and lets you review and replay them in the morning.
 
-La especificación completa está en [`plan.md`](plan.md).
+Everything runs on the phone. The APK does not declare the `INTERNET` permission, so no audio, transcript or statistic can leave the device.
 
-## Estado
+<p>
+  <img src="screenshots/home.png" width="200" alt="Home screen before starting the night">
+  <img src="screenshots/live.png" width="200" alt="Live session with level meter and recent sounds">
+  <img src="screenshots/night-detail.png" width="200" alt="Night detail with timeline and episodes">
+  <img src="screenshots/history.png" width="200" alt="History as a monthly calendar">
+</p>
 
-| Qué | Estado |
-|---|---|
-| Fases F0–F8 de `plan.md` §9 | Código escrito |
-| `./gradlew assembleDebug` | **BUILD SUCCESSFUL** (APK debug de ~125 MB, casi todo librerías nativas de MediaPipe para 3 ABI) |
-| `./gradlew test` | **130 tests JVM en verde, incluida la sesión completa con Robolectric** (núcleo puro, `RetentionPolicy`, posición en la grabación completa) + 14 capturas de pantalla en español e inglés (`ScreenshotTest`, solo con `NS_SCREENSHOTS=1`) |
-| Diseño (0.3.0, 2026-11-04) | Dirección **A "Murmur · Instrumento"** del prototipo: azul noche, Inter Tight + JetBrains Mono (incluidas en `res/font`, OFL), medidor de barras, casillas, onda del clip. Ver `plan.md` §12.5 |
-| Nombre (0.3.1, 2026-11-04) | La app se llama **Murmur** (ícono, encabezado, Ajustes). El identificador interno sigue siendo `com.nochesonora` para que se instale encima y conserve las noches grabadas. Ver `plan.md` §12.6 |
-| Calendario, calibración e idioma (0.4.0, 2026-11-04) | Historial como calendario mensual; aviso del minuto de calibración en Inicio; idioma español / inglés en Ajustes. Ver `plan.md` §12.7 |
-| Noche fuera de la app (0.5.0, 2026-11-04) | Pausar / continuar desde la notificación (también en la pantalla de bloqueo), resumen al despertar, botón de ajustes rápidos, widget, tendencias en Historial, transcripción en el teléfono de lo que se dice dormido y 28 tipos de sonido. Base de datos v2. Ver `plan.md` §12.8 |
-| Logo (0.5.1, 2026-11-04) | "Luna de barras": luna creciente hecha de barras de nivel, en el ícono (con capa monocroma), la notificación, el botón de ajustes rápidos, el widget y el encabezado. Ver `plan.md` §12.9 |
-| Transcripción mejorada (0.5.2, 2026-11-04) | Antes de reconocer, cada clip de habla se recorta (sin el pre-roll ni los silencios), se le sube el volumen a nivel de conversación y se parte en frases que se reconocen una por una; los resultados parciales sirven de respaldo. Las transcripciones viejas se rehacen solas. Ver `plan.md` §12.10 |
-| Ruidos repetidos y filtro (0.6.0, 2026-11-05) | Viento, ventilador, lluvia o ruido del cuarto se guardan una vez por tramo de la noche y las repeticiones solo se cuentan ("se repitió 123 veces más, hasta las 5:40"); nunca si a la vez se oye habla, ronquido o tos. Se puede apagar en Ajustes. En el detalle de la noche, filtro por categoría (Todas · Ronquido · Habla · Tos · Otro). Base de datos v3. Ver `plan.md` §12.11 |
-| Sonidos ignorados (0.7.0, 2026-11-05) | En cualquier clip de "Otro", "Ignorar este sonido" (perro, aire acondicionado, puerta…): desde ahí no se guarda, salvo que a la vez se oiga habla, ronquido o tos. Al ignorarlo se pueden borrar los clips de ese sonido de todas las noches. Lista con "Dejar de ignorar" en Ajustes. Ver `plan.md` §12.12 |
-| `./gradlew compileDebugAndroidTestKotlin` | Compila |
-| `./gradlew lintDebug` | Sin errores; 2 avisos deliberados: `OldTargetApi` (targetSdk 36, A28) y `BatteryLife` (A16) |
-| Permisos del APK (`aapt2 dump permissions`) | Sin `INTERNET` ni `ACCESS_NETWORK_STATE` |
-| Tests instrumentados (`connectedAndroidTest`) | Sin ejecutar: necesitan dispositivo o emulador |
-| Validación manual (checklist de abajo) | Primera prueba en teléfono el 2026-11-03: sin eventos; 7 problemas encontrados y corregidos (ver `plan.md` §12). Primera noche real con 0.2.0 el 2026-11-03: 17 clips, sesión completada. 0.3.0 solo cambia el diseño (se instala encima de 0.2.0) |
+## Features
 
-Compilado el 2026-11-03 con JDK 21 (Temurin) y el SDK de Android (plataforma 37.0, build-tools 36.0.0) dentro de un contenedor Docker, porque el equipo no tiene JDK ni Android SDK instalados. Nada se ha ejecutado todavía en un teléfono.
+- **Smart detection.** The first minute calibrates to the room. After that, only sounds louder than the room's baseline are recorded, each with 3 s of audio before and 2 s after.
+- **On-device classification.** [YAMNet](https://www.kaggle.com/models/google/yamnet) (Google's audio classifier, run with MediaPipe) sorts every clip into **Snoring**, **Talking**, **Coughing** or **Other**, and names other sounds (dog, door, rain, fan, TV…; 28 types). Background noise is discarded.
+- **Sleep-talk transcription.** Talking clips are transcribed with Android's on-device speech recognizer (Android 13+). Before recognition, each clip is trimmed, boosted to conversation level and split into phrases.
+- **Clean nights.**
+  - **Repeated noises:** wind, a fan, rain or room noise are saved once and later repeats are only counted ("heard 123 more times, until 5:40").
+  - **Ignored sounds:** any sound can be added to an ignore list from one of its clips, optionally deleting the clips already saved.
+  - **Never lost:** clips that also contain talking, snoring or coughing are always saved.
+- **Morning review.**
+  - Timeline of the night, with episodes grouped by category.
+  - Filter by category, play any clip, and correct or delete it.
+  - Optional full-night recording.
+- **History and trends.** A monthly calendar of nights, plus snoring minutes and talking episodes over time. Favorite nights are kept by the retention policy.
+- **Outside the app.**
+  - Pause and resume from the notification, including on the lock screen.
+  - A morning summary notification.
+  - A Quick Settings tile and a home-screen widget.
+- **Spanish and English**, switchable in Settings.
 
-## Cómo compilar
+<p>
+  <img src="screenshots/category-filter.png" width="200" alt="Category filter and a repeated wind clip">
+  <img src="screenshots/trends.png" width="200" alt="Trends across nights">
+  <img src="screenshots/ignored-sounds.png" width="200" alt="Ignored sounds in Settings">
+</p>
 
-Requisitos: Android Studio reciente (trae el JBR 21) con el **SDK de Android 37** (plataforma `android-37.0`).
+## Privacy
 
-1. Abrir la carpeta `Murmur` en Android Studio y dejar que sincronice Gradle (wrapper 9.8.2, AGP 9.5.0).
-2. Ejecutar en un dispositivo con Android 8.0 (API 26) o superior.
+- No network access. The `INTERNET` and `ACCESS_NETWORK_STATE` permissions are explicitly removed from the merged manifest.
+- No cloud backup. `allowBackup="false"`, and `data_extraction_rules.xml` excludes all data from cloud backup and device transfer.
+- Audio is stored as WAV clips in the app's private storage. Retention is configurable: forever, 7 days or 30 days, and favorite nights are never deleted.
+- The YAMNet model (`app/src/main/assets/yamnet.tflite`) ships inside the APK. It was downloaded once from Google's MediaPipe model storage when the project was set up.
 
-Desde la línea de comandos (con `JAVA_HOME` apuntando a un JDK 17+ y `ANDROID_HOME` al SDK, o un `local.properties` con `sdk.dir=...`):
+## Building
+
+Requirements: a recent Android Studio (it bundles JBR 21) with **Android SDK 37** (platform `android-37.0`). The app runs on Android 8.0 (API 26) or newer.
+
+1. Open the project folder in Android Studio and let Gradle sync (wrapper 9.8.2, AGP 9.5.0).
+2. Run it on a device.
+
+From the command line, set `JAVA_HOME` to a JDK 17+ and `ANDROID_HOME` to the SDK (or add a `local.properties` with `sdk.dir=...`):
 
 ```bash
 ./gradlew test
@@ -45,73 +62,108 @@ Desde la línea de comandos (con `JAVA_HOME` apuntando a un JDK 17+ y `ANDROID_H
 ```
 
 ```bash
-./gradlew connectedAndroidTest
+./gradlew lintDebug
 ```
 
-El modelo `app/src/main/assets/yamnet.tflite` ya está en el repositorio (descargado una vez de `https://storage.googleapis.com/mediapipe-models/audio_classifier/yamnet/float32/1/yamnet.tflite`). La app nunca usa la red.
+To regenerate the screenshots (written to `app/build/screenshots`):
 
-## Estructura
+```bash
+NS_SCREENSHOTS=1 ./gradlew testDebugUnitTest --tests '*ScreenshotTest*'
+```
+
+## Project structure
 
 ```
 app/src/main/java/com/nochesonora/
-├─ core/            Kotlin puro (sin android.*): PCM, WAV, ADTS, línea base, detector de eventos,
-│                   ventaneo, mapeo de etiquetas, heurística de ronquido, votación, episodios
-├─ audio/           AudioRecord, YAMNet (MediaPipe), grabación completa AAC/ADTS, interrupciones
-├─ service/         Foreground Service, motor de la sesión, estado en vivo, notificación
-├─ data/            Room, DataStore, archivos de audio, retención, repositorio único
-└─ ui/              Compose: Inicio, Historial, Detalle, Ajustes, Diagnóstico
+├─ core/            Pure Kotlin (no android.*): PCM, WAV, ADTS, baseline, event detector,
+│                   windowing, label mapping, snore heuristic, voting, episodes,
+│                   repeat and ignore filters
+├─ audio/           AudioRecord, YAMNet (MediaPipe), full-night AAC/ADTS recording, interruptions
+├─ service/         Foreground service, session engine, live state, notifications, tile, widget
+├─ transcription/   On-device speech recognition and speech preprocessing
+├─ data/            Room (DB v3), DataStore, audio files, retention, single repository
+└─ ui/              Compose: Home, History, Night detail, Settings, Diagnostics
 ```
 
-Arquitectura MVVM simple con un repositorio y DI manual (`AppContainer`), sin Hilt.
+- Simple MVVM with one repository and manual dependency injection (`AppContainer`), without Hilt.
+- The internal package is still `com.nochesonora` (the app's original name, NocheSonora), so updates install over earlier builds and keep recorded nights.
 
-## Decisiones de diseño
+## Status
 
-Las de `plan.md` §1.2:
+| What | Status |
+|---|---|
+| Version | **0.7.0** (versionCode 10) |
+| Unit tests | **138 JVM tests passing**, including a full session simulated with Robolectric, plus 15 screenshot tests (Spanish and English) |
+| Lint | 0 errors. 23 warnings, all known, including the deliberate `OldTargetApi` (targetSdk 36, see A28) and `BatteryLife` (A16); most of the rest are plural suggestions and library update notices |
+| APK permissions | No `INTERNET`, no `ACCESS_NETWORK_STATE` |
+| Instrumented tests | Not run (they need a device or emulator) |
+| Real-device testing | In use on a phone since 2026-11-03. The first night with 0.2.0 recorded 17 clips; issues found on the phone are listed in `plan.md` §12 |
 
-| # | Ambigüedad / problema | Decisión |
+### Changelog
+
+| Version | Changes |
+|---|---|
+| 0.3.0 | "Murmur · Instrument" design: night blue, Inter Tight + JetBrains Mono (OFL, bundled), bar meter, clip waveform |
+| 0.3.1 | Renamed to **Murmur** |
+| 0.4.0 | History as a monthly calendar, visible calibration minute, Spanish / English setting |
+| 0.5.0 | Pause / resume from the notification, morning summary, Quick Settings tile, widget, trends, sleep-talk transcription, 28 sound types (DB v2) |
+| 0.5.1 | "Moon of bars" logo |
+| 0.5.2 | More reliable transcription: trimming, gain, per-phrase recognition |
+| 0.6.0 | Repeated ambient noises saved once; category filter in the night detail (DB v3) |
+| 0.7.0 | Ignored sounds, chosen from a clip, with optional cleanup of saved clips |
+
+The full specification and the notes for each version are in [`plan.md`](plan.md) (in Spanish).
+
+## Design decisions
+
+These resolve ambiguities in the original specification (`plan.md` §1.2):
+
+| # | Ambiguity / problem | Decision |
 |---|---|---|
-| A1 | El documento no traía estructura de paquetes. | La de `plan.md` §3. |
-| A2 | MediaPipe en `AUDIO_CLIPS` trocea en ventanas de 0,975 s sin solapamiento; el requisito pide 50 %. | Ventaneo manual: `classify()` con exactamente 15.600 muestras por ventana, avanzando 7.800. |
-| A3 | "Engine sostenido" no estaba definido. | `Engine`, `Idling`, `Engine starting` cuentan como FONDO solo si aparecen (≥ 0,30) en ≥ 70 % de las ventanas; si no, como OTRO. |
-| A4 | `Breathing` va a RONQUIDO "solo si es periódico". ¿Y si no? | Si no es periódico, vota como OTRO (con la etiqueta original). |
-| A5 | Ninguna ventana supera 0,30. | OTRO con etiqueta `Desconocido`; no se descarta. |
-| A6 | Post-roll de 2 s vs. hangover de 2,5 s. | Clip = [inicio − 3 s, último bloque activo + 2 s]. El audio ya está en memoria al cerrar. |
-| A7 | Corte a los 60 s. | El evento cortado termina en el segundo 60 sin post-roll; el siguiente empieza en ese instante sin pre-roll (audio contiguo). |
-| A8 | "Eventos consecutivos" para episodios. | Orden por hora; se une al episodio si el evento inmediatamente anterior es de la misma categoría efectiva (`userCategory ?: category`) y el hueco es < 30 s. |
-| A9 | Registro de pausas. | Entidad `PauseEntity`. |
-| A10 | Android 14+ no deja reiniciar solo un FGS de micrófono. | `START_NOT_STICKY`; si el proceso muere la sesión queda INTERRUMPIDA. |
-| A11 | `full.m4a` queda corrupto si el proceso muere. | Se graba en AAC **ADTS** (`full.aac`), reproducible aunque se corte. ExoPlayer salta con *constant bitrate seeking*. Desviación deliberada del requisito. |
-| A12 | Panel "En vivo" sin sesión. | "Sin sesión activa"; solo "Probar 10 segundos", desactivado durante una sesión. |
-| A13 | Aviso de < 500 MB libres. | Diálogo "Cancelar" / "Comenzar igualmente". |
-| A14 | Cuándo aplicar la retención. | Al abrir la app, al terminar cada sesión y al cambiar el ajuste (sin WorkManager). |
-| A15 | `MIC` aplica AGC/NS y falsea la línea base. | `UNPROCESSED` si el equipo lo soporta; si no, `VOICE_RECOGNITION`. |
-| A16 | Exclusión de optimización de batería. | Se pide una vez, tras explicarlo, con `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; si falla, la pantalla de ajustes. La app no va a Play Store, así que su restricción sobre ese permiso no aplica. |
-| A17 | Corrección manual a FONDO. | El selector solo ofrece RONQUIDO / HABLA / TOS / OTRO; para quitar algo, "Borrar". |
-| A18 | Categoría del episodio tras corregir. | Se reagrupan los episodios de la sesión tras cada corrección o borrado. |
+| A1 | No package structure was given. | The one in `plan.md` §3. |
+| A2 | MediaPipe in `AUDIO_CLIPS` mode splits audio into 0.975 s windows with no overlap; the requirement asks for 50 %. | Manual windowing: `classify()` on exactly 15,600 samples per window, advancing 7,800. |
+| A3 | "Sustained engine" was undefined. | `Engine`, `Idling` and `Engine starting` count as BACKGROUND only if they appear (≥ 0.30) in ≥ 70 % of windows; otherwise as OTHER. |
+| A4 | `Breathing` counts as SNORING "only if periodic". What if it isn't? | If not periodic, it votes as OTHER (with its original label). |
+| A5 | No window scores above 0.30. | OTHER with the label `Unknown`; the clip is not discarded. |
+| A6 | 2 s post-roll vs. 2.5 s hangover. | Clip = [start − 3 s, last active block + 2 s]. The audio is already in memory when the event closes. |
+| A7 | Cut at 60 s. | The cut event ends at second 60 without post-roll; the next one starts at that instant without pre-roll (contiguous audio). |
+| A8 | "Consecutive events" for episodes. | Sorted by time; an event joins the episode if the previous event has the same effective category (`userCategory ?: category`) and the gap is < 30 s. |
+| A9 | Recording pauses. | A `PauseEntity` table. |
+| A10 | Android 14+ does not allow restarting a microphone foreground service on its own. | `START_NOT_STICKY`; if the process dies, the session is marked INTERRUPTED. |
+| A11 | `full.m4a` is corrupted if the process dies. | The full night is recorded as AAC **ADTS** (`full.aac`), playable even if cut off. ExoPlayer seeks with *constant bitrate seeking*. A deliberate deviation from the requirement. |
+| A12 | "Live" panel without a session. | "No active session"; only "Test 10 seconds", disabled during a session. |
+| A13 | Warning when less than 500 MB is free. | A "Cancel" / "Start anyway" dialog. |
+| A14 | When to apply retention. | When the app opens, when each session ends and when the setting changes (no WorkManager). |
+| A15 | `MIC` applies AGC/NS and distorts the baseline. | `UNPROCESSED` if the device supports it; otherwise `VOICE_RECOGNITION`. |
+| A16 | Battery optimization exemption. | Requested once, after an explanation, with `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; if that fails, the settings screen. The app is not distributed on the Play Store, so its policy on that permission does not apply. |
+| A17 | Manual correction to BACKGROUND. | The picker only offers SNORING / TALKING / COUGHING / OTHER; to remove something, use "Delete". |
+| A18 | Episode category after a correction. | The session's episodes are regrouped after every correction or deletion. |
 
-Decisiones adicionales tomadas al implementar:
+Additional decisions made during implementation:
 
-| # | Problema encontrado | Decisión |
+| # | Problem found | Decision |
 |---|---|---|
-| A19 | Si la línea base se congela durante todo evento (§4.3), un ventilador que se enciende genera un evento continuo que se corta cada 60 s para siempre y la base nunca sube: justo la "avalancha" que se quiere evitar. | La base se congela durante un evento **salvo** si es la continuación de un corte por 60 s (nivel sostenido). Con +15 dB de ventilador hay unos 3 eventos (descartados como FONDO) y en ~2 min queda absorbido. Lo cubre el test `fanTurningOnIsAbsorbedWithoutAvalanche`. |
-| A20 | Picos de la heurística de ronquido: con "máximos locales separados ≥ 1,5 s", un pulso cada 1 s parece periódico cada 2 s, y un ronquido cada 2 s podía fundirse con el siguiente. | Un pico por ráfaga (tramo continuo sobre mediana + 6 dB); ráfagas a < 1,5 s de la anterior se funden con ella en cadena. |
-| A21 | Carrera entre la limpieza de sesiones huérfanas al abrir la app y una sesión que se crea en ese momento. | Solo se marcan INTERRUMPIDA las sesiones EN_CURSO creadas antes de que arrancara el proceso actual. |
-| A22 | Algunos equipos entregan ceros sin avisar por `isClientSilenced` cuando otra app toma el micrófono. | 2 s seguidos de ceros digitales exactos también abren una pausa `MICROFONO_OCUPADO`. Una habitación real nunca da ceros exactos. |
-| A23 | Una continuación tras el corte de 60 s que no vuelve a superar el umbral daría un evento de duración 0. | Se descarta. |
-| A24 | Si YAMNet no carga (modelo dañado, ABI sin soporte), la noche se perdería. | La sesión sigue y guarda los eventos como OTRO / `Sin clasificar`; Inicio lo avisa. |
-| A25 | `plan.md` §2 tenía cruzadas dos versiones (lifecycle 2.10.2 y navigation 2.11.0 no existen). | lifecycle **2.11.0**, navigation-compose **2.10.2** (verificadas en Google Maven). |
-| A26 | Fin de un evento en la BD. | `startedAt`/`endedAt` son el inicio y fin reales (sin pre/post-roll); el WAV incluye los rolls. |
-| A27 | Seguridad del manifiesto. | `tools:node="remove"` para `INTERNET` y `ACCESS_NETWORK_STATE`, por si una dependencia los colara en el manifiesto final. Además, `data_extraction_rules.xml` excluye todo de la copia en la nube y de la transferencia entre dispositivos en Android 12+ (`allowBackup="false"` cubre las versiones anteriores). |
-| A28 | El plan pedía compileSdk 36 como "última estable", pero ya está publicada la API 37 y las bibliotecas de 2026 (Compose 1.12, core 1.19, lifecycle 2.11, navigation 2.10) se niegan a compilar contra 36. | **compileSdk 37**. **targetSdk se queda en 36**, como dice el plan: subirlo activaría cambios de comportamiento de Android 17 que no se han probado en un teléfono. |
+| A19 | If the baseline froze during every event, a fan turning on would create one continuous event, cut every 60 s forever, and the baseline would never rise: exactly the avalanche to avoid. | The baseline freezes during an event **unless** it continues a 60 s cut (a sustained level). With a +15 dB fan there are about 3 events (discarded as BACKGROUND) and it is absorbed in ~2 min. Covered by `fanTurningOnIsAbsorbedWithoutAvalanche`. |
+| A20 | Snore heuristic peaks: with "local maxima ≥ 1.5 s apart", a pulse every 1 s looked periodic every 2 s, and a snore every 2 s could merge with the next. | One peak per burst (a continuous stretch above median + 6 dB); bursts < 1.5 s after the previous one are chained into it. |
+| A21 | Race between cleaning up orphaned sessions at startup and a session created at that moment. | Only IN_PROGRESS sessions created before the current process started are marked INTERRUPTED. |
+| A22 | Some devices silently deliver zeros, without `isClientSilenced`, when another app takes the microphone. | 2 s of exact digital zeros also opens a `MICROFONO_OCUPADO` (microphone busy) pause. A real room never produces exact zeros. |
+| A23 | A continuation after a 60 s cut that never crosses the threshold again would give a zero-length event. | It is discarded. |
+| A24 | If YAMNet fails to load (damaged model, unsupported ABI), the night would be lost. | The session continues and saves events as OTHER / `Unclassified`; Home shows a warning. |
+| A25 | `plan.md` §2 mixed up two versions (lifecycle 2.10.2 and navigation 2.11.0 don't exist). | lifecycle **2.11.0**, navigation-compose **2.10.2** (verified on Google Maven). |
+| A26 | Event end time in the database. | `startedAt` / `endedAt` are the real start and end (without pre/post-roll); the WAV includes the rolls. |
+| A27 | Manifest safety. | `tools:node="remove"` on `INTERNET` and `ACCESS_NETWORK_STATE`, in case a dependency adds them to the merged manifest. |
+| A28 | The plan asked for compileSdk 36 as "latest stable", but API 37 is out and the 2026 libraries (Compose 1.12, core 1.19, lifecycle 2.11, navigation 2.10) refuse to compile against 36. | **compileSdk 37**. **targetSdk stays at 36**, as the plan says: raising it would turn on Android 17 behavior changes that haven't been tested on a phone. |
 
-## Checklist de validación manual (plan §8.3)
+## Manual validation checklist
 
-1. [ ] Diagnóstico → "Probar 10 s" hablando, tosiendo y con el ventilador encendido.
-2. [ ] Sesión de 15 min con el ventilador encendido todo el tiempo → 0 eventos FONDO guardados.
-3. [ ] Encender el ventilador a mitad de la sesión → la base sube y no hay una avalancha de eventos.
-4. [ ] Durante la sesión, abrir la grabadora de voz o recibir una llamada → pausa registrada y reanudación automática.
-5. [ ] Forzar la detención desde Ajustes del sistema → al reabrir, la sesión aparece INTERRUMPIDA con la hora del último latido.
-6. [ ] Noche real completa de 8 h con "Guardar grabación completa": batería consumida, memoria estable (sin crecimiento) y comparación de los eventos detectados con la grabación.
-7. [ ] Probar en al menos un Samsung o Xiaomi con la optimización de batería por defecto.
+From `plan.md` §8.3:
 
-Criterios de aceptación: `plan.md` §10. El APK no declara `INTERNET` (comprobable con `aapt dump permissions` o el *APK Analyzer* de Android Studio).
+1. [ ] Diagnostics → "Test 10 s" while talking, coughing and with the fan on.
+2. [ ] A 15-minute session with the fan on the whole time → 0 BACKGROUND events saved.
+3. [ ] Turn the fan on mid-session → the baseline rises without an avalanche of events.
+4. [ ] During a session, open the voice recorder or take a call → the pause is recorded and the session resumes automatically.
+5. [ ] Force-stop the app from system Settings → on reopening, the session shows as INTERRUPTED at the time of the last heartbeat.
+6. [ ] A full 8-hour night with "Save full recording": battery use, stable memory (no growth), and detected events compared with the recording.
+7. [ ] Test on at least one Samsung or Xiaomi phone with default battery optimization.
+
+Acceptance criteria are in `plan.md` §10.
