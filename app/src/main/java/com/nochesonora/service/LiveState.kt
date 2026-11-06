@@ -37,7 +37,7 @@ data class LiveSnapshot(
     val thresholdDb: Float? = null,
     val calibrationProgress: Float = 0f,
     val counts: Map<Category, Int> = emptyMap(),
-    /** Top 3 of the last classified clip (includes those discarded as FONDO). */
+    /** Top 3 of the last classified clip (includes those discarded as BACKGROUND). */
     val lastTop3: List<LabelScore> = emptyList(),
     val lastCategory: Category? = null,
     val lastDiscarded: Boolean = false,

@@ -107,7 +107,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.roundToInt
 
-private val selectableCategories = listOf(Category.RONQUIDO, Category.HABLA, Category.TOS, Category.OTRO)
+private val selectableCategories = listOf(Category.SNORING, Category.SPEECH, Category.COUGH, Category.OTHER)
 
 @Composable
 fun NightDetailScreen(sessionId: Long, onBack: () -> Unit) {
@@ -149,7 +149,7 @@ fun NightDetailScreen(sessionId: Long, onBack: () -> Unit) {
         val d = detail ?: return@Column
         // The night in progress is drawn up to "now".
         val now by produceState(System.currentTimeMillis(), d.session.status) {
-            while (d.session.status == SessionStatus.EN_CURSO) {
+            while (d.session.status == SessionStatus.IN_PROGRESS) {
                 value = System.currentTimeMillis()
                 delay(30_000)
             }
@@ -157,7 +157,7 @@ fun NightDetailScreen(sessionId: Long, onBack: () -> Unit) {
         val endMs = d.session.endedAt ?: if (vm.isLive) now else d.session.lastHeartbeatAt
         val eventsByEpisode = remember(d.events) { d.events.groupBy { it.episodeId } }
         val soundCounts = remember(d.events) { nightSoundCounts(d.events) }
-        val hasSpeech = remember(d.events) { d.events.any { it.effectiveCategory == Category.HABLA } }
+        val hasSpeech = remember(d.events) { d.events.any { it.effectiveCategory == Category.SPEECH } }
         val categoryCounts = remember(d.events) { categoryCounts(d.events) }
         // If the filtered category has no episodes left (deleted or corrected), show them all.
         val activeFilter = filter?.takeIf { it in categoryCounts }
@@ -319,7 +319,7 @@ internal fun IgnoreSoundDialog(type: SoundType, savedClips: Int?, onConfirm: (de
 internal fun Summary(d: SessionDetail, endMs: Long) {
     val s = d.session
     val counts = d.events.groupingBy { it.effectiveCategory }.eachCount()
-    val snoreMs = d.episodes.filter { it.category == Category.RONQUIDO }.sumOf { it.endedAt - it.startedAt }
+    val snoreMs = d.episodes.filter { it.category == Category.SNORING }.sumOf { it.endedAt - it.startedAt }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         val end = s.endedAt?.let { " → ${formatTime(it)}" } ?: ""
         Text(
@@ -332,11 +332,11 @@ internal fun Summary(d: SessionDetail, endMs: Long) {
         NightStatTiles(
             durationMs = endMs - s.startedAt,
             snoreMs = snoreMs,
-            speech = counts[Category.HABLA] ?: 0,
-            cough = counts[Category.TOS] ?: 0,
-            other = counts[Category.OTRO] ?: 0,
+            speech = counts[Category.SPEECH] ?: 0,
+            cough = counts[Category.COUGH] ?: 0,
+            other = counts[Category.OTHER] ?: 0,
         )
-        if (s.status == SessionStatus.INTERRUMPIDA) {
+        if (s.status == SessionStatus.INTERRUPTED) {
             Text(
                 stringResource(R.string.detail_interrupted),
                 style = MaterialTheme.typography.bodySmall,
@@ -346,10 +346,10 @@ internal fun Summary(d: SessionDetail, endMs: Long) {
     }
 }
 
-/** Sound type of each OTRO event of the night, counted (for "Identified sounds"). */
+/** Sound type of each OTHER event of the night, counted (for "Identified sounds"). */
 internal fun nightSoundCounts(events: List<EventEntity>): List<Pair<SoundType, Int>> =
     SoundTypes.count(
-        events.filter { it.effectiveCategory == Category.OTRO }
+        events.filter { it.effectiveCategory == Category.OTHER }
             // A repeated noise (wind, fan) counts every time it was heard.
             .flatMap { e -> List(1 + e.repeats) { e.soundType() } },
     )
@@ -400,7 +400,7 @@ private fun FilterPill(label: String, count: Int, selected: Boolean, dot: Color?
     )
 }
 
-/** The most frequent type among the events of an OTRO episode (null if none has a type). */
+/** The most frequent type among the events of an OTHER episode (null if none has a type). */
 private fun episodeSoundType(events: List<EventEntity>): SoundType? =
     SoundTypes.count(events.map { it.soundType() }).firstOrNull()?.first
 
@@ -476,8 +476,8 @@ internal fun EpisodeCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CategoryDot(episode.category)
                 Spacer(Modifier.width(10.dp))
-                // An OTRO episode shows the sound's name ("Dog", "Door"…), not "Other".
-                val soundType = if (episode.category == Category.OTRO) remember(events) { episodeSoundType(events) } else null
+                // An OTHER episode shows the sound's name ("Dog", "Door"…), not "Other".
+                val soundType = if (episode.category == Category.OTHER) remember(events) { episodeSoundType(events) } else null
                 Text(
                     soundType?.label() ?: episode.category.label(),
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
@@ -503,7 +503,7 @@ internal fun EpisodeCard(
                 modifier = Modifier.padding(start = 18.dp, top = 2.dp),
             )
             // When collapsed, a speech episode shows the start of what was understood.
-            if (!expanded && episode.category == Category.HABLA) {
+            if (!expanded && episode.category == Category.SPEECH) {
                 val snippet = events.firstNotNullOfOrNull { it.transcript?.takeIf(String::isNotBlank) }
                 if (snippet != null) {
                     Text(
@@ -579,11 +579,11 @@ private fun EventBlock(
         val soundType = remember(event.otherLabel, event.topLabelsJson) { event.soundType() }
         val name = when {
             event.userCategory != null -> stringResource(R.string.detail_corrected, category.label())
-            category == Category.OTRO && soundType != null -> soundType.label()
-            category == Category.OTRO -> stringResource(R.string.common_other_with_label, event.otherLabel?.let { yamnetLabel(it) } ?: "?")
+            category == Category.OTHER && soundType != null -> soundType.label()
+            category == Category.OTHER -> stringResource(R.string.common_other_with_label, event.otherLabel?.let { yamnetLabel(it) } ?: "?")
             else -> category.label()
         }
-        if (showHeader || event.userCategory != null || category == Category.OTRO) {
+        if (showHeader || event.userCategory != null || category == Category.OTHER) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(formatTimeSeconds(event.startedAt), style = Murmur.monoBody, color = OnSurfaceMuted)
                 Spacer(Modifier.width(10.dp))
@@ -600,7 +600,7 @@ private fun EventBlock(
                 knownDurationMs = wave.second,
             )
         }
-        if (category == Category.HABLA) Transcript(event.transcript, transcribing, failed)
+        if (category == Category.SPEECH) Transcript(event.transcript, transcribing, failed)
         if (event.repeats > 0) {
             val until = event.lastRepeatAt?.let { formatTime(it) } ?: ""
             MutedText(
@@ -624,7 +624,7 @@ private fun EventBlock(
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (category == Category.HABLA && canTranscribe && !transcribing && event.filePath.isNotEmpty()) {
+            if (category == Category.SPEECH && canTranscribe && !transcribing && event.filePath.isNotEmpty()) {
                 SecondaryButton(
                     stringResource(if (event.transcript == null && !failed) R.string.transcript_action else R.string.transcript_action_again),
                     onClick = { onTranscribe(event) },
@@ -648,7 +648,7 @@ private fun EventBlock(
                 }
             }
             SecondaryButton(stringResource(R.string.common_delete), onClick = { onDelete(event) }, height = 36.dp)
-            if (category == Category.OTRO && IgnoreFilter.canIgnore(soundType) && soundType !in ignoredSounds) {
+            if (category == Category.OTHER && IgnoreFilter.canIgnore(soundType) && soundType !in ignoredSounds) {
                 SecondaryButton(stringResource(R.string.detail_ignore_sound), onClick = { soundType?.let(onIgnore) }, height = 36.dp)
             }
             if (hasFull) SecondaryButton(stringResource(R.string.detail_go_to_recording), onClick = { onPlayFull(event) }, height = 36.dp)

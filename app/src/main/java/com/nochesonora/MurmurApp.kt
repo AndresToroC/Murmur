@@ -16,7 +16,7 @@ class MurmurApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
-        // On app open: orphaned sessions → INTERRUMPIDA (§6.6) and retention (A14).
+        // On app open: orphaned sessions → INTERRUPTED (§6.6) and retention (A14).
         container.appScope.launch {
             runCatching {
                 val repo = container.repository

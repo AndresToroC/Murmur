@@ -10,27 +10,27 @@ import com.nochesonora.core.classification.SoundType
 import com.nochesonora.core.classification.SoundTypes
 import com.nochesonora.core.classification.VotingClassifier
 
-enum class SessionStatus { EN_CURSO, COMPLETADA, INTERRUMPIDA }
+enum class SessionStatus { IN_PROGRESS, COMPLETED, INTERRUPTED }
 
 /** Why a session paused. The values are stored in the database, so they stay as they are. */
 object PauseReason {
-    const val MIC_BUSY = "MICROFONO_OCUPADO"
-    const val CALL = "LLAMADA"
-    const val AUDIO_ERROR = "ERROR_AUDIO"
+    const val MIC_BUSY = "MIC_BUSY"
+    const val CALL = "CALL"
+    const val AUDIO_ERROR = "AUDIO_ERROR"
     /** The user paused from the notification or Home. */
-    const val USER = "USUARIO"
+    const val USER = "USER"
 }
 
 @Entity(tableName = "sessions")
 data class SessionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val startedAt: Long,
-    /** null while EN_CURSO. */
+    /** null while IN_PROGRESS. */
     val endedAt: Long?,
     val status: SessionStatus,
     /** Filled in when calibration finishes. */
     val baselineDbAtStart: Float?,
-    /** Heartbeat every 30 s: if the process dies, it becomes the end time of the INTERRUMPIDA session. */
+    /** Heartbeat every 30 s: if the process dies, it becomes the end time of the INTERRUPTED session. */
     val lastHeartbeatAt: Long,
     val sensitivityDb: Int,
     val fullRecordingPath: String?,
@@ -50,7 +50,7 @@ data class EventEntity(
     val sessionId: Long,
     val episodeId: Long?,
     val category: Category,
-    /** Original YAMNet label when the category is OTRO. */
+    /** Original YAMNet label when the category is OTHER. */
     val otherLabel: String?,
     val startedAt: Long,
     val endedAt: Long,
@@ -60,7 +60,7 @@ data class EventEntity(
     val filePath: String,
     val userCategory: Category?,
     /**
-     * What was understood from a HABLA clip (on-device transcription). null = not attempted
+     * What was understood from a SPEECH clip (on-device transcription). null = not attempted
      * yet; "" = attempted but nothing was understood. Column added in DB version 2.
      */
     val transcript: String? = null,

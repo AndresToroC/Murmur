@@ -92,7 +92,7 @@ class ScreenshotTest {
     }.timeInMillis
 
     private val night = SessionEntity(
-        id = 1, startedAt = at(23, 31), endedAt = at(3, 4), status = SessionStatus.COMPLETADA,
+        id = 1, startedAt = at(23, 31), endedAt = at(3, 4), status = SessionStatus.COMPLETED,
         baselineDbAtStart = -52f, lastHeartbeatAt = at(3, 4), sensitivityDb = 10, fullRecordingPath = null,
     )
 
@@ -125,12 +125,12 @@ class ScreenshotTest {
             LiveSnapshot(
                 serviceRunning = true, sessionId = 1, startedAt = System.currentTimeMillis() - (72 * 60 + 40) * 1000L,
                 phase = LivePhase.LISTENING, levelDb = -49f, baselineDb = -52f, thresholdDb = -42f, calibrationProgress = 1f,
-                counts = mapOf(Category.HABLA to 8, Category.OTRO to 9),
+                counts = mapOf(Category.SPEECH to 8, Category.OTHER to 9),
                 recent = listOf(
-                    HeardItem(at(0, 41, 12), Category.HABLA, "Speech", discarded = false),
-                    HeardItem(at(0, 12, 3), Category.OTRO, "Inside, small room", discarded = false),
-                    HeardItem(at(0, 5, 47), Category.FONDO, "Mechanical fan", discarded = true),
-                    HeardItem(at(23, 41, 20), Category.HABLA, "Speech", discarded = false),
+                    HeardItem(at(0, 41, 12), Category.SPEECH, "Speech", discarded = false),
+                    HeardItem(at(0, 12, 3), Category.OTHER, "Inside, small room", discarded = false),
+                    HeardItem(at(0, 5, 47), Category.BACKGROUND, "Mechanical fan", discarded = true),
+                    HeardItem(at(23, 41, 20), Category.SPEECH, "Speech", discarded = false),
                 ),
                 discardedCount = 3,
                 backgroundLabel = "Mechanical fan",
@@ -154,7 +154,7 @@ class ScreenshotTest {
 
     /** Filter on "Other" with the fan's wind noise saved once plus its repeats. */
     @Test
-    fun detailFilteredRepeatedNoise() = detailShot("14_detail_filter", filter = Category.OTRO, openIndex = 2)
+    fun detailFilteredRepeatedNoise() = detailShot("14_detail_filter", filter = Category.OTHER, openIndex = 2)
 
     private fun detailShot(name: String, filter: Category?, openIndex: Int) {
         val wav = File(out, "clip.wav")
@@ -167,12 +167,12 @@ class ScreenshotTest {
         WavWriter.writeFileAtomic(wav, samples)
 
         val raw = listOf(
-            Triple(at(23, 31), 7_000L, Category.OTRO), Triple(at(23, 31, 20), 3_000L, Category.HABLA),
-            Triple(at(23, 32), 39_000L, Category.OTRO), Triple(at(23, 33), 600L, Category.HABLA),
-            Triple(at(23, 34), 1_200L, Category.HABLA), Triple(at(23, 41), 2_000L, Category.HABLA),
-            Triple(at(0, 2), 1_500L, Category.HABLA), Triple(at(1, 15), 4_000L, Category.OTRO),
-            Triple(at(2, 0), 2_000L, Category.HABLA), Triple(at(2, 25), 1_800L, Category.HABLA),
-            Triple(at(2, 40), 2_500L, Category.HABLA),
+            Triple(at(23, 31), 7_000L, Category.OTHER), Triple(at(23, 31, 20), 3_000L, Category.SPEECH),
+            Triple(at(23, 32), 39_000L, Category.OTHER), Triple(at(23, 33), 600L, Category.SPEECH),
+            Triple(at(23, 34), 1_200L, Category.SPEECH), Triple(at(23, 41), 2_000L, Category.SPEECH),
+            Triple(at(0, 2), 1_500L, Category.SPEECH), Triple(at(1, 15), 4_000L, Category.OTHER),
+            Triple(at(2, 0), 2_000L, Category.SPEECH), Triple(at(2, 25), 1_800L, Category.SPEECH),
+            Triple(at(2, 40), 2_500L, Category.SPEECH),
         )
         val episodes = raw.mapIndexed { i, (start, len, cat) ->
             EpisodeEntity(id = i + 1L, sessionId = 1, category = cat, startedAt = start, endedAt = start + len, eventCount = if (i == 2) 4 else 1)
@@ -181,7 +181,7 @@ class ScreenshotTest {
             EventEntity(
                 id = ep.id, sessionId = 1, episodeId = ep.id, category = ep.category,
                 otherLabel = when {
-                    ep.category != Category.OTRO -> null
+                    ep.category != Category.OTHER -> null
                     ep.id == 3L -> "Wind noise (microphone)"
                     else -> "Inside, small room"
                 },
@@ -248,7 +248,7 @@ class ScreenshotTest {
                 12, 3, 2, 4, 42 * 60_000L,
             ),
             SessionSummaryRow(
-                night.copy(id = 3, startedAt = night.startedAt - 2 * day, endedAt = null, status = SessionStatus.INTERRUMPIDA,
+                night.copy(id = 3, startedAt = night.startedAt - 2 * day, endedAt = null, status = SessionStatus.INTERRUPTED,
                     lastHeartbeatAt = night.startedAt - 2 * day + 2 * 3_600_000L),
                 0, 0, 0, 0, 0,
             ),
@@ -343,7 +343,7 @@ class ScreenshotTest {
             serviceRunning = true, sessionId = 1, startedAt = System.currentTimeMillis() - (95 * 60 + 12) * 1000L,
             phase = LivePhase.PAUSED, pauseReason = com.nochesonora.data.db.PauseReason.USER,
             levelDb = -100f, baselineDb = -52f, thresholdDb = -42f, calibrationProgress = 1f,
-            counts = mapOf(Category.HABLA to 3, Category.RONQUIDO to 2), backgroundLabel = "Mechanical fan",
+            counts = mapOf(Category.SPEECH to 3, Category.SNORING to 2), backgroundLabel = "Mechanical fan",
         )
         shoot("11_home_paused") { HomeContent(live = live, last = null, stopping = false, onStart = {}, onStop = {}, onOpenSession = {}) }
     }

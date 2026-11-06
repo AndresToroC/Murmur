@@ -3,7 +3,7 @@ package com.nochesonora.core.classification
 data class ClassificationResult(
     val category: Category,
     val confidence: Float,
-    /** Original YAMNet label when the category is OTRO. */
+    /** Original YAMNet label when the category is OTHER. */
     val otherLabel: String?,
     /** The 3 labels with the highest mean score across windows. */
     val topLabels: List<LabelScore>,
@@ -19,7 +19,7 @@ object VotingClassifier {
     const val ENGINE_SUSTAINED_FRACTION = 0.70f
     const val SNORE_BOOST_FACTOR = 1.5f
     const val SNORE_BOOST_PER_WINDOW = 0.3f
-    private val REAL_SOUNDS = listOf(Category.RONQUIDO, Category.HABLA, Category.TOS)
+    private val REAL_SOUNDS = listOf(Category.SNORING, Category.SPEECH, Category.COUGH)
 
     fun classify(windows: List<List<LabelScore>>, snore: SnoreResult): ClassificationResult {
         val n = windows.size.coerceAtLeast(1)
@@ -35,9 +35,9 @@ object VotingClassifier {
                 if (score < MIN_SCORE) continue
                 when (val kind = LabelMapper.kind(label)) {
                     LabelKind.BREATHING -> if (snore.isPeriodic) {
-                        scores[Category.RONQUIDO.ordinal] += score
+                        scores[Category.SNORING.ordinal] += score
                     } else {
-                        scores[Category.OTRO.ordinal] += score
+                        scores[Category.OTHER.ordinal] += score
                         otherWeights.merge(label, score, Float::plus)
                     }
                     LabelKind.ENGINE -> {
@@ -48,7 +48,7 @@ object VotingClassifier {
                     else -> {
                         val category = LabelMapper.directCategory(kind)!!
                         scores[category.ordinal] += score
-                        if (category == Category.OTRO) otherWeights.merge(label, score, Float::plus)
+                        if (category == Category.OTHER) otherWeights.merge(label, score, Float::plus)
                     }
                 }
             }
@@ -58,20 +58,20 @@ object VotingClassifier {
         // Sustained engine = background; brief engine = other (A3).
         if (engineScore > 0f) {
             if (engineWindows >= ENGINE_SUSTAINED_FRACTION * n) {
-                scores[Category.FONDO.ordinal] += engineScore
+                scores[Category.BACKGROUND.ordinal] += engineScore
             } else {
-                scores[Category.OTRO.ordinal] += engineScore
+                scores[Category.OTHER.ordinal] += engineScore
                 engineWeights.forEach { (label, w) -> otherWeights.merge(label, w, Float::plus) }
             }
         }
 
         if (snore.isSnoreLike) {
-            scores[Category.RONQUIDO.ordinal] = scores[Category.RONQUIDO.ordinal] * SNORE_BOOST_FACTOR + SNORE_BOOST_PER_WINDOW * n
+            scores[Category.SNORING.ordinal] = scores[Category.SNORING.ordinal] * SNORE_BOOST_FACTOR + SNORE_BOOST_PER_WINDOW * n
         }
 
         // Background never beats a real sound. A cough fills 1–2 windows and the rest of the clip
-        // (pre/post-roll) is "Silence" or a fan: summing windows, FONDO would win and the cough would be lost.
-        if (REAL_SOUNDS.any { scores[it.ordinal] > 0f }) scores[Category.FONDO.ordinal] = 0f
+        // (pre/post-roll) is "Silence" or a fan: summing windows, BACKGROUND would win and the cough would be lost.
+        if (REAL_SOUNDS.any { scores[it.ordinal] > 0f }) scores[Category.BACKGROUND.ordinal] = 0f
 
         val meanScores = meanScores(windows, n)
         val top3 = meanScores.take(3)
@@ -79,11 +79,11 @@ object VotingClassifier {
         var best = -1
         for (i in scores.indices) if (scores[i] > 0f && (best < 0 || scores[i] > scores[best])) best = i
         if (best < 0) {
-            // No votes: the event passed the energy threshold, so it is saved as OTRO (A5).
-            return ClassificationResult(Category.OTRO, 0f, LabelMapper.UNKNOWN_LABEL, top3, meanScores, snore, windows.size)
+            // No votes: the event passed the energy threshold, so it is saved as OTHER (A5).
+            return ClassificationResult(Category.OTHER, 0f, LabelMapper.UNKNOWN_LABEL, top3, meanScores, snore, windows.size)
         }
         val category = Category.entries[best]
-        val otherLabel = if (category == Category.OTRO) {
+        val otherLabel = if (category == Category.OTHER) {
             otherWeights.maxByOrNull { it.value }?.key ?: LabelMapper.UNKNOWN_LABEL
         } else {
             null

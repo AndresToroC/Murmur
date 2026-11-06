@@ -87,7 +87,7 @@ class NightDetailViewModel(private val container: AppContainer, private val sess
     }
 
     private fun EventEntity.needsTranscript() =
-        effectiveCategory == Category.HABLA && transcript == null && filePath.isNotEmpty()
+        effectiveCategory == Category.SPEECH && transcript == null && filePath.isNotEmpty()
 
     private fun enqueue(event: EventEntity) {
         if (event.id in _transcription.value.inProgress) return

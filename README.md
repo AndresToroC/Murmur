@@ -81,19 +81,19 @@ app/src/main/java/com/nochesonora/
 ├─ audio/           AudioRecord, YAMNet (MediaPipe), full-night AAC/ADTS recording, interruptions
 ├─ service/         Foreground service, session engine, live state, notifications, tile, widget
 ├─ transcription/   On-device speech recognition and speech preprocessing
-├─ data/            Room (DB v3), DataStore, audio files, retention, single repository
+├─ data/            Room (DB v4), DataStore, audio files, retention, single repository
 └─ ui/              Compose: Home, History, Night detail, Settings, Diagnostics
 ```
 
 - Simple MVVM with one repository and manual dependency injection (`AppContainer`), without Hilt.
-- The internal package is still `com.nochesonora` (the app's original name, NocheSonora), so updates install over earlier builds and keep recorded nights.
+- The internal package is still `com.nochesonora` (the app's original name, NocheSonora), so updates install over earlier builds and keep recorded nights. The Spanish UI strings live in `res/values/` (Spanish is the default locale) and the English ones in `res/values-en/`.
 
 ## Status
 
 | What | Status |
 |---|---|
-| Version | **0.7.0** (versionCode 10) |
-| Unit tests | **138 JVM tests passing**, including a full session simulated with Robolectric, plus 15 screenshot tests (Spanish and English) |
+| Version | **0.8.0** (versionCode 11) |
+| Unit tests | **140 JVM tests passing**, including a full session simulated with Robolectric, plus 15 screenshot tests (Spanish and English) |
 | Lint | 0 errors. 23 warnings, all known, including the deliberate `OldTargetApi` (targetSdk 36, see A28) and `BatteryLife` (A16); most of the rest are plural suggestions and library update notices |
 | APK permissions | No `INTERNET`, no `ACCESS_NETWORK_STATE` |
 | Instrumented tests | Not run (they need a device or emulator) |
@@ -111,6 +111,7 @@ app/src/main/java/com/nochesonora/
 | 0.5.2 | More reliable transcription: trimming, gain, per-phrase recognition |
 | 0.6.0 | Repeated ambient noises saved once; category filter in the night detail (DB v3) |
 | 0.7.0 | Ignored sounds, chosen from a clip, with optional cleanup of saved clips |
+| 0.8.0 | Code, comments and plan in English; stored values renamed to English with a migration that keeps existing nights (DB v4) |
 
 The full specification and the notes for each version are in [`plan.md`](plan.md) (in Spanish).
 
@@ -146,7 +147,7 @@ Additional decisions made during implementation:
 | A19 | If the baseline froze during every event, a fan turning on would create one continuous event, cut every 60 s forever, and the baseline would never rise: exactly the avalanche to avoid. | The baseline freezes during an event **unless** it continues a 60 s cut (a sustained level). With a +15 dB fan there are about 3 events (discarded as BACKGROUND) and it is absorbed in ~2 min. Covered by `fanTurningOnIsAbsorbedWithoutAvalanche`. |
 | A20 | Snore heuristic peaks: with "local maxima ≥ 1.5 s apart", a pulse every 1 s looked periodic every 2 s, and a snore every 2 s could merge with the next. | One peak per burst (a continuous stretch above median + 6 dB); bursts < 1.5 s after the previous one are chained into it. |
 | A21 | Race between cleaning up orphaned sessions at startup and a session created at that moment. | Only IN_PROGRESS sessions created before the current process started are marked INTERRUPTED. |
-| A22 | Some devices silently deliver zeros, without `isClientSilenced`, when another app takes the microphone. | 2 s of exact digital zeros also opens a `MICROFONO_OCUPADO` (microphone busy) pause. A real room never produces exact zeros. |
+| A22 | Some devices silently deliver zeros, without `isClientSilenced`, when another app takes the microphone. | 2 s of exact digital zeros also opens a `MIC_BUSY` (microphone busy) pause. A real room never produces exact zeros. |
 | A23 | A continuation after a 60 s cut that never crosses the threshold again would give a zero-length event. | It is discarded. |
 | A24 | If YAMNet fails to load (damaged model, unsupported ABI), the night would be lost. | The session continues and saves events as OTHER / `Unclassified`; Home shows a warning. |
 | A25 | `plan.md` §2 mixed up two versions (lifecycle 2.10.2 and navigation 2.11.0 don't exist). | lifecycle **2.11.0**, navigation-compose **2.10.2** (verified on Google Maven). |

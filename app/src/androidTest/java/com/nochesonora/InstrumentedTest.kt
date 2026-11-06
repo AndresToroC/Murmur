@@ -10,6 +10,7 @@ import com.nochesonora.core.episodes.EpisodeLite
 import com.nochesonora.data.db.AppDatabase
 import com.nochesonora.data.db.EventEntity
 import com.nochesonora.data.db.PauseEntity
+import com.nochesonora.data.db.PauseReason
 import com.nochesonora.data.db.SessionEntity
 import com.nochesonora.data.db.SessionStatus
 import kotlinx.coroutines.flow.first
@@ -44,11 +45,11 @@ class NightDaoTest {
     @Test
     fun deletingSessionCascades() = runTest {
         val dao = db.nightDao()
-        val id = dao.insertSession(SessionEntity(startedAt = 0, endedAt = null, status = SessionStatus.EN_CURSO,
+        val id = dao.insertSession(SessionEntity(startedAt = 0, endedAt = null, status = SessionStatus.IN_PROGRESS,
             baselineDbAtStart = null, lastHeartbeatAt = 0, sensitivityDb = 10, fullRecordingPath = null))
-        val eventId = dao.insertEvent(event(id, Category.TOS, 10))
-        dao.insertPause(PauseEntity(sessionId = id, startedAt = 1, endedAt = null, reason = "LLAMADA"))
-        dao.replaceEpisodes(id, listOf(EpisodeLite(Category.TOS, 10_000, 15_000, listOf(eventId))))
+        val eventId = dao.insertEvent(event(id, Category.COUGH, 10))
+        dao.insertPause(PauseEntity(sessionId = id, startedAt = 1, endedAt = null, reason = PauseReason.CALL))
+        dao.replaceEpisodes(id, listOf(EpisodeLite(Category.COUGH, 10_000, 15_000, listOf(eventId))))
         dao.deleteSession(id)
         assertNull(dao.getEvent(eventId))
         assertTrue(dao.getEvents(id).isEmpty())
@@ -59,12 +60,12 @@ class NightDaoTest {
     @Test
     fun summaryCountsEffectiveCategories() = runTest {
         val dao = db.nightDao()
-        val id = dao.insertSession(SessionEntity(startedAt = 0, endedAt = 100_000, status = SessionStatus.COMPLETADA,
+        val id = dao.insertSession(SessionEntity(startedAt = 0, endedAt = 100_000, status = SessionStatus.COMPLETED,
             baselineDbAtStart = -50f, lastHeartbeatAt = 0, sensitivityDb = 10, fullRecordingPath = null))
-        dao.insertEvent(event(id, Category.RONQUIDO, 0))
-        dao.insertEvent(event(id, Category.OTRO, 10, user = Category.HABLA))
-        dao.insertEvent(event(id, Category.TOS, 20))
-        dao.replaceEpisodes(id, listOf(EpisodeLite(Category.RONQUIDO, 0, 65_000, emptyList())))
+        dao.insertEvent(event(id, Category.SNORING, 0))
+        dao.insertEvent(event(id, Category.OTHER, 10, user = Category.SPEECH))
+        dao.insertEvent(event(id, Category.COUGH, 20))
+        dao.replaceEpisodes(id, listOf(EpisodeLite(Category.SNORING, 0, 65_000, emptyList())))
         val row = dao.observeSummaries().first().single()
         assertEquals(1, row.snoreEvents)
         assertEquals(1, row.speechEvents)

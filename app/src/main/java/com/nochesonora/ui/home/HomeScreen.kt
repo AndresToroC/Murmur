@@ -467,7 +467,7 @@ private fun LivePanel(live: LiveSnapshot) {
     }
 
     TileRow {
-        listOf(Category.RONQUIDO, Category.HABLA, Category.TOS, Category.OTRO).forEach {
+        listOf(Category.SNORING, Category.SPEECH, Category.COUGH, Category.OTHER).forEach {
             StatTile(
                 value = "${live.counts[it] ?: 0}",
                 label = it.label(),
@@ -659,7 +659,7 @@ private fun HeardRow(item: HeardItem) {
         }
         else -> {
             dot = item.category.color()
-            text = categoryLabel + (label?.takeIf { item.category == Category.OTRO }?.let { " · $it" } ?: "")
+            text = categoryLabel + (label?.takeIf { item.category == Category.OTHER }?.let { " · $it" } ?: "")
             color = OnSurface
         }
     }

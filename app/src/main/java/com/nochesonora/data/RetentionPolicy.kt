@@ -3,9 +3,9 @@ package com.nochesonora.data
 import java.util.concurrent.TimeUnit
 
 enum class Retention(val days: Int?) {
-    SIEMPRE(null),
-    DIAS_7(7),
-    DIAS_30(30),
+    FOREVER(null),
+    DAYS_7(7),
+    DAYS_30(30),
 }
 
 data class RetentionCandidate(

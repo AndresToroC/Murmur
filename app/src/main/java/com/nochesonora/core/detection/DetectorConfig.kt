@@ -4,9 +4,9 @@ import com.nochesonora.core.audio.Pcm
 
 /** Margin above the baseline that opens an event. */
 enum class Sensitivity(val marginDb: Int) {
-    BAJA(14),
-    MEDIA(10),
-    ALTA(7),
+    LOW(14),
+    MEDIUM(10),
+    HIGH(7),
 }
 
 /** All numeric parameters of layers 1 and 2 (plan §4.3 and §4.4). */
@@ -20,7 +20,7 @@ data class DetectorConfig(
     val percentileWindowMs: Long = 30_000,
     val percentile: Double = 0.20,
     val emaTauMs: Long = 120_000,
-    val sensitivityDb: Float = Sensitivity.MEDIA.marginDb.toFloat(),
+    val sensitivityDb: Float = Sensitivity.MEDIUM.marginDb.toFloat(),
     // Layer 2: events
     val onsetMs: Long = 300,
     val hangoverMs: Long = 2_500,

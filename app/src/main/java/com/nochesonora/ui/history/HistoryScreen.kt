@@ -345,12 +345,12 @@ internal fun SessionCard(row: SessionSummaryRow, onClick: () -> Unit, onFavorite
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val end = s.endedAt?.let { " → ${formatTime(it)}" } ?: ""
                     Text("${formatTime(s.startedAt)}$end", style = MaterialTheme.typography.titleMedium)
-                    if (s.status != SessionStatus.COMPLETADA) {
+                    if (s.status != SessionStatus.COMPLETED) {
                         Spacer(Modifier.width(8.dp))
                         Text(
                             s.status.label(),
                             style = MaterialTheme.typography.labelMedium,
-                            color = if (s.status == SessionStatus.EN_CURSO) Primary else CoughRed,
+                            color = if (s.status == SessionStatus.IN_PROGRESS) Primary else CoughRed,
                         )
                     }
                 }
@@ -386,7 +386,7 @@ internal fun SessionCard(row: SessionSummaryRow, onClick: () -> Unit, onFavorite
                     Icon(StarIcon, stringResource(R.string.common_favorite), tint = OnSurfaceMuted, modifier = Modifier.size(20.dp))
                 }
             }
-            if (s.status != SessionStatus.EN_CURSO) {
+            if (s.status != SessionStatus.IN_PROGRESS) {
                 Box {
                     IconButton(onClick = { menu = true }) {
                         Icon(Icons.Filled.MoreVert, stringResource(R.string.history_more), tint = OnSurfaceMuted)

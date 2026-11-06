@@ -27,8 +27,8 @@ val CoughRed = Color(0xFFFF8A80)
 val OtherGray = Color(0xFF9AA6B8)
 
 fun Category.color(): Color = when (this) {
-    Category.RONQUIDO -> SnoreAmber
-    Category.HABLA -> SpeechBlue
-    Category.TOS -> CoughRed
-    Category.OTRO, Category.FONDO -> OtherGray
+    Category.SNORING -> SnoreAmber
+    Category.SPEECH -> SpeechBlue
+    Category.COUGH -> CoughRed
+    Category.OTHER, Category.BACKGROUND -> OtherGray
 }

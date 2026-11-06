@@ -18,11 +18,11 @@ private val isSpanish: Boolean get() = locale.language == "es"
 @Composable
 fun Category.label(): String = stringResource(
     when (this) {
-        Category.RONQUIDO -> R.string.cat_snore
-        Category.HABLA -> R.string.cat_speech
-        Category.TOS -> R.string.cat_cough
-        Category.OTRO -> R.string.cat_other
-        Category.FONDO -> R.string.cat_background
+        Category.SNORING -> R.string.cat_snore
+        Category.SPEECH -> R.string.cat_speech
+        Category.COUGH -> R.string.cat_cough
+        Category.OTHER -> R.string.cat_other
+        Category.BACKGROUND -> R.string.cat_background
     },
 )
 
@@ -37,9 +37,9 @@ fun yamnetLabel(label: String): String = soundName(label)
 @Composable
 fun SessionStatus.label(): String = stringResource(
     when (this) {
-        SessionStatus.EN_CURSO -> R.string.status_in_progress
-        SessionStatus.COMPLETADA -> R.string.status_completed
-        SessionStatus.INTERRUMPIDA -> R.string.status_interrupted
+        SessionStatus.IN_PROGRESS -> R.string.status_in_progress
+        SessionStatus.COMPLETED -> R.string.status_completed
+        SessionStatus.INTERRUPTED -> R.string.status_interrupted
     },
 )
 

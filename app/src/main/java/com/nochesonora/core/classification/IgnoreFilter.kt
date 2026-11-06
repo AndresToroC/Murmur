@@ -2,7 +2,7 @@ package com.nochesonora.core.classification
 
 /**
  * Sounds the user asked to ignore from a clip ("Ignore this sound": the dog, the air
- * conditioner, the fridge…). An OTRO clip of an ignored type is not saved, unless speech,
+ * conditioner, the fridge…). An OTHER clip of an ignored type is not saved, unless speech,
  * snoring or a cough can also be heard in it.
  *
  * Pure logic (no android.*), tested on the JVM.
@@ -21,7 +21,7 @@ object IgnoreFilter {
 
     /** The ignored type of this clip, or null if it must be saved. */
     fun ignoredType(result: ClassificationResult, ignored: Set<SoundType>): SoundType? {
-        if (ignored.isEmpty() || result.category != Category.OTRO) return null
+        if (ignored.isEmpty() || result.category != Category.OTHER) return null
         val type = SoundTypes.ofEvent(result.otherLabel, result.topLabels.map { it.label }) ?: return null
         if (type !in ignored || !canIgnore(type)) return null
         val protect = if (type in SPEECH_LIKE) RepeatFilter.REAL_KINDS - LabelKind.SPEECH else RepeatFilter.REAL_KINDS

@@ -90,9 +90,9 @@ fun Timeline(
         val minWidth = 3.dp.toPx()
         episodes.forEachIndexed { i, ep ->
             val h = when (ep.category) {
-                Category.HABLA -> 34 + (i % 3) * 8
-                Category.RONQUIDO -> 48
-                Category.TOS -> 40
+                Category.SPEECH -> 34 + (i % 3) * 8
+                Category.SNORING -> 48
+                Category.COUGH -> 40
                 else -> 22
             }.dp.toPx()
             val x0 = x(ep.startedAt)

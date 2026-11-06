@@ -17,28 +17,28 @@ class RepeatFilterTest {
 
     @Test
     fun ambientNoisesAreRecognized() {
-        assertEquals(SoundType.WIND, RepeatFilter.ambientType(result(Category.OTRO, "Wind noise (microphone)", "Wind noise (microphone)" to 0.6f)))
-        assertEquals(SoundType.WIND, RepeatFilter.ambientType(result(Category.OTRO, "Wind")))
-        assertEquals(SoundType.RAIN, RepeatFilter.ambientType(result(Category.OTRO, "Rain on surface")))
-        assertEquals(SoundType.ROOM, RepeatFilter.ambientType(result(Category.OTRO, "Inside, small room")))
+        assertEquals(SoundType.WIND, RepeatFilter.ambientType(result(Category.OTHER, "Wind noise (microphone)", "Wind noise (microphone)" to 0.6f)))
+        assertEquals(SoundType.WIND, RepeatFilter.ambientType(result(Category.OTHER, "Wind")))
+        assertEquals(SoundType.RAIN, RepeatFilter.ambientType(result(Category.OTHER, "Rain on surface")))
+        assertEquals(SoundType.ROOM, RepeatFilter.ambientType(result(Category.OTHER, "Inside, small room")))
         // Sounds that matter, or that are not ambient, are never folded.
-        assertNull(RepeatFilter.ambientType(result(Category.OTRO, "Dog")))
-        assertNull(RepeatFilter.ambientType(result(Category.OTRO, "Door")))
-        assertNull(RepeatFilter.ambientType(result(Category.HABLA, null, "Speech" to 0.5f)))
-        assertNull(RepeatFilter.ambientType(result(Category.RONQUIDO, null)))
-        assertNull(RepeatFilter.ambientType(result(Category.OTRO, LabelMapper.UNKNOWN_LABEL)))
+        assertNull(RepeatFilter.ambientType(result(Category.OTHER, "Dog")))
+        assertNull(RepeatFilter.ambientType(result(Category.OTHER, "Door")))
+        assertNull(RepeatFilter.ambientType(result(Category.SPEECH, null, "Speech" to 0.5f)))
+        assertNull(RepeatFilter.ambientType(result(Category.SNORING, null)))
+        assertNull(RepeatFilter.ambientType(result(Category.OTHER, LabelMapper.UNKNOWN_LABEL)))
     }
 
     @Test
     fun windWithSpeechInsideIsNotFolded() {
         // Wind won, but speech was heard in one window: the clip is saved.
         assertNull(
-            RepeatFilter.ambientType(result(Category.OTRO, "Wind", "Wind" to 0.5f, "Speech" to 0.08f)),
+            RepeatFilter.ambientType(result(Category.OTHER, "Wind", "Wind" to 0.5f, "Speech" to 0.08f)),
         )
-        assertNull(RepeatFilter.ambientType(result(Category.OTRO, "Wind", "Snoring" to 0.05f)))
-        assertNull(RepeatFilter.ambientType(result(Category.OTRO, "Wind", "Cough" to 0.04f)))
+        assertNull(RepeatFilter.ambientType(result(Category.OTHER, "Wind", "Snoring" to 0.05f)))
+        assertNull(RepeatFilter.ambientType(result(Category.OTHER, "Wind", "Cough" to 0.04f)))
         // A tiny trace does not count.
-        assertEquals(SoundType.WIND, RepeatFilter.ambientType(result(Category.OTRO, "Wind", "Speech" to 0.02f)))
+        assertEquals(SoundType.WIND, RepeatFilter.ambientType(result(Category.OTHER, "Wind", "Speech" to 0.02f)))
     }
 
     @Test

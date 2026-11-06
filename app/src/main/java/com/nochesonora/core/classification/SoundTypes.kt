@@ -2,7 +2,7 @@ package com.nochesonora.core.classification
 
 /**
  * "Friendly" sound type for display (dog, door, rain…). Presentation only: each event's
- * category (RONQUIDO / HABLA / TOS / OTRO / FONDO) is still decided by
+ * category (SNORING / SPEECH / COUGH / OTHER / BACKGROUND) is still decided by
  * [LabelMapper] and [VotingClassifier]; this groups YAMNet's 521 labels so they can be named.
  */
 enum class SoundType {
@@ -144,7 +144,7 @@ object SoundTypes {
     )
 
     /** Labels that say nothing about the sound (unclassified or unknown). */
-    private val meaningless = setOf(LabelMapper.UNKNOWN_LABEL, "Sin clasificar", "Silence", "Sound effect", "Cacophony")
+    private val meaningless = setOf(LabelMapper.UNKNOWN_LABEL, LabelMapper.UNCLASSIFIED_LABEL, "Silence", "Sound effect", "Cacophony")
 
     /** For the test: every label in the table must exist in YAMNet (no typos). */
     internal val mappedLabels: Set<String> get() = table.keys + musicTv
@@ -157,7 +157,7 @@ object SoundTypes {
     }
 
     /**
-     * Type of an event: first its OTRO label; if that says nothing, the first of its top
+     * Type of an event: first its OTHER label; if that says nothing, the first of its top
      * labels that has a type (not counting room-background ones).
      */
     fun ofEvent(otherLabel: String?, topLabels: List<String>): SoundType? {

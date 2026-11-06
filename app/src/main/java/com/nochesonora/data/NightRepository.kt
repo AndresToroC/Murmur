@@ -53,7 +53,7 @@ class NightRepository(
             SessionEntity(
                 startedAt = startedAt,
                 endedAt = null,
-                status = SessionStatus.EN_CURSO,
+                status = SessionStatus.IN_PROGRESS,
                 baselineDbAtStart = null,
                 lastHeartbeatAt = startedAt,
                 sensitivityDb = sensitivityDb,
@@ -74,22 +74,22 @@ class NightRepository(
 
     suspend fun completeSession(sessionId: Long, endedAt: Long) {
         dao.endOpenPauses(sessionId, endedAt)
-        dao.finishSession(sessionId, SessionStatus.COMPLETADA, endedAt)
+        dao.finishSession(sessionId, SessionStatus.COMPLETED, endedAt)
     }
 
     /**
-     * Every EN_CURSO session other than the live service's becomes INTERRUMPIDA, ending at its
+     * Every IN_PROGRESS session other than the live service's becomes INTERRUPTED, ending at its
      * last heartbeat (§6.6). Clips already written are kept.
      *
      * Only sessions created before this process started count: a session created by this same
      * process is always closed by its own service, so there is no race with one that is starting.
      */
     suspend fun markOrphansInterrupted(processStartedAt: Long, activeSessionId: Long?): Int {
-        val orphans = dao.getSessionsByStatus(SessionStatus.EN_CURSO)
+        val orphans = dao.getSessionsByStatus(SessionStatus.IN_PROGRESS)
             .filter { it.id != activeSessionId && it.startedAt < processStartedAt }
         for (s in orphans) {
             dao.endOpenPauses(s.id, s.lastHeartbeatAt)
-            dao.finishSession(s.id, SessionStatus.INTERRUMPIDA, s.lastHeartbeatAt)
+            dao.finishSession(s.id, SessionStatus.INTERRUPTED, s.lastHeartbeatAt)
         }
         return orphans.size
     }
@@ -101,7 +101,7 @@ class NightRepository(
      * the episodes. If the WAV fails, the row is deleted.
      */
     suspend fun saveEvent(sessionId: Long, event: ClosedEvent, result: ClassificationResult): Long? {
-        require(result.category != Category.FONDO) { "FONDO is not persisted" }
+        require(result.category != Category.BACKGROUND) { "BACKGROUND is not persisted" }
         val id = dao.insertEvent(
             EventEntity(
                 sessionId = sessionId,
@@ -158,7 +158,7 @@ class NightRepository(
 
     /** Saved clips from every night whose sound is [type] (what gets deleted when it is ignored). */
     suspend fun clipsOfType(type: SoundType): List<EventEntity> =
-        dao.getEventsInCategory(Category.OTRO).filter { it.effectiveCategory == Category.OTRO && it.soundType() == type }
+        dao.getEventsInCategory(Category.OTHER).filter { it.effectiveCategory == Category.OTHER && it.soundType() == type }
 
     /** Deletes several clips (rows and WAVs) and rebuilds the episodes of each affected night once. */
     suspend fun deleteEvents(events: List<EventEntity>) {
@@ -198,7 +198,7 @@ class NightRepository(
 
     suspend fun applyRetention(retention: Retention, now: Long = System.currentTimeMillis()): Int {
         val candidates = dao.getAllSessions().map {
-            RetentionCandidate(it.id, it.startedAt, it.endedAt, it.isFavorite, it.status == SessionStatus.EN_CURSO)
+            RetentionCandidate(it.id, it.startedAt, it.endedAt, it.isFavorite, it.status == SessionStatus.IN_PROGRESS)
         }
         val ids = RetentionPolicy.idsToDelete(now, retention, candidates)
         ids.forEach { deleteSession(it) }

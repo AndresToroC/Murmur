@@ -17,7 +17,7 @@ class NightSummaryTest {
     private val context: Application get() = ApplicationProvider.getApplicationContext()
     private val start = 1_762_230_660_000L // any time works: only the duration matters
     private val night = SessionEntity(
-        id = 1, startedAt = start, endedAt = start + (3 * 60 + 33) * 60_000L, status = SessionStatus.COMPLETADA,
+        id = 1, startedAt = start, endedAt = start + (3 * 60 + 33) * 60_000L, status = SessionStatus.COMPLETED,
         baselineDbAtStart = -52f, lastHeartbeatAt = start, sensitivityDb = 10, fullRecordingPath = null,
     )
 

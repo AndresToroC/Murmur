@@ -85,7 +85,7 @@ class SessionEngineTest {
         groupRepeats: Boolean = true,
         ignored: Set<SoundType> = emptySet(),
     ): Long = runBlocking {
-        val session = repository.createSession(System.currentTimeMillis(), Sensitivity.MEDIA.marginDb, saveFullRecording = false)
+        val session = repository.createSession(System.currentTimeMillis(), Sensitivity.MEDIUM.marginDb, saveFullRecording = false)
         lateinit var engine: SessionEngine
         engine = SessionEngine(
             context = context,
@@ -96,7 +96,7 @@ class SessionEngineTest {
             loadClassifier = { classifier },
         )
         engine.setIgnoredSounds(ignored)
-        engine.run(session, Sensitivity.MEDIA, groupRepeats)
+        engine.run(session, Sensitivity.MEDIUM, groupRepeats)
         session.id
     }
 
@@ -124,14 +124,14 @@ class SessionEngineTest {
             5,
             events.size,
         )
-        assertTrue(events.all { it.category == Category.HABLA })
+        assertTrue(events.all { it.category == Category.SPEECH })
         for (e in events) {
             val wav = File(e.filePath)
             assertTrue("missing WAV ${e.filePath}", wav.isFile)
             assertTrue(wav.length() > WavWriter.HEADER_SIZE + Pcm.msToSamples(5_000) * 2) // at least pre + post-roll
         }
         assertEquals(0, liveState.snapshot.value.saveErrors)
-        assertEquals(5, liveState.snapshot.value.counts[Category.HABLA])
+        assertEquals(5, liveState.snapshot.value.counts[Category.SPEECH])
         assertTrue("no temporary files",File(events[0].filePath).parentFile!!.list()!!.none { it.endsWith(".tmp") })
     }
 
@@ -145,7 +145,7 @@ class SessionEngineTest {
         SignalGen.mixInto(pcm, SignalGen.voiceBurst(3.0, 8_000.0), 80.0) // speech after resuming
         var opens = 0
         var releasesWhilePaused = 0
-        val session = runBlocking { repository.createSession(System.currentTimeMillis(), Sensitivity.MEDIA.marginDb, saveFullRecording = false) }
+        val session = runBlocking { repository.createSession(System.currentTimeMillis(), Sensitivity.MEDIUM.marginDb, saveFullRecording = false) }
         lateinit var engine: SessionEngine
         val audio = object : AudioSource {
             private var pos = 0
@@ -185,7 +185,7 @@ class SessionEngineTest {
             openAudio = { audio },
             loadClassifier = { fakeYamnet { if (it > -35) "Speech" else null } },
         )
-        runBlocking { engine.run(session, Sensitivity.MEDIA) }
+        runBlocking { engine.run(session, Sensitivity.MEDIUM) }
 
         val pauses = runBlocking { db.nightDao().observePauses(session.id).first() }
         assertEquals(listOf(com.nochesonora.data.db.PauseReason.USER), pauses.map { it.reason })
@@ -227,12 +227,12 @@ class SessionEngineTest {
         val sessionId = runSession(windyNight(), windYamnet)
         val events = runBlocking { db.nightDao().getEvents(sessionId) }
         assertEquals(1, events.size)
-        assertEquals(Category.OTRO, events.single().category)
+        assertEquals(Category.OTHER, events.single().category)
         assertEquals(3, events.single().repeats)
         assertTrue(events.single().lastRepeatAt!! > events.single().startedAt)
         val live = liveState.snapshot.value
         assertEquals(3, live.repeatedCount)
-        assertEquals(1, live.counts[Category.OTRO])
+        assertEquals(1, live.counts[Category.OTHER])
         assertEquals(0, live.saveErrors)
         // Only one WAV on disk.
         assertEquals(1, File(events.single().filePath).parentFile!!.list()!!.count { it.endsWith(".wav") })

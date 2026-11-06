@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import com.nochesonora.R
+import com.nochesonora.core.classification.LabelMapper
 import com.nochesonora.core.classification.SoundType
 import com.nochesonora.core.classification.SoundTypes
 import com.nochesonora.ui.theme.CoughRed
@@ -76,8 +77,8 @@ fun soundName(yamnetLabel: String): String {
 /** Translations of labels with no type of their own (or that are preferred as is). */
 private val yamnetEs = mapOf(
     "Silence" to "Silencio",
-    "Desconocido" to "Desconocido",
-    "Sin clasificar" to "Sin clasificar",
+    LabelMapper.UNKNOWN_LABEL to "Desconocido",
+    LabelMapper.UNCLASSIFIED_LABEL to "Sin clasificar",
     "Sound effect" to "Efecto de sonido",
     "Cacophony" to "Ruido mezclado",
     "Sine wave" to "Tono",

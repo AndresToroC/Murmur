@@ -10,7 +10,7 @@ class EpisodeGrouperTest {
 
     @Test
     fun gapOf29sJoins() {
-        val eps = EpisodeGrouper.group(listOf(ev(1, Category.RONQUIDO, 0), ev(2, Category.RONQUIDO, 34)))
+        val eps = EpisodeGrouper.group(listOf(ev(1, Category.SNORING, 0), ev(2, Category.SNORING, 34)))
         assertEquals(1, eps.size)
         assertEquals(listOf(1L, 2L), eps[0].eventIds)
         assertEquals(0L, eps[0].startedAt)
@@ -19,22 +19,22 @@ class EpisodeGrouperTest {
 
     @Test
     fun gapOf31sSplits() {
-        val eps = EpisodeGrouper.group(listOf(ev(1, Category.RONQUIDO, 0), ev(2, Category.RONQUIDO, 36)))
+        val eps = EpisodeGrouper.group(listOf(ev(1, Category.SNORING, 0), ev(2, Category.SNORING, 36)))
         assertEquals(2, eps.size)
     }
 
     @Test
     fun interleavedCategoryBreaks() {
         val eps = EpisodeGrouper.group(
-            listOf(ev(1, Category.RONQUIDO, 0), ev(2, Category.TOS, 8), ev(3, Category.RONQUIDO, 16)),
+            listOf(ev(1, Category.SNORING, 0), ev(2, Category.COUGH, 8), ev(3, Category.SNORING, 16)),
         )
-        assertEquals(listOf(Category.RONQUIDO, Category.TOS, Category.RONQUIDO), eps.map { it.category })
+        assertEquals(listOf(Category.SNORING, Category.COUGH, Category.SNORING), eps.map { it.category })
     }
 
     @Test
     fun userCategoryWins() {
         val eps = EpisodeGrouper.group(
-            listOf(ev(1, Category.RONQUIDO, 0), ev(2, Category.OTRO, 8, user = Category.RONQUIDO), ev(3, Category.RONQUIDO, 16)),
+            listOf(ev(1, Category.SNORING, 0), ev(2, Category.OTHER, 8, user = Category.SNORING), ev(3, Category.SNORING, 16)),
         )
         assertEquals(1, eps.size)
         assertEquals(3, eps[0].eventIds.size)
@@ -42,7 +42,7 @@ class EpisodeGrouperTest {
 
     @Test
     fun unsortedInputIsSorted() {
-        val eps = EpisodeGrouper.group(listOf(ev(2, Category.HABLA, 20), ev(1, Category.HABLA, 0)))
+        val eps = EpisodeGrouper.group(listOf(ev(2, Category.SPEECH, 20), ev(1, Category.SPEECH, 0)))
         assertEquals(listOf(1L, 2L), eps.single().eventIds)
     }
 

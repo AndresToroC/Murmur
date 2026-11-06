@@ -21,16 +21,16 @@ class RetentionPolicyTest {
 
     @Test
     fun keepForever() {
-        assertEquals(emptyList<Long>(), RetentionPolicy.idsToDelete(now, Retention.SIEMPRE, sessions))
+        assertEquals(emptyList<Long>(), RetentionPolicy.idsToDelete(now, Retention.FOREVER, sessions))
     }
 
     @Test
     fun sevenDays() {
-        assertEquals(listOf(2L, 3L, 6L), RetentionPolicy.idsToDelete(now, Retention.DIAS_7, sessions))
+        assertEquals(listOf(2L, 3L, 6L), RetentionPolicy.idsToDelete(now, Retention.DAYS_7, sessions))
     }
 
     @Test
     fun thirtyDays() {
-        assertEquals(listOf(3L, 6L), RetentionPolicy.idsToDelete(now, Retention.DIAS_30, sessions))
+        assertEquals(listOf(3L, 6L), RetentionPolicy.idsToDelete(now, Retention.DAYS_30, sessions))
     }
 }

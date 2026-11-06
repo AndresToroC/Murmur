@@ -42,7 +42,7 @@ class MurmurWidget : AppWidgetProvider() {
                 val live = app.container.liveState.snapshot.value
                 val last = withTimeoutOrNull(5_000) {
                     app.container.repository.observeSummaries().first()
-                        .firstOrNull { it.session.status != SessionStatus.EN_CURSO }
+                        .firstOrNull { it.session.status != SessionStatus.IN_PROGRESS }
                 }
                 val views = render(AppLanguage.wrap(context.applicationContext), live, last)
                 ids.forEach { manager.updateAppWidget(it, views) }

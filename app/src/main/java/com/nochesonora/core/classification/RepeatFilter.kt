@@ -50,7 +50,7 @@ class RepeatFilter(private val windowMs: Long = WINDOW_MS) {
 
         /** Ambient-noise type of the clip, or null if it is not one (or if it also has a real sound). */
         fun ambientType(result: ClassificationResult): SoundType? {
-            if (result.category != Category.OTRO) return null
+            if (result.category != Category.OTHER) return null
             val type = SoundTypes.of(result.otherLabel)?.takeIf { it in AMBIENT } ?: return null
             return if (hasRealSound(result)) null else type
         }

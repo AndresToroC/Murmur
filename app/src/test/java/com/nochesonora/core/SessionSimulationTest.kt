@@ -54,6 +54,6 @@ class SessionSimulationTest {
     fun shortSoundsAreNotDiscardedAsBackground() {
         val analyzer = ClipAnalyzer(fakeYamnet("Cough"))
         val categories = runSession(oneMinute()).map { analyzer.analyze(it.pcm).category }
-        assertEquals(List(3) { Category.TOS }, categories)
+        assertEquals(List(3) { Category.COUGH }, categories)
     }
 }

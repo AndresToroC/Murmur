@@ -13,6 +13,7 @@ import com.nochesonora.core.classification.Category
 import com.nochesonora.core.classification.ClassificationResult
 import com.nochesonora.core.classification.ClipAnalyzer
 import com.nochesonora.core.classification.IgnoreFilter
+import com.nochesonora.core.classification.LabelMapper
 import com.nochesonora.core.classification.RepeatFilter
 import com.nochesonora.core.classification.SnoreHeuristic
 import com.nochesonora.core.classification.SoundType
@@ -324,7 +325,7 @@ class SessionEngine(
     private suspend fun processEvent(sessionId: Long, event: ClosedEvent, analyzer: ClipAnalyzer?) {
         try {
             val result = analyzer?.analyze(event.pcm) ?: unclassified(event)
-            val discarded = result.category == Category.FONDO
+            val discarded = result.category == Category.BACKGROUND
             // A sound on the ignore list (the dog, the AC…): no WAV and no row.
             val ignoredType = if (discarded) null else IgnoreFilter.ignoredType(result, ignoredSounds)
             val skipped = discarded || ignoredType != null
@@ -333,7 +334,7 @@ class SessionEngine(
             val ambient = if (groupRepeats && !skipped) RepeatFilter.ambientType(result) else null
             val foldInto = repeats.foldInto(ambient, event.startedAtMs)
             val repeated = foldInto != null && repository.addRepeat(sessionId, foldInto, event.startedAtMs)
-            // FONDO is discarded: no WAV and no row. If saving fails, it shows on Home (never silently).
+            // BACKGROUND is discarded: no WAV and no row. If saving fails, it shows on Home (never silently).
             val saved = when {
                 skipped || repeated -> true
                 else -> repository.saveEvent(sessionId, event, result)
@@ -381,9 +382,9 @@ class SessionEngine(
     }
 
     private fun unclassified(event: ClosedEvent) = ClassificationResult(
-        category = Category.OTRO,
+        category = Category.OTHER,
         confidence = 0f,
-        otherLabel = "Sin clasificar",
+        otherLabel = LabelMapper.UNCLASSIFIED_LABEL,
         topLabels = emptyList(),
         meanScores = emptyList(),
         snore = SnoreHeuristic.analyze(event.pcm),

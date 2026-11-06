@@ -22,7 +22,7 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val lastSession: StateFlow<SessionSummaryRow?> = container.repository.observeSummaries()
-        .map { list -> list.firstOrNull { it.session.status != SessionStatus.EN_CURSO } }
+        .map { list -> list.firstOrNull { it.session.status != SessionStatus.IN_PROGRESS } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun freeBytes(): Long = container.repository.freeBytes()

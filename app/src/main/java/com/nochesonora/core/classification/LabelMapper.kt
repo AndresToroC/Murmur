@@ -3,19 +3,22 @@ package com.nochesonora.core.classification
 /** Label kind before resolving the rules that depend on the whole clip. */
 enum class LabelKind {
     SNORE,
-    /** `Breathing`: RONQUIDO only if the clip is periodic (A4). */
+    /** `Breathing`: SNORING only if the clip is periodic (A4). */
     BREATHING,
     SPEECH,
     COUGH,
     BACKGROUND,
-    /** Engine: FONDO only if sustained (A3). */
+    /** Engine: BACKGROUND only if sustained (A3). */
     ENGINE,
     OTHER,
 }
 
 /** YAMNet label (exact `categoryName()` name) → kind. */
 object LabelMapper {
-    const val UNKNOWN_LABEL = "Desconocido"
+    const val UNKNOWN_LABEL = "Unknown"
+
+    /** otherLabel of the clips saved while YAMNet was not available. */
+    const val UNCLASSIFIED_LABEL = "Unclassified"
 
     private val kinds: Map<String, LabelKind> = buildMap {
         listOf("Snoring", "Gasp").forEach { put(it, LabelKind.SNORE) }
@@ -34,11 +37,11 @@ object LabelMapper {
 
     /** Direct category for labels that do not depend on context. */
     fun directCategory(kind: LabelKind): Category? = when (kind) {
-        LabelKind.SNORE -> Category.RONQUIDO
-        LabelKind.SPEECH -> Category.HABLA
-        LabelKind.COUGH -> Category.TOS
-        LabelKind.BACKGROUND -> Category.FONDO
-        LabelKind.OTHER -> Category.OTRO
+        LabelKind.SNORE -> Category.SNORING
+        LabelKind.SPEECH -> Category.SPEECH
+        LabelKind.COUGH -> Category.COUGH
+        LabelKind.BACKGROUND -> Category.BACKGROUND
+        LabelKind.OTHER -> Category.OTHER
         LabelKind.BREATHING, LabelKind.ENGINE -> null
     }
 }

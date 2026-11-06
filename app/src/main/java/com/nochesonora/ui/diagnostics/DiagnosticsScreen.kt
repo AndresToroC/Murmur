@@ -143,9 +143,9 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     Column(Modifier.padding(16.dp)) {
                         val r = t.result
                         Text(stringResource(R.string.diag_mean_level, formatDb(t.meanLevelDb)))
-                        val cat = if (r.category == Category.OTRO) stringResource(R.string.common_other_with_label, r.otherLabel.toString()) else r.category.label()
+                        val cat = if (r.category == Category.OTHER) stringResource(R.string.common_other_with_label, r.otherLabel.toString()) else r.category.label()
                         Text(
-                            stringResource(if (r.category == Category.FONDO) R.string.diag_category_discarded else R.string.diag_category, cat),
+                            stringResource(if (r.category == Category.BACKGROUND) R.string.diag_category_discarded else R.string.diag_category, cat),
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(stringResource(R.string.diag_confidence, (r.confidence * 100).roundToInt(), r.windowCount))

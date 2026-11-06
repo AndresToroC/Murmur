@@ -15,13 +15,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 data class AppSettings(
-    val sensitivity: Sensitivity = Sensitivity.MEDIA,
+    val sensitivity: Sensitivity = Sensitivity.MEDIUM,
     val saveFullRecording: Boolean = false,
-    val retention: Retention = Retention.SIEMPRE,
+    val retention: Retention = Retention.FOREVER,
     val batteryPromptShown: Boolean = false,
     /** Notification with the night's summary when the session is stopped. */
     val morningSummary: Boolean = true,
-    /** Transcribe on the phone what is said while asleep (HABLA clips). */
+    /** Transcribe on the phone what is said while asleep (SPEECH clips). */
     val transcribeSpeech: Boolean = true,
     /** Save repeating ambient noises only once (wind, fan, rain). */
     val groupRepeats: Boolean = true,
@@ -67,9 +67,9 @@ class SettingsRepository(private val context: Context) {
     }
 
     private fun Preferences.toSettings() = AppSettings(
-        sensitivity = this[Keys.sensitivity]?.let { runCatching { Sensitivity.valueOf(it) }.getOrNull() } ?: Sensitivity.MEDIA,
+        sensitivity = this[Keys.sensitivity]?.let(::storedSensitivity) ?: Sensitivity.MEDIUM,
         saveFullRecording = this[Keys.saveFull] ?: false,
-        retention = this[Keys.retention]?.let { runCatching { Retention.valueOf(it) }.getOrNull() } ?: Retention.SIEMPRE,
+        retention = this[Keys.retention]?.let(::storedRetention) ?: Retention.FOREVER,
         batteryPromptShown = this[Keys.batteryPromptShown] ?: false,
         morningSummary = this[Keys.morningSummary] ?: true,
         transcribeSpeech = this[Keys.transcribeSpeech] ?: true,
@@ -78,3 +78,13 @@ class SettingsRepository(private val context: Context) {
             .mapNotNull { name -> runCatching { SoundType.valueOf(name) }.getOrNull() }.toSet(),
     )
 }
+
+/** Values saved before 0.8.0 used Spanish names; they are still read so the setting is kept. */
+private val LEGACY_SENSITIVITY = mapOf("BAJA" to Sensitivity.LOW, "MEDIA" to Sensitivity.MEDIUM, "ALTA" to Sensitivity.HIGH)
+private val LEGACY_RETENTION = mapOf("SIEMPRE" to Retention.FOREVER, "DIAS_7" to Retention.DAYS_7, "DIAS_30" to Retention.DAYS_30)
+
+internal fun storedSensitivity(name: String): Sensitivity? =
+    Sensitivity.entries.firstOrNull { it.name == name } ?: LEGACY_SENSITIVITY[name]
+
+internal fun storedRetention(name: String): Retention? =
+    Retention.entries.firstOrNull { it.name == name } ?: LEGACY_RETENTION[name]

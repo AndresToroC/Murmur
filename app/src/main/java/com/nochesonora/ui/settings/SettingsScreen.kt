@@ -105,9 +105,9 @@ fun SettingsScreen(onOpenDiagnostics: () -> Unit) {
         Text(stringResource(R.string.settings_sensitivity), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         val sensitivities = listOf(
-            Sensitivity.BAJA to stringResource(R.string.settings_sensitivity_low),
-            Sensitivity.MEDIA to stringResource(R.string.settings_sensitivity_medium),
-            Sensitivity.ALTA to stringResource(R.string.settings_sensitivity_high),
+            Sensitivity.LOW to stringResource(R.string.settings_sensitivity_low),
+            Sensitivity.MEDIUM to stringResource(R.string.settings_sensitivity_medium),
+            Sensitivity.HIGH to stringResource(R.string.settings_sensitivity_high),
         )
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             sensitivities.forEachIndexed { i, (value, label) ->
@@ -163,9 +163,9 @@ fun SettingsScreen(onOpenDiagnostics: () -> Unit) {
         Text(stringResource(R.string.settings_retention), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         val retentions = listOf(
-            Retention.SIEMPRE to stringResource(R.string.settings_retention_forever),
-            Retention.DIAS_7 to stringResource(R.string.settings_retention_7),
-            Retention.DIAS_30 to stringResource(R.string.settings_retention_30),
+            Retention.FOREVER to stringResource(R.string.settings_retention_forever),
+            Retention.DAYS_7 to stringResource(R.string.settings_retention_7),
+            Retention.DAYS_30 to stringResource(R.string.settings_retention_30),
         )
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             retentions.forEachIndexed { i, (value, label) ->

@@ -68,7 +68,7 @@ class VotingClassifierTest {
             listOf(w("Speech" to 0.6f, "Snoring" to 0.35f), w("Speech" to 0.7f), w("Snoring" to 0.4f)),
             notSnore,
         )
-        assertEquals(Category.HABLA, r.category)
+        assertEquals(Category.SPEECH, r.category)
         assertEquals(1.3f / 3, r.confidence, 1e-4f)
         assertNull(r.otherLabel)
     }
@@ -76,7 +76,7 @@ class VotingClassifierTest {
     @Test
     fun scoresBelowThresholdDoNotVote() {
         val r = VotingClassifier.classify(listOf(w("Cough" to 0.29f), w("Cough" to 0.29f)), notSnore)
-        assertEquals(Category.OTRO, r.category)
+        assertEquals(Category.OTHER, r.category)
         assertEquals(LabelMapper.UNKNOWN_LABEL, r.otherLabel)
         assertEquals(0f, r.confidence, 0f)
         assertEquals("Cough", r.topLabels.first().label) // the top 3 is saved anyway
@@ -85,58 +85,58 @@ class VotingClassifierTest {
     @Test
     fun noWindowsIsUnknown() {
         val r = VotingClassifier.classify(listOf(emptyList(), emptyList()), notSnore)
-        assertEquals(Category.OTRO, r.category)
+        assertEquals(Category.OTHER, r.category)
         assertEquals(LabelMapper.UNKNOWN_LABEL, r.otherLabel)
     }
 
     @Test
     fun backgroundWins() {
         val r = VotingClassifier.classify(List(5) { w("Mechanical fan" to 0.8f, "Speech" to 0.1f) }, notSnore)
-        assertEquals(Category.FONDO, r.category)
+        assertEquals(Category.BACKGROUND, r.category)
     }
 
     /**
      * Regression using what YAMNet actually returns for a cough clip (ESC-50): "Silence" in almost
-     * every window because of the pre/post-roll, and "Cough" in one or two. FONDO used to win and the clip was discarded.
+     * every window because of the pre/post-roll, and "Cough" in one or two. BACKGROUND used to win and the clip was discarded.
      */
     @Test
     fun shortCoughAmongSilenceIsCough() {
         val windows = List(10) { if (it == 4 || it == 5) w("Cough" to 0.55f, "Silence" to 0.2f) else w("Silence" to 0.7f) }
-        assertEquals(Category.TOS, VotingClassifier.classify(windows, notSnore).category)
+        assertEquals(Category.COUGH, VotingClassifier.classify(windows, notSnore).category)
     }
 
     @Test
     fun speechOverFanIsSpeech() {
         val windows = List(8) { if (it < 3) w("Speech" to 0.4f, "Mechanical fan" to 0.6f) else w("Mechanical fan" to 0.8f) }
-        assertEquals(Category.HABLA, VotingClassifier.classify(windows, notSnore).category)
+        assertEquals(Category.SPEECH, VotingClassifier.classify(windows, notSnore).category)
     }
 
     @Test
     fun backgroundStillBeatsWeakOther() {
         val windows = List(6) { if (it == 0) w("Inside, small room" to 0.35f, "Hum" to 0.5f) else w("Hum" to 0.7f) }
-        assertEquals(Category.FONDO, VotingClassifier.classify(windows, notSnore).category)
+        assertEquals(Category.BACKGROUND, VotingClassifier.classify(windows, notSnore).category)
     }
 
     @Test
     fun sustainedEngineIsBackground() {
         val windows = List(10) { if (it < 7) w("Engine" to 0.5f) else w("Idling" to 0.4f) }
-        assertEquals(Category.FONDO, VotingClassifier.classify(windows, notSnore).category)
+        assertEquals(Category.BACKGROUND, VotingClassifier.classify(windows, notSnore).category)
     }
 
     @Test
     fun briefEngineIsOther() {
         val windows = List(10) { if (it < 2) w("Engine" to 0.5f) else emptyList() }
         val r = VotingClassifier.classify(windows, notSnore)
-        assertEquals(Category.OTRO, r.category)
+        assertEquals(Category.OTHER, r.category)
         assertEquals("Engine", r.otherLabel)
     }
 
     @Test
     fun breathingDependsOnPeriodicity() {
         val windows = List(4) { w("Breathing" to 0.5f) }
-        assertEquals(Category.RONQUIDO, VotingClassifier.classify(windows, periodicOnly).category)
+        assertEquals(Category.SNORING, VotingClassifier.classify(windows, periodicOnly).category)
         val r = VotingClassifier.classify(windows, notSnore)
-        assertEquals(Category.OTRO, r.category)
+        assertEquals(Category.OTHER, r.category)
         assertEquals("Breathing", r.otherLabel)
     }
 
@@ -144,7 +144,7 @@ class VotingClassifierTest {
     fun snoreHeuristicBoostsEvenWithoutSnoringLabel() {
         val windows = List(4) { w("Dog" to 0.2f) }
         val r = VotingClassifier.classify(windows, snoreLike)
-        assertEquals(Category.RONQUIDO, r.category)
+        assertEquals(Category.SNORING, r.category)
         assertEquals(0.3f, r.confidence, 1e-4f)
     }
 
@@ -152,7 +152,7 @@ class VotingClassifierTest {
     fun otherKeepsHeaviestOriginalLabel() {
         val windows = listOf(w("Dog" to 0.4f, "Door" to 0.35f), w("Door" to 0.5f), w("Door" to 0.31f))
         val r = VotingClassifier.classify(windows, notSnore)
-        assertEquals(Category.OTRO, r.category)
+        assertEquals(Category.OTHER, r.category)
         assertEquals("Door", r.otherLabel)
     }
 
@@ -239,7 +239,7 @@ class ClipAnalyzerTest {
         val r = analyzer.analyze(ShortArray(16_000 * 5))
         assertEquals(Windowing.windowCount(80_000), calls)
         assertEquals(calls, r.windowCount)
-        assertEquals(Category.TOS, r.category)
+        assertEquals(Category.COUGH, r.category)
         assertEquals(0.8f, r.confidence, 1e-4f)
     }
 }

@@ -60,11 +60,11 @@ abstract class NightDao {
     @Query(
         """
         SELECT s.*,
-          (SELECT COUNT(*) FROM events e WHERE e.sessionId = s.id AND COALESCE(e.userCategory, e.category) = 'RONQUIDO') AS snoreEvents,
-          (SELECT COUNT(*) FROM events e WHERE e.sessionId = s.id AND COALESCE(e.userCategory, e.category) = 'HABLA') AS speechEvents,
-          (SELECT COUNT(*) FROM events e WHERE e.sessionId = s.id AND COALESCE(e.userCategory, e.category) = 'TOS') AS coughEvents,
-          (SELECT COUNT(*) FROM events e WHERE e.sessionId = s.id AND COALESCE(e.userCategory, e.category) = 'OTRO') AS otherEvents,
-          (SELECT COALESCE(SUM(ep.endedAt - ep.startedAt), 0) FROM episodes ep WHERE ep.sessionId = s.id AND ep.category = 'RONQUIDO') AS snoreMs
+          (SELECT COUNT(*) FROM events e WHERE e.sessionId = s.id AND COALESCE(e.userCategory, e.category) = 'SNORING') AS snoreEvents,
+          (SELECT COUNT(*) FROM events e WHERE e.sessionId = s.id AND COALESCE(e.userCategory, e.category) = 'SPEECH') AS speechEvents,
+          (SELECT COUNT(*) FROM events e WHERE e.sessionId = s.id AND COALESCE(e.userCategory, e.category) = 'COUGH') AS coughEvents,
+          (SELECT COUNT(*) FROM events e WHERE e.sessionId = s.id AND COALESCE(e.userCategory, e.category) = 'OTHER') AS otherEvents,
+          (SELECT COALESCE(SUM(ep.endedAt - ep.startedAt), 0) FROM episodes ep WHERE ep.sessionId = s.id AND ep.category = 'SNORING') AS snoreMs
         FROM sessions s
         ORDER BY s.startedAt DESC
         """,
