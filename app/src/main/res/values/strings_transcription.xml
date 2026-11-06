@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Transcripción de los clips de habla. Inglés en values-en/strings_transcription.xml. -->
+<resources>
+    <string name="transcript_quote">“%1$s”</string>
+    <string name="transcript_running">Transcribiendo…</string>
+    <string name="transcript_no_match">No se entendieron palabras (puede ser un murmullo).</string>
+    <string name="transcript_failed">El reconocedor del teléfono no pudo con este clip. Toca Transcribir de nuevo.</string>
+    <string name="transcript_action">Transcribir</string>
+    <string name="transcript_action_again">Transcribir de nuevo</string>
+    <string name="transcript_not_supported">Este teléfono no puede transcribir lo que se dijo: hace falta Android 13 o superior con reconocimiento de voz sin conexión.</string>
+    <string name="transcript_language_missing">El reconocimiento de voz del teléfono no tiene este idioma, así que no se puede transcribir lo que se dijo.</string>
+    <string name="transcript_needs_download">Para transcribir lo que se dijo, el teléfono necesita descargar el idioma (lo descarga Android; Murmur sigue sin usar internet).</string>
+    <string name="transcript_download">Descargar idioma para transcribir</string>
+    <string name="transcript_downloading">Descargando el idioma en el teléfono. Vuelve a abrir esta noche en unos minutos.</string>
+</resources>

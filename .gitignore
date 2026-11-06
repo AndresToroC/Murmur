@@ -1,0 +1,12 @@
+.gradle/
+.kotlin/
+build/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# APK compilado (126 MB, pasa el límite de GitHub)
+*.apk

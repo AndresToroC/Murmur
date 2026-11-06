@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="trends_tab_calendar">Calendar</string>
+    <string name="trends_tab_trends">Trends</string>
+    <string name="trends_range_7">7 days</string>
+    <string name="trends_range_30">30 days</string>
+    <string name="trends_empty">No nights in the last %1$d days.</string>
+    <string name="trends_tile_nights">Nights</string>
+    <string name="trends_tile_snore">Snoring / night</string>
+    <string name="trends_tile_speech">Talking / night</string>
+    <string name="trends_tile_cough">Coughs (total)</string>
+    <string name="trends_percent">%1$d%%</string>
+    <string name="trends_vs_previous">Arrows: compared with the previous %1$d days (average per night).</string>
+    <string name="trends_chart_snore">Snoring (min per night)</string>
+    <string name="trends_chart_speech">Talking (times per night)</string>
+    <string name="trends_chart_cough">Cough (times per night)</string>
+    <string name="trends_max_minutes">max %1$d min</string>
+    <string name="trends_max_times">max %1$d×</string>
+    <string name="trends_tap_hint">Tap a bar to open that night.</string>
+    <string name="trends_insights">Highlights</string>
+    <string name="trends_insight_most_snore">Most snoring: %1$s · %2$s</string>
+    <string name="trends_insight_no_talk">%1$d of %2$d nights without talking</string>
+    <string name="trends_insight_quietest">Quietest night: %1$s · %2$s</string>
+    <plurals name="trends_sounds">
+        <item quantity="one">%d sound</item>
+        <item quantity="other">%d sounds</item>
+    </plurals>
+</resources>

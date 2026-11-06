@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Capa monocroma (íconos temáticos de Android 13+): la misma luna en una sola tinta;
+     el sistema la colorea. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="2.5"
+        android:scaleY="2.5"
+        android:translateX="24"
+        android:translateY="24">
+        <path
+            android:fillColor="#00000000"
+            android:pathData="M5.4,9.56V14.44M7.6,6.2V17.8M9.8,4.6V19.4M12,3.79V6.26M12,15.34V20.21M14.2,3.59V3.59M14.2,17.97V20.45M16.4,19.18V20.16M18.6,19.46V19.46"
+            android:strokeWidth="1.7"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

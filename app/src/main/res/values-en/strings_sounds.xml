@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="detail_sounds_title">Sounds identified</string>
+    <string name="sound_dog">Dog</string>
+    <string name="sound_cat">Cat</string>
+    <string name="sound_animal">Animal</string>
+    <string name="sound_baby">Baby</string>
+    <string name="sound_moan">Moaning or crying</string>
+    <string name="sound_laughter">Laughter</string>
+    <string name="sound_voices">Voices</string>
+    <string name="sound_snoring">Snoring</string>
+    <string name="sound_breathing">Breathing</string>
+    <string name="sound_cough">Cough</string>
+    <string name="sound_sneeze">Sneeze</string>
+    <string name="sound_throat">Throat clearing</string>
+    <string name="sound_body">Body noise</string>
+    <string name="sound_movement">Movement</string>
+    <string name="sound_impact">Thud</string>
+    <string name="sound_door">Door</string>
+    <string name="sound_footsteps">Footsteps</string>
+    <string name="sound_alarm">Alarm or phone</string>
+    <string name="sound_siren">Siren</string>
+    <string name="sound_vehicle">Vehicle</string>
+    <string name="sound_fireworks">Fireworks or blast</string>
+    <string name="sound_rain">Rain or storm</string>
+    <string name="sound_wind">Wind</string>
+    <string name="sound_water">Water</string>
+    <string name="sound_music_tv">Music or TV</string>
+    <string name="sound_household">Household appliances</string>
+    <string name="sound_fan">Fan or A/C</string>
+    <string name="sound_room">Room noise</string>
+</resources>

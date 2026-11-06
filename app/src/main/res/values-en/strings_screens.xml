@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English texts for Detail, Diagnostics, common components, navigation and notification. -->
+<resources>
+    <!-- Common -->
+    <string name="common_back">Back</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_favorite">Mark as favorite</string>
+    <string name="common_unfavorite">Remove from favorites</string>
+    <string name="common_other_with_label">Other (%1$s)</string>
+    <string name="common_tile_duration">Duration</string>
+    <string name="common_tile_snore">Snoring</string>
+    <string name="common_tile_speech">Talked</string>
+    <string name="common_tile_cough">Cough</string>
+    <string name="common_tile_other">Other</string>
+    <string name="common_tile_events">Events</string>
+
+    <!-- Player -->
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Night detail -->
+    <string name="detail_title_fallback">Night</string>
+    <string name="detail_timeline">Timeline</string>
+    <plurals name="detail_clips">
+        <item quantity="one">%d clip</item>
+        <item quantity="other">%d clips</item>
+    </plurals>
+    <string name="detail_baseline_clips">baseline %1$s dBFS · %2$s</string>
+    <string name="detail_pauses">Gray: pauses (%1$d)</string>
+    <string name="detail_full_recording">Full recording</string>
+    <string name="detail_no_events">No events recorded</string>
+    <string name="detail_episodes">Episodes</string>
+    <string name="detail_delete_event_title">Delete this event?</string>
+    <string name="detail_delete_event_text">Its audio will be deleted. This can\'t be undone.</string>
+    <string name="detail_summary">%1$s · %2$s · sensitivity %3$d dB</string>
+    <string name="detail_interrupted">The session was interrupted: it ends at the last saved data.</string>
+    <string name="detail_expand">Expand</string>
+    <string name="detail_collapse">Collapse</string>
+    <string name="detail_corrected">%1$s (corrected)</string>
+    <string name="detail_peak_confidence">peak %1$s dBFS · confidence %2$d%%</string>
+    <string name="detail_change_category">Change category</string>
+    <string name="detail_go_to_recording">Go to recording</string>
+
+    <!-- Diagnostics -->
+    <string name="diag_title">Diagnostics</string>
+    <string name="diag_live">Live</string>
+    <string name="diag_no_session">No active session</string>
+    <string name="diag_level">Level: %1$s</string>
+    <string name="diag_base_threshold">Baseline: %1$s · Threshold: %2$s</string>
+    <string name="diag_phase_calibrating">CALIBRATING (%1$d%%)</string>
+    <string name="diag_phase_listening">LISTENING</string>
+    <string name="diag_phase_event">EVENT</string>
+    <string name="diag_phase_paused">PAUSED · %1$s</string>
+    <string name="diag_detector_state">Detector state: %1$s</string>
+    <string name="diag_audio_source">Audio source: %1$s</string>
+    <string name="diag_dropped">Events dropped (queue full): %1$d</string>
+    <string name="diag_last_clip">Last classified clip</string>
+    <string name="diag_none_yet">None yet</string>
+    <string name="diag_discarded">%1$s · discarded</string>
+    <string name="diag_test_title">Test for 10 seconds</string>
+    <string name="diag_test_hint">Talk, cough or turn on the fan and see what it detects. Nothing is saved.</string>
+    <string name="diag_busy">Not available during a session: the microphone is in use.</string>
+    <string name="diag_permission">Microphone permission is required.</string>
+    <string name="diag_recording">Recording…</string>
+    <string name="diag_classifying">Classifying…</string>
+    <string name="diag_mean_level">Average level: %1$s</string>
+    <string name="diag_category">Category: %1$s</string>
+    <string name="diag_category_discarded">Category: %1$s · would be discarded</string>
+    <string name="diag_confidence">Confidence: %1$d%% · %2$d windows</string>
+    <string name="diag_snore_like">Looks like snoring? %1$s</string>
+    <string name="diag_yes">Yes</string>
+    <string name="diag_no">No</string>
+    <string name="diag_yes_lower">yes</string>
+    <string name="diag_no_lower">no</string>
+    <string name="diag_periodic">Periodic: %1$s (%2$d peaks) · Energy &lt; 500 Hz: %3$d%%</string>
+    <string name="diag_labels">Labels (mean score)</string>
+    <string name="diag_mic_failed">Couldn\'t open the microphone (is another app using it?)</string>
+    <string name="diag_error">Error: %1$s</string>
+
+    <!-- Notification -->
+    <string name="notif_channel_name">Night session</string>
+    <string name="notif_channel_desc">Ongoing notice while the app listens to the night</string>
+    <string name="notif_title">Listening to the night</string>
+    <plurals name="notif_events">
+        <item quantity="one">%d event detected</item>
+        <item quantity="other">%d events detected</item>
+    </plurals>
+    <string name="notif_paused_call">Paused (call in progress)</string>
+    <string name="notif_paused_retry">Paused (retrying the microphone)</string>
+    <string name="notif_paused_busy">Paused (microphone in use)</string>
+    <string name="notif_stop">Stop</string>
+</resources>

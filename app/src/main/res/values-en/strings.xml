@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common -->
+    <string name="action_continue">Continue</string>
+    <string name="action_not_now">Not now</string>
+    <string name="action_open">Open</string>
+    <string name="privacy_note">Everything is processed on the phone. Nothing leaves the device.</string>
+
+    <!-- Categories and states -->
+    <string name="cat_snore">Snoring</string>
+    <string name="cat_speech">Talking</string>
+    <string name="cat_cough">Cough</string>
+    <string name="cat_other">Other</string>
+    <string name="cat_background">Background</string>
+    <string name="status_in_progress">In progress</string>
+    <string name="status_completed">Completed</string>
+    <string name="status_interrupted">Interrupted</string>
+    <string name="pause_call">Paused (call in progress)</string>
+    <string name="pause_audio_error">Paused (retrying the microphone)</string>
+    <string name="pause_mic_busy">Paused (microphone busy)</string>
+
+    <!-- Home -->
+    <string name="home_tonight">Tonight</string>
+    <string name="home_ready">Ready to listen · %1$s</string>
+    <string name="home_tips_title">Before you sleep</string>
+    <string name="home_tip_charger">Plug the phone into the charger.</string>
+    <string name="home_tip_near_bed">Leave it near the bed, with the microphone uncovered.</string>
+    <string name="home_tip_screen_off">You can turn the screen off: the session keeps going.</string>
+    <string name="home_tip_calibration">The first minute measures how quiet the room is.</string>
+    <string name="home_last_night">Last night</string>
+    <string name="home_start">Start night</string>
+    <string name="home_stop">Stop</string>
+    <string name="home_saving">Saving the last events…</string>
+    <string name="home_keep_charging">Keep the phone plugged into the charger</string>
+    <string name="home_pill_paused">‖ PAUSED</string>
+    <string name="home_pill_calibrating">◌ MEASURING</string>
+    <string name="home_pill_recording">● RECORDING</string>
+    <string name="home_session_time">Session time</string>
+    <string name="home_status_preparing">Getting ready…</string>
+    <string name="home_status_calibrating">Measuring the room</string>
+    <string name="home_status_event">Sound in progress</string>
+    <string name="home_status_recording">Recording</string>
+    <string name="home_status_since">%1$s · since %2$s</string>
+    <string name="home_calibration_title">Measuring how quiet the room is</string>
+    <string name="home_calibration_text">For the first minute Murmur listens to the background noise (fan, air conditioning, street) so it can ignore it later. Stay quiet if you can. Anything that makes a sound is still recorded.</string>
+    <string name="home_calibration_remaining">%1$d s left</string>
+    <string name="home_calibration_next">Next: normal recording all night</string>
+    <string name="home_calibrated_title">Room measured</string>
+    <string name="home_calibrated_text">Baseline %1$s dBFS. Normal recording from now on.</string>
+    <string name="home_calibrated_text_bg">Background: %1$s · baseline %2$s dBFS. Normal recording from now on.</string>
+    <string name="home_live_level">Live level</string>
+    <string name="home_baseline">base %1$s</string>
+    <string name="home_threshold">threshold %1$s</string>
+    <string name="home_background">bg: %1$s</string>
+    <string name="home_classifier_missing">The sound model could not be loaded: events are saved unclassified.</string>
+    <string name="home_recent">Recently heard</string>
+    <string name="home_recent_empty_warmup">Measuring the silence for a few seconds before listening.</string>
+    <string name="home_recent_empty">Nothing yet. Each sound shows up here a few seconds after it ends.</string>
+    <string name="home_recent_discarded">Ignored as background tonight: %1$d</string>
+    <string name="home_recent_errors">Errors: %1$d. %2$s</string>
+    <string name="home_heard_not_saved">%1$s · NOT SAVED</string>
+    <string name="home_heard_ignored">Ignored · background</string>
+    <string name="home_heard_ignored_label">Ignored · background (%1$s)</string>
+    <string name="home_no_mic_permission">Without microphone permission the night can\'t be recorded</string>
+    <string name="home_no_notification_permission">Without notifications the session still works, but you won\'t see the alert</string>
+    <string name="home_battery_title">Keep the system from stopping the session</string>
+    <string name="home_battery_text">To listen all night, Android must not put the app to sleep. In the next step, allow Murmur to ignore battery optimization. You\'ll only be asked once.</string>
+    <string name="home_space_title">Low free space</string>
+    <string name="home_space_text">%1$s free. A night can take up a lot of space if there are many events.</string>
+    <string name="home_space_confirm">Start anyway</string>
+    <string name="home_stop_title">Stop the session?</string>
+    <string name="home_stop_text">Everything recorded so far will be saved.</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <plurals name="history_nights">
+        <item quantity="one">%d night</item>
+        <item quantity="other">%d nights</item>
+    </plurals>
+    <string name="history_month_empty">No nights this month</string>
+    <string name="history_prev_month">Previous month</string>
+    <string name="history_next_month">Next month</string>
+    <string name="history_day_empty">No recordings on this day.</string>
+    <string name="history_empty">No nights recorded yet. Tap \"Start night\" on Home.</string>
+    <string name="history_duration">%1$s recorded</string>
+    <string name="history_count_snore">snoring</string>
+    <string name="history_count_speech">talking</string>
+    <string name="history_count_cough">cough</string>
+    <string name="history_count_other">other</string>
+    <string name="history_no_events">No events</string>
+    <string name="history_more">More options</string>
+    <string name="history_delete_title">Delete this night?</string>
+    <string name="history_delete_text">All its events and audio will be deleted. This can\'t be undone.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_note">The app switches language right away.</string>
+    <string name="settings_language_note_live">The notification of the current session switches language next night.</string>
+    <string name="settings_sensitivity">Sensitivity</string>
+    <string name="settings_sensitivity_low">Low</string>
+    <string name="settings_sensitivity_medium">Medium</string>
+    <string name="settings_sensitivity_high">High</string>
+    <string name="settings_sensitivity_note">Margin above background noise: 14 / 10 / 7 dB. Applies to the next session.</string>
+    <string name="settings_full_recording">Save the full night recording</string>
+    <string name="settings_full_recording_note">In addition to the clips. Takes ~115 MB per 8 hours.</string>
+    <string name="settings_retention">Keep nights</string>
+    <string name="settings_retention_forever">Forever</string>
+    <string name="settings_retention_7">7 days</string>
+    <string name="settings_retention_30">30 days</string>
+    <string name="settings_retention_note">Favorites are never deleted.</string>
+    <string name="settings_storage">Storage</string>
+    <string name="settings_storage_usage">The app uses %1$s · Free on the phone %2$s</string>
+    <string name="settings_delete_all">Delete everything</string>
+    <string name="settings_unavailable_live">Not available during a session.</string>
+    <string name="settings_diagnostics">Diagnostics</string>
+    <string name="settings_diagnostics_note">Live levels and a 10-second test</string>
+    <string name="settings_full_dialog_title">Full recording</string>
+    <string name="settings_full_dialog_text">All the night\'s audio will be saved as AAC (32 kbps). Takes ~115 MB per 8 hours.</string>
+    <string name="settings_full_dialog_confirm">Turn on</string>
+    <string name="settings_delete_dialog_title">Delete everything?</string>
+    <string name="settings_delete_dialog_text">All nights, their events and audio will be deleted, favorites included.</string>
+    <string name="settings_delete_confirm_title">Are you sure?</string>
+    <string name="settings_delete_confirm_text">This can\'t be undone.</string>
+</resources>

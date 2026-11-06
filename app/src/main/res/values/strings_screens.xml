@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textos de Detalle, Diagnóstico, componentes comunes, navegación y notificación (español, base). -->
+<resources>
+    <!-- Comunes -->
+    <string name="common_back">Volver</string>
+    <string name="common_cancel">Cancelar</string>
+    <string name="common_delete">Borrar</string>
+    <string name="common_favorite">Marcar como favorita</string>
+    <string name="common_unfavorite">Quitar de favoritas</string>
+    <string name="common_other_with_label">Otro (%1$s)</string>
+    <string name="common_tile_duration">Duración</string>
+    <string name="common_tile_snore">Ronquido</string>
+    <string name="common_tile_speech">Habló</string>
+    <string name="common_tile_cough">Tos</string>
+    <string name="common_tile_other">Otros</string>
+    <string name="common_tile_events">Eventos</string>
+
+    <!-- Reproductor -->
+    <string name="player_play">Reproducir</string>
+    <string name="player_pause">Pausar</string>
+
+    <!-- Navegación -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_history">Historial</string>
+    <string name="nav_settings">Ajustes</string>
+
+    <!-- Detalle de la noche -->
+    <string name="detail_title_fallback">Noche</string>
+    <string name="detail_timeline">Línea de tiempo</string>
+    <plurals name="detail_clips">
+        <item quantity="one">%d clip</item>
+        <item quantity="many">%d clips</item>
+        <item quantity="other">%d clips</item>
+    </plurals>
+    <string name="detail_baseline_clips">base %1$s dBFS · %2$s</string>
+    <string name="detail_pauses">Gris: pausas (%1$d)</string>
+    <string name="detail_full_recording">Grabación completa</string>
+    <string name="detail_no_events">Sin eventos registrados</string>
+    <string name="detail_episodes">Episodios</string>
+    <string name="detail_delete_event_title">¿Borrar este evento?</string>
+    <string name="detail_delete_event_text">Se borrará su audio. No se puede deshacer.</string>
+    <string name="detail_summary">%1$s · %2$s · sensibilidad %3$d dB</string>
+    <string name="detail_interrupted">La sesión se interrumpió: termina en el último dato guardado.</string>
+    <string name="detail_expand">Abrir</string>
+    <string name="detail_collapse">Cerrar</string>
+    <string name="detail_corrected">%1$s (corregido)</string>
+    <string name="detail_peak_confidence">pico %1$s dBFS · confianza %2$d %%</string>
+    <string name="detail_change_category">Cambiar categoría</string>
+    <string name="detail_go_to_recording">Ir a la grabación</string>
+
+    <!-- Diagnóstico -->
+    <string name="diag_title">Diagnóstico</string>
+    <string name="diag_live">En vivo</string>
+    <string name="diag_no_session">Sin sesión activa</string>
+    <string name="diag_level">Nivel: %1$s</string>
+    <string name="diag_base_threshold">Base: %1$s · Umbral: %2$s</string>
+    <string name="diag_phase_calibrating">CALIBRANDO (%1$d %%)</string>
+    <string name="diag_phase_listening">ESCUCHANDO</string>
+    <string name="diag_phase_event">EVENTO</string>
+    <string name="diag_phase_paused">PAUSA · %1$s</string>
+    <string name="diag_detector_state">Estado del detector: %1$s</string>
+    <string name="diag_audio_source">Fuente de audio: %1$s</string>
+    <string name="diag_dropped">Eventos descartados por cola llena: %1$d</string>
+    <string name="diag_last_clip">Último clip clasificado</string>
+    <string name="diag_none_yet">Todavía ninguno</string>
+    <string name="diag_discarded">%1$s · descartado</string>
+    <string name="diag_test_title">Probar 10 segundos</string>
+    <string name="diag_test_hint">Habla, tose o enciende el ventilador y mira qué detecta. No se guarda nada.</string>
+    <string name="diag_busy">No disponible durante una sesión: el micrófono está ocupado.</string>
+    <string name="diag_permission">Se necesita el permiso de micrófono.</string>
+    <string name="diag_recording">Grabando…</string>
+    <string name="diag_classifying">Clasificando…</string>
+    <string name="diag_mean_level">Nivel medio: %1$s</string>
+    <string name="diag_category">Categoría: %1$s</string>
+    <string name="diag_category_discarded">Categoría: %1$s · se descartaría</string>
+    <string name="diag_confidence">Confianza: %1$d %% · %2$d ventanas</string>
+    <string name="diag_snore_like">¿Parece ronquido? %1$s</string>
+    <string name="diag_yes">Sí</string>
+    <string name="diag_no">No</string>
+    <string name="diag_yes_lower">sí</string>
+    <string name="diag_no_lower">no</string>
+    <string name="diag_periodic">Periódico: %1$s (%2$d picos) · Energía &lt; 500 Hz: %3$d %%</string>
+    <string name="diag_labels">Etiquetas (score medio)</string>
+    <string name="diag_mic_failed">No se pudo abrir el micrófono (¿lo usa otra app?)</string>
+    <string name="diag_error">Error: %1$s</string>
+
+    <!-- Notificación -->
+    <string name="notif_channel_name">Sesión nocturna</string>
+    <string name="notif_channel_desc">Aviso permanente mientras la app escucha la noche</string>
+    <string name="notif_title">Escuchando la noche</string>
+    <plurals name="notif_events">
+        <item quantity="one">%d evento detectado</item>
+        <item quantity="many">%d eventos detectados</item>
+        <item quantity="other">%d eventos detectados</item>
+    </plurals>
+    <string name="notif_paused_call">En pausa (llamada en curso)</string>
+    <string name="notif_paused_retry">En pausa (reintentando el micrófono)</string>
+    <string name="notif_paused_busy">En pausa (micrófono ocupado)</string>
+    <string name="notif_stop">Detener</string>
+</resources>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tipos de sonido (agrupan las etiquetas de YAMNet). Inglés en values-en/strings_sounds.xml. -->
+<resources>
+    <string name="detail_sounds_title">Sonidos identificados</string>
+    <string name="sound_dog">Perro</string>
+    <string name="sound_cat">Gato</string>
+    <string name="sound_animal">Animal</string>
+    <string name="sound_baby">Bebé</string>
+    <string name="sound_moan">Quejido o llanto</string>
+    <string name="sound_laughter">Risa</string>
+    <string name="sound_voices">Voces</string>
+    <string name="sound_snoring">Ronquido</string>
+    <string name="sound_breathing">Respiración</string>
+    <string name="sound_cough">Tos</string>
+    <string name="sound_sneeze">Estornudo</string>
+    <string name="sound_throat">Carraspeo</string>
+    <string name="sound_body">Ruido del cuerpo</string>
+    <string name="sound_movement">Movimiento</string>
+    <string name="sound_impact">Golpe</string>
+    <string name="sound_door">Puerta</string>
+    <string name="sound_footsteps">Pasos</string>
+    <string name="sound_alarm">Alarma o teléfono</string>
+    <string name="sound_siren">Sirena</string>
+    <string name="sound_vehicle">Vehículo</string>
+    <string name="sound_fireworks">Pólvora o explosión</string>
+    <string name="sound_rain">Lluvia o tormenta</string>
+    <string name="sound_wind">Viento</string>
+    <string name="sound_water">Agua</string>
+    <string name="sound_music_tv">Música o TV</string>
+    <string name="sound_household">Aparatos de la casa</string>
+    <string name="sound_fan">Ventilador o aire</string>
+    <string name="sound_room">Ruido del cuarto</string>
+</resources>

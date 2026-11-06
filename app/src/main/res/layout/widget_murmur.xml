@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget de Murmur: diseño A (azul noche, borde fino). RemoteViews: solo vistas compatibles. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_tile"
+            android:tint="#7CC4FF" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/app_name"
+            android:textColor="#E7ECF5"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/widget_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/widget_pill"
+            android:fontFamily="monospace"
+            android:paddingStart="10dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="3dp"
+            android:text="@string/widget_ready"
+            android:textColor="#93A0B8"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <Chronometer
+        android:id="@+id/widget_clock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:fontFamily="monospace"
+        android:textColor="#E7ECF5"
+        android:textSize="30sp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/widget_last"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_last_day"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#C9D3E3"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/widget_last_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="monospace"
+            android:maxLines="2"
+            android:textColor="#93A0B8"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_button"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/widget_button_primary"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:text="@string/widget_start"
+        android:textColor="#0A0F1C"
+        android:textSize="15sp" />
+</LinearLayout>

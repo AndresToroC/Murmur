@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pausa manual, resumen al despertar, botón de ajustes rápidos y widget. Inglés en values-en. -->
+<resources>
+    <!-- Pausa manual -->
+    <string name="pause_user">En pausa</string>
+    <string name="notif_pause">Pausar</string>
+    <string name="notif_resume">Continuar</string>
+    <string name="notif_title_paused">Grabación en pausa</string>
+    <string name="notif_paused_user">El micrófono está libre. Toca Continuar para seguir.</string>
+    <string name="home_pause">Pausar</string>
+    <string name="home_resume">Continuar</string>
+    <string name="home_paused_note">En pausa: no se escucha nada hasta que toques Continuar.</string>
+
+    <!-- Resumen al despertar -->
+    <string name="summary_channel_name">Resumen de la noche</string>
+    <string name="summary_channel_desc">Lo que pasó en la noche, al detener la sesión</string>
+    <string name="summary_title">Tu noche · %1$s</string>
+    <string name="summary_snore">%1$s de ronquido</string>
+    <string name="summary_quiet">%1$s · noche tranquila, sin sonidos</string>
+    <plurals name="summary_speech">
+        <item quantity="one">habló %d vez</item>
+        <item quantity="many">habló %d veces</item>
+        <item quantity="other">habló %d veces</item>
+    </plurals>
+    <plurals name="summary_snore_events">
+        <item quantity="one">%d ronquido</item>
+        <item quantity="many">%d ronquidos</item>
+        <item quantity="other">%d ronquidos</item>
+    </plurals>
+    <plurals name="summary_cough">
+        <item quantity="one">tosió %d vez</item>
+        <item quantity="many">tosió %d veces</item>
+        <item quantity="other">tosió %d veces</item>
+    </plurals>
+    <plurals name="summary_other">
+        <item quantity="one">%d sonido más</item>
+        <item quantity="many">%d sonidos más</item>
+        <item quantity="other">%d sonidos más</item>
+    </plurals>
+
+    <!-- Ajustes -->
+    <string name="settings_morning_summary">Resumen al despertar</string>
+    <string name="settings_morning_summary_note">Al detener la sesión, una notificación con lo que pasó en la noche.</string>
+    <string name="settings_transcribe">Transcribir lo que se dice dormido</string>
+    <string name="settings_transcribe_note">Convierte en texto los clips de habla, dentro del teléfono (Android 13 o superior).</string>
+
+    <!-- Ajustes rápidos y widget -->
+    <string name="tile_label">Murmur</string>
+    <string name="tile_idle">Comenzar noche</string>
+    <string name="tile_recording">Grabando</string>
+    <string name="tile_paused">En pausa</string>
+    <string name="widget_description">Comienza o detén la noche y mira la última</string>
+    <string name="widget_start">Comenzar noche</string>
+    <string name="widget_stop">Detener</string>
+    <string name="widget_recording">Grabando</string>
+    <string name="widget_paused">En pausa</string>
+    <string name="widget_ready">Listo para escuchar</string>
+
+    <!-- Ruidos repetidos y filtro del detalle -->
+    <string name="detail_filter_all">Todas</string>
+    <string name="settings_group_repeats">Guardar una sola vez los ruidos repetidos</string>
+    <string name="settings_group_repeats_note">Viento, ventilador, lluvia o ruido del cuarto: se guarda el primero y después solo se cuentan las veces. Si a la vez se oye habla, ronquido o tos, el clip se guarda igual.</string>
+    <string name="home_heard_repeated">Repetido · %1$s (ya guardado)</string>
+    <string name="home_recent_repeated">Ruidos repetidos que solo se contaron: %1$d</string>
+    <plurals name="detail_repeats">
+        <item quantity="one">Se repitió %1$d vez más, hasta las %2$s. Solo se guardó este clip.</item>
+        <item quantity="many">Se repitió %1$d veces más, hasta las %2$s. Solo se guardó este clip.</item>
+        <item quantity="other">Se repitió %1$d veces más, hasta las %2$s. Solo se guardó este clip.</item>
+    </plurals>
+
+    <!-- Sonidos ignorados -->
+    <string name="detail_ignore_sound">Ignorar este sonido</string>
+    <string name="ignore_dialog_title">¿Ignorar «%1$s»?</string>
+    <string name="ignore_dialog_text">Desde ahora Murmur no guardará este tipo de sonido. Si a la vez se oye habla, ronquido o tos, el clip se guarda igual. Puedes deshacerlo en Ajustes → Sonidos ignorados.</string>
+    <string name="ignore_dialog_confirm">Ignorar</string>
+    <string name="ignore_dialog_confirm_delete">Ignorar y borrar</string>
+    <string name="settings_ignored_title">Sonidos ignorados</string>
+    <string name="settings_ignored_empty">Ninguno. Para ignorar un sonido (el perro, el aire acondicionado, la nevera…), abre un clip en el detalle de la noche y toca «Ignorar este sonido».</string>
+    <string name="settings_ignored_note">Murmur no guarda estos sonidos, salvo que a la vez se oiga habla, ronquido o tos.</string>
+    <string name="settings_ignored_remove">Dejar de ignorar</string>
+    <string name="home_heard_user_ignored">Ignorado · %1$s (está en tu lista)</string>
+    <string name="home_recent_user_ignored">Sonidos de tu lista de ignorados: %1$d</string>
+    <plurals name="ignore_dialog_delete">
+        <item quantity="one">Borrar también el clip de este sonido que ya está guardado</item>
+        <item quantity="many">Borrar también los %1$d clips de este sonido que ya están guardados, de todas las noches</item>
+        <item quantity="other">Borrar también los %1$d clips de este sonido que ya están guardados, de todas las noches</item>
+    </plurals>
+</resources>

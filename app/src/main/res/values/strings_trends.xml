@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Historial → Tendencias (español). Inglés en values-en/strings_trends.xml. -->
+<resources>
+    <string name="trends_tab_calendar">Calendario</string>
+    <string name="trends_tab_trends">Tendencias</string>
+    <string name="trends_range_7">7 días</string>
+    <string name="trends_range_30">30 días</string>
+    <string name="trends_empty">Sin noches en los últimos %1$d días.</string>
+    <string name="trends_tile_nights">Noches</string>
+    <string name="trends_tile_snore">Ronquido / noche</string>
+    <string name="trends_tile_speech">Habló / noche</string>
+    <string name="trends_tile_cough">Tos (total)</string>
+    <string name="trends_percent">%1$d %%</string>
+    <string name="trends_vs_previous">Flechas: comparado con los %1$d días anteriores (media por noche).</string>
+    <string name="trends_chart_snore">Ronquido (min por noche)</string>
+    <string name="trends_chart_speech">Habló (veces por noche)</string>
+    <string name="trends_chart_cough">Tos (veces por noche)</string>
+    <string name="trends_max_minutes">máx. %1$d min</string>
+    <string name="trends_max_times">máx. %1$d×</string>
+    <string name="trends_tap_hint">Toca una barra para abrir esa noche.</string>
+    <string name="trends_insights">Lo destacado</string>
+    <string name="trends_insight_most_snore">Más ronquido: %1$s · %2$s</string>
+    <string name="trends_insight_no_talk">%1$d de %2$d noches sin hablar</string>
+    <string name="trends_insight_quietest">Noche más tranquila: %1$s · %2$s</string>
+    <plurals name="trends_sounds">
+        <item quantity="one">%d sonido</item>
+        <item quantity="many">%d sonidos</item>
+        <item quantity="other">%d sonidos</item>
+    </plurals>
+</resources>

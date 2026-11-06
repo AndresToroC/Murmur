@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Manual pause -->
+    <string name="pause_user">Paused</string>
+    <string name="notif_pause">Pause</string>
+    <string name="notif_resume">Resume</string>
+    <string name="notif_title_paused">Recording paused</string>
+    <string name="notif_paused_user">The microphone is free. Tap Resume to continue.</string>
+    <string name="home_pause">Pause</string>
+    <string name="home_resume">Resume</string>
+    <string name="home_paused_note">Paused: nothing is heard until you tap Resume.</string>
+
+    <!-- Morning summary -->
+    <string name="summary_channel_name">Night summary</string>
+    <string name="summary_channel_desc">What happened during the night, when the session stops</string>
+    <string name="summary_title">Your night · %1$s</string>
+    <string name="summary_snore">%1$s of snoring</string>
+    <string name="summary_quiet">%1$s · quiet night, no sounds</string>
+    <plurals name="summary_speech">
+        <item quantity="one">talked %d time</item>
+        <item quantity="other">talked %d times</item>
+    </plurals>
+    <plurals name="summary_snore_events">
+        <item quantity="one">%d snore</item>
+        <item quantity="other">%d snores</item>
+    </plurals>
+    <plurals name="summary_cough">
+        <item quantity="one">coughed %d time</item>
+        <item quantity="other">coughed %d times</item>
+    </plurals>
+    <plurals name="summary_other">
+        <item quantity="one">%d other sound</item>
+        <item quantity="other">%d other sounds</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="settings_morning_summary">Morning summary</string>
+    <string name="settings_morning_summary_note">When the session stops, a notification with what happened during the night.</string>
+    <string name="settings_transcribe">Transcribe sleep talking</string>
+    <string name="settings_transcribe_note">Turns talking clips into text, on the phone (Android 13 or later).</string>
+
+    <!-- Quick Settings and widget -->
+    <string name="tile_label">Murmur</string>
+    <string name="tile_idle">Start night</string>
+    <string name="tile_recording">Recording</string>
+    <string name="tile_paused">Paused</string>
+    <string name="widget_description">Start or stop the night and see the last one</string>
+    <string name="widget_start">Start night</string>
+    <string name="widget_stop">Stop</string>
+    <string name="widget_recording">Recording</string>
+    <string name="widget_paused">Paused</string>
+    <string name="widget_ready">Ready to listen</string>
+
+    <!-- Ruidos repetidos y filtro del detalle -->
+    <string name="detail_filter_all">All</string>
+    <string name="settings_group_repeats">Save repeated noises only once</string>
+    <string name="settings_group_repeats_note">Wind, fan, rain or room noise: the first one is saved and after that only the times are counted. If talking, snoring or coughing is heard at the same time, the clip is saved anyway.</string>
+    <string name="home_heard_repeated">Repeated · %1$s (already saved)</string>
+    <string name="home_recent_repeated">Repeated noises only counted: %1$d</string>
+    <plurals name="detail_repeats">
+        <item quantity="one">Heard %1$d more time, until %2$s. Only this clip was saved.</item>
+        <item quantity="other">Heard %1$d more times, until %2$s. Only this clip was saved.</item>
+    </plurals>
+
+    <!-- Sonidos ignorados -->
+    <string name="detail_ignore_sound">Ignore this sound</string>
+    <string name="ignore_dialog_title">Ignore “%1$s”?</string>
+    <string name="ignore_dialog_text">From now on Murmur will not save this kind of sound. If talking, snoring or coughing is heard at the same time, the clip is saved anyway. You can undo it in Settings → Ignored sounds.</string>
+    <string name="ignore_dialog_confirm">Ignore</string>
+    <string name="ignore_dialog_confirm_delete">Ignore and delete</string>
+    <string name="settings_ignored_title">Ignored sounds</string>
+    <string name="settings_ignored_empty">None. To ignore a sound (the dog, the air conditioner, the fridge…), open a clip in the night detail and tap “Ignore this sound”.</string>
+    <string name="settings_ignored_note">Murmur does not save these sounds, unless talking, snoring or coughing is heard at the same time.</string>
+    <string name="settings_ignored_remove">Stop ignoring</string>
+    <string name="home_heard_user_ignored">Ignored · %1$s (on your list)</string>
+    <string name="home_recent_user_ignored">Sounds from your ignore list: %1$d</string>
+    <plurals name="ignore_dialog_delete">
+        <item quantity="one">Also delete the clip of this sound that is already saved</item>
+        <item quantity="other">Also delete the %1$d clips of this sound already saved, from every night</item>
+    </plurals>
+</resources>

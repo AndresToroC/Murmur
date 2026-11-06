@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transcript_quote">“%1$s”</string>
+    <string name="transcript_running">Transcribing…</string>
+    <string name="transcript_no_match">No words could be made out (it may be mumbling).</string>
+    <string name="transcript_failed">The phone\'s speech recognizer couldn\'t handle this clip. Tap Transcribe again.</string>
+    <string name="transcript_action">Transcribe</string>
+    <string name="transcript_action_again">Transcribe again</string>
+    <string name="transcript_not_supported">This phone can\'t transcribe what was said: it needs Android 13 or later with offline speech recognition.</string>
+    <string name="transcript_language_missing">The phone\'s speech recognition doesn\'t have this language, so what was said can\'t be transcribed.</string>
+    <string name="transcript_needs_download">To transcribe what was said, the phone needs to download the language (Android downloads it; Murmur still doesn\'t use the internet).</string>
+    <string name="transcript_download">Download language to transcribe</string>
+    <string name="transcript_downloading">Downloading the language on the phone. Open this night again in a few minutes.</string>
+</resources>

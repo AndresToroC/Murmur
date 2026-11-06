@@ -1,0 +1,464 @@
+<title>Logo de Murmur</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una columna de "fichas de instrumento"; cada dirección = texto a la izquierda, banco de pruebas a la derecha. */
+:root {
+  --bg: #0A0F1C; --surface: #111829; --surface2: #151D31; --border: #1E2940; --border2: #2E3B58;
+  --fg: #E7ECF5; --fg2: #C9D3E3; --muted: #93A0B8; --accent: #7CC4FF; --amber: #F2B44B;
+  --dot-off: #2A3756;
+  /* Contextos de dispositivo: iguales en ambos temas, porque representan el teléfono. */
+  --dev-night: #0A0F1C; --dev-night-hi: #18223D; --dev-ring: rgba(255,255,255,.07);
+  --dev-bar: #000000; --dev-notif: #1A2030; --dev-notif-fg: #E7ECF5; --dev-notif-muted: #9AA6B8;
+  --dev-wall-n1: #222C4C; --dev-wall-n2: #0B1020; --dev-wall-l1: #E9EEF7; --dev-wall-l2: #CBD6E8;
+  --dev-label-n: #E7ECF5; --dev-label-l: #1A2338;
+  --dev-th-l-bg: #D6E2FF; --dev-th-l-fg: #1A3157; --dev-th-d-bg: #253149; --dev-th-d-fg: #C4D6FF;
+  --dev-qs-on: #7CC4FF; --dev-qs-on-fg: #0A0F1C; --dev-qs-off: #262E40; --dev-qs-off-fg: #E7ECF5;
+  --dev-light: #F4F6FB; --dev-light-fg: #0E1526; --dev-light-border: #DCE2EE;
+  --sans: "Inter Tight", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --mask-r: 50%;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F3F5FA; --surface: #FFFFFF; --surface2: #EEF2F8; --border: #DCE2EE; --border2: #C3CCDD;
+    --fg: #0E1526; --fg2: #2A3550; --muted: #56627C; --accent: #1F64A8; --amber: #8F5D0B; --dot-off: #D3DAE7;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #F3F5FA; --surface: #FFFFFF; --surface2: #EEF2F8; --border: #DCE2EE; --border2: #C3CCDD;
+  --fg: #0E1526; --fg2: #2A3550; --muted: #56627C; --accent: #1F64A8; --amber: #8F5D0B; --dot-off: #D3DAE7;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 40px 96px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 48px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 700; line-height: 1.1; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 15px; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+.eyebrow svg { width: 18px; height: 18px; }
+.lead { color: var(--fg2); max-width: 68ch; font-size: 16px; }
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+header { display: grid; gap: 16px; }
+
+/* Controles */
+.controls { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.controls .lbl { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--border2); border-radius: 8px; overflow: hidden; }
+.seg button { font: 500 13px var(--sans); color: var(--fg2); background: transparent; border: 0; padding: 7px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--border2); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+.seg button:focus-visible, .chk input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chk { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--fg2); cursor: pointer; }
+.chk input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+/* Análisis */
+.analysis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.panel { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.panel ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--fg2); font-size: 14px; }
+.panel p { color: var(--fg2); font-size: 14px; }
+.sw { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.sw span { display: inline-flex; align-items: center; gap: 6px; font: 400 11px var(--mono); color: var(--muted); }
+.sw i { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border2); display: inline-block; }
+
+/* Bloque de comparación */
+.sect-head { display: grid; gap: 6px; }
+.compare { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.wall { border-radius: 16px; padding: 22px 16px 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 8px; justify-items: center; min-width: 0; }
+.wall.n { background: linear-gradient(160deg, var(--dev-wall-n1), var(--dev-wall-n2)); }
+.wall.l { background: linear-gradient(160deg, var(--dev-wall-l1), var(--dev-wall-l2)); }
+.app { display: grid; gap: 6px; justify-items: center; font-size: 11px; text-align: center; }
+.wall.n .app { color: var(--dev-label-n); }
+.wall.l .app { color: var(--dev-label-l); }
+.barrow { background: var(--dev-bar); border-radius: 16px; padding: 18px 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 8px; justify-items: center; align-content: start; }
+.barrow .app { color: var(--dev-notif-muted); font-family: var(--mono); font-size: 10px; }
+.cap { font: 400 11px/1.4 var(--mono); color: var(--muted); }
+
+/* Tiles del ícono */
+.tile { width: var(--s); height: var(--s); max-width: 100%; border-radius: var(--mask-r); background: radial-gradient(130% 130% at 28% 18%, var(--dev-night-hi) 0%, var(--dev-night) 62%); box-shadow: inset 0 0 0 1px var(--dev-ring); display: grid; place-items: center; position: relative; overflow: hidden; flex: none; transition: border-radius .25s ease; }
+.tile svg { width: 82%; height: 82%; display: block; }
+.tile.th-l { background: var(--dev-th-l-bg); box-shadow: none; }
+.tile.th-d { background: var(--dev-th-d-bg); box-shadow: none; }
+.tile .safe { display: none; position: absolute; inset: 4.15%; border-radius: 50%; border: 1px dashed rgba(124,196,255,.7); pointer-events: none; }
+.show-safe .tile.big .safe { display: block; }
+.g { display: inline-block; flex: none; }
+.g svg { width: 100%; height: 100%; display: block; }
+
+/* Fichas de dirección */
+.dirs { display: grid; gap: 24px; }
+.dir { border: 1px solid var(--border); border-radius: 18px; background: var(--surface); display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); overflow: hidden; }
+.dir.top { border-color: var(--border2); }
+.dtext { padding: 24px; display: grid; gap: 14px; align-content: start; border-right: 1px solid var(--border); min-width: 0; }
+.dname { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.dname h2 { font-size: 24px; }
+.badge { font: 500 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--bg); background: var(--accent); border-radius: 999px; padding: 5px 8px; }
+.tag { color: var(--fg2); font-size: 15px; }
+.facts { display: grid; gap: 10px; margin: 0; }
+.facts div { display: grid; gap: 2px; }
+.facts dt { font: 500 11px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.facts dd { margin: 0; font-size: 14px; color: var(--fg2); }
+.rate { display: grid; grid-template-columns: auto auto; gap: 6px 14px; justify-content: start; align-items: center; margin: 4px 0 0; padding-top: 14px; border-top: 1px solid var(--border); }
+.rate dt { font: 400 12px var(--mono); color: var(--muted); }
+.rate dd { margin: 0; display: flex; gap: 4px; }
+.rate dd i { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-off); display: block; }
+.rate dd i.on { background: var(--accent); }
+
+.bench { padding: 24px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; background: var(--surface2); min-width: 0; align-content: start; }
+.bench figure { margin: 0; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.hero-tile { grid-row: span 2; }
+.stack { display: grid; gap: 20px; align-content: start; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.sizes { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+.sizes > div { display: grid; gap: 6px; justify-items: center; }
+.device { display: grid; gap: 8px; min-width: 0; }
+.sb { background: var(--dev-bar); color: #fff; height: 34px; border-radius: 10px 10px 0 0; display: flex; align-items: center; gap: 8px; padding: 0 12px; font: 500 13px var(--mono); }
+.sb .sp { flex: 1; }
+.batt { width: 20px; height: 10px; border: 1.5px solid #fff; border-radius: 3px; position: relative; }
+.batt::after { content: ""; position: absolute; inset: 1.5px 5px 1.5px 1.5px; background: #fff; border-radius: 1px; }
+.notif { background: var(--dev-notif); color: var(--dev-notif-fg); border-radius: 0 0 12px 12px; padding: 12px; display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.35; margin-top: -8px; }
+.notif small { color: var(--dev-notif-muted); font-size: 12px; }
+.notif .ico { width: 30px; height: 30px; border-radius: 50%; background: #2A3550; display: grid; place-items: center; flex: none; }
+.qsrow { display: flex; gap: 10px; flex-wrap: wrap; }
+.qs { height: 56px; border-radius: 20px; padding: 0 16px 0 14px; display: flex; align-items: center; gap: 12px; min-width: 156px; font-size: 13px; line-height: 1.2; }
+.qs b { display: block; font-weight: 600; }
+.qs small { font-size: 12px; opacity: .8; }
+.qs.on { background: var(--dev-qs-on); color: var(--dev-qs-on-fg); }
+.qs.off { background: var(--dev-qs-off); color: var(--dev-qs-off-fg); }
+.wms { display: flex; gap: 10px; flex-wrap: wrap; }
+.wm { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-radius: 12px; flex: 1 1 200px; min-width: 0; }
+.wm.dk { background: var(--dev-night); box-shadow: inset 0 0 0 1px var(--dev-ring); color: #E7ECF5; }
+.wm.lt { background: var(--dev-light); box-shadow: inset 0 0 0 1px var(--dev-light-border); color: var(--dev-light-fg); }
+.wm .word { font: 700 28px/1 var(--sans); letter-spacing: -0.025em; }
+.wm .g { width: 32px; height: 32px; }
+.wm .sub { font: 400 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; opacity: .6; display: block; margin-top: 4px; }
+
+/* Recomendación */
+.reco { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.reco .panel { grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: start; padding: 22px; }
+.reco .rank { font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.reco .body { display: grid; gap: 8px; }
+.closing { border: 1px dashed var(--border2); border-radius: 14px; padding: 18px 20px; color: var(--fg2); max-width: 80ch; }
+
+@media (max-width: 980px) {
+  .dir { grid-template-columns: minmax(0, 1fr); }
+  .dtext { border-right: 0; border-bottom: 1px solid var(--border); }
+  .analysis, .compare { grid-template-columns: minmax(0, 1fr); }
+  .reco { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .bench { grid-template-columns: minmax(0, 1fr); padding: 18px; }
+  .hero-tile { grid-row: auto; }
+  .dtext { padding: 20px 18px; }
+  .wall, .barrow { grid-template-columns: repeat(4, minmax(0, 1fr)); padding-inline: 10px; }
+  .reco .panel { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span class="g" id="hdr-mark"></span>Murmur · identidad · v0.4</div>
+    <h1>Logo de Murmur</h1>
+    <p class="lead">Siete direcciones originales para el ícono, cada una probada donde va a vivir: Play Store, pantalla de inicio a 48&nbsp;dp, ícono temático monocromo, glifo blanco de la barra de estado, botón de ajustes rápidos y el logotipo junto al nombre.</p>
+    <div class="controls" role="group" aria-label="Opciones de vista">
+      <span class="lbl">Máscara del launcher</span>
+      <span class="seg" id="mask">
+        <button type="button" id="mask-circle" data-r="50%" aria-pressed="true">Círculo</button>
+        <button type="button" id="mask-squircle" data-r="34%" aria-pressed="false">Squircle</button>
+        <button type="button" id="mask-rounded" data-r="22%" aria-pressed="false">Redondeado</button>
+      </span>
+      <label class="chk"><input type="checkbox" id="safe"> Zona segura (66 dp)</label>
+    </div>
+  </header>
+
+  <section class="analysis" aria-label="Análisis">
+    <div class="panel">
+      <div class="eyebrow">El nombre</div>
+      <h3>Murmur = murmullo</h3>
+      <p>Un sonido bajo, continuo, apenas audible. La palabra se repite a sí misma (mur·mur), como una respiración o un ronquido que vuelve. Funciona igual en español e inglés y trae una M doble que pide simetría y ritmo.</p>
+    </div>
+    <div class="panel">
+      <div class="eyebrow">El producto</div>
+      <h3>Un instrumento que escucha de noche</h3>
+      <ul>
+        <li>Graba solo lo que sobresale del silencio: ronquidos, habla, tos.</li>
+        <li>Todo local y privado: el logo no debe parecer un micrófono espía.</li>
+        <li>Azul noche, bordes finos y cifras mono: más medidor que app de bienestar.</li>
+      </ul>
+      <div class="sw" aria-label="Paleta de la app">
+        <span><i style="background:#0A0F1C"></i>0A0F1C</span>
+        <span><i style="background:#7CC4FF"></i>7CC4FF</span>
+        <span><i style="background:#F2B44B"></i>F2B44B</span>
+        <span><i style="background:#FF8A80"></i>FF8A80</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="eyebrow">Límites técnicos</div>
+      <h3>Lo que el logo tiene que aguantar</h3>
+      <ul>
+        <li>Ícono adaptativo de 108 dp: todo dentro del círculo de 66 dp, porque cada launcher recorta distinto.</li>
+        <li>Capa <span class="mono">monochrome</span> (Android 13+): una sola tinta; hoy reutiliza el ícono a color.</li>
+        <li>Glifo de 24 dp blanco para la notificación y la barra de estado, y otro para el botón de ajustes rápidos.</li>
+        <li>Evitar lo gastado: micrófono, luna con estrellas, "Zzz", ecualizador suelto.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="sect-head" aria-labelledby="cmp">
+    <h2 id="cmp">Las siete juntas, a tamaño real</h2>
+    <p class="muted">Íconos a 48&nbsp;dp sobre un fondo oscuro y uno claro, y los glifos de 24&nbsp;dp en una barra de estado.</p>
+  </section>
+  <div class="compare">
+    <div class="wall n" id="wall-n" aria-label="Pantalla de inicio oscura"></div>
+    <div class="wall l" id="wall-l" aria-label="Pantalla de inicio clara"></div>
+    <div class="barrow" id="bar-all" aria-label="Glifos en la barra de estado"></div>
+  </div>
+
+  <section class="dirs" id="dirs" aria-label="Direcciones"></section>
+
+  <section class="sect-head" aria-labelledby="rec">
+    <h2 id="rec">Mi recomendación</h2>
+    <p class="muted">Ordenadas por lo que mejor cumple las tres cosas a la vez: se reconoce a 48&nbsp;dp, sobrevive en una tinta y solo podría ser de Murmur.</p>
+  </section>
+  <div class="reco" id="reco"></div>
+  <p class="closing">Cualquiera de las dos se puede refinar en la siguiente vuelta: grosores ajustados por tamaño, el <span class="mono">VectorDrawable</span> de 108&nbsp;dp con su capa <span class="mono">monochrome</span> propia, el glifo de notificación y el de ajustes rápidos, y el logotipo con el título "Murmur" en Inter Tight.</p>
+</div>
+
+<script>
+(function () {
+  var uid = 0;
+  function L(d, w, col, op) {
+    return '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round" stroke-linejoin="round"' + (op != null && op < 1 ? ' opacity="' + op + '"' : '') + '/>';
+  }
+  function V(x, y1, y2) { return 'M' + x + ' ' + (+y1).toFixed(2) + 'V' + (+y2).toFixed(2); }
+
+  // Barras verticales recortadas por una luna creciente (C1 menos C2).
+  function crescentBars(xs, w, C1, C2) {
+    var d = '';
+    xs.forEach(function (x) {
+      var dx1 = x - C1[0]; if (Math.abs(dx1) >= C1[2]) return;
+      var h1 = Math.sqrt(C1[2] * C1[2] - dx1 * dx1), a = C1[1] - h1, b = C1[1] + h1, segs = [[a, b]];
+      var dx2 = x - C2[0];
+      if (Math.abs(dx2) < C2[2]) {
+        var h2 = Math.sqrt(C2[2] * C2[2] - dx2 * dx2), c = C2[1] - h2, e = C2[1] + h2;
+        segs = [];
+        if (c > a) segs.push([a, Math.min(c, b)]);
+        if (e < b) segs.push([Math.max(e, a), b]);
+      }
+      segs.forEach(function (s) {
+        var len = s[1] - s[0];
+        if (len >= w + 0.2) d += V(x, s[0] + w / 2, s[1] - w / 2);
+        else if (len >= w * 0.7) { var m = (s[0] + s[1]) / 2; d += V(x, m, m); }
+      });
+    });
+    return d;
+  }
+
+  var MARKS = [
+    {
+      id: 'luna', name: 'Luna de barras', top: 1,
+      tag: 'Una luna creciente hecha de barras de nivel.',
+      concept: 'La silueta de la luna se recorta en barras verticales. Hacia la punta las barras bajan, como un sonido que se apaga.',
+      fit: 'Junta noche y escucha en una sola forma, sin micrófono, y hereda las barras del encabezado de la app.',
+      risk: 'A 24 dp las ranuras se cierran, así que el glifo usa 4 barras gruesas. Lunas hay muchas en apps de sueño; la luna rayada en barras no es común.',
+      behave: 'Silueta fuerte a 48 dp. Una sola tinta, así que el monocromo no pierde nada. Glifo propio de 4 barras.',
+      rate: [4, 3, 4, 5],
+      dark: { ink: '#7CC4FF' }, light: { ink: '#1F64A8' },
+      draw: function (c, s) {
+        var w = s ? 3 : 2.3, xs = s ? [5, 9.5, 14, 18.5] : [4.5, 7.5, 10.5, 13.5, 16.5, 19.5];
+        return L(crescentBars(xs, w, [12, 12, 9.3], [16.9, 8.1, 7.4]), w, c.ink);
+      }
+    },
+    {
+      id: 'umbral', name: 'Umbral', top: 2,
+      tag: 'El medidor de la app: solo una barra cruza la línea.',
+      concept: 'Barras de nivel bajo una línea de umbral punteada. Una sola la atraviesa y se enciende. Es como Murmur decide qué grabar.',
+      fit: 'Lo más propio de esta app: sale de la tarjeta "Nivel en vivo", con su umbral punteado y las barras que lo pasan en azul.',
+      risk: 'No dice "noche". Las barras apagadas casi desaparecen a 48 dp en fondos oscuros, y a 24 dp la línea punteada pasa a ser sólida.',
+      behave: 'A 48 dp se lee "barra alta + línea". En monocromo las barras bajas quedan al 45 % y la alta entera. Glifo de 3 barras.',
+      rate: [4, 4, 5, 4],
+      dark: { ink: '#7CC4FF', ink2: '#3A4B72', ink3: '#93A0B8' }, light: { ink: '#1F64A8', ink2: '#B3C0D6', ink3: '#56627C' },
+      muted2: true,
+      draw: function (c, s) {
+        var w = 2.6, out = '', bars = s ? [[6.5, 14.5], [12, 4], [17.5, 13.5]] : [[4, 16.5], [8, 14], [12, 4], [16, 13], [20, 17]];
+        bars.forEach(function (b) { out += L(V(b[0], b[1], 20), w, b[0] === 12 ? c.ink : c.ink2, b[0] === 12 ? 1 : c.o2); });
+        var line = s ? L('M2.5 9.5h5.6M16.4 9.5h5.1', 2, c.ink3 || c.ink) : L('M2.4 9.5h1.6M6.9 9.5h1.6M15.5 9.5h1.6M20 9.5h1.6', 1.7, c.ink3 || c.ink);
+        return '<g transform="translate(0 .5)">' + line + out + '</g>';
+      }
+    },
+    {
+      id: 'nivel', name: 'Nivel',
+      tag: 'Las cinco barras de hoy, afinadas.',
+      concept: 'El medidor que ya acompaña al título "Murmur", más grueso y simétrico, en azul acento sobre azul noche.',
+      fit: 'Continuidad total: es el mismo trazo del encabezado y del botón de ajustes rápidos actual.',
+      risk: 'Genérico. Ecualizadores, grabadoras y apps de podcast usan barras casi iguales, y no dice nada de la noche.',
+      behave: 'Impecable a 48 dp y como glifo; el monocromo no cambia nada.',
+      rate: [5, 5, 2, 3],
+      dark: { ink: '#7CC4FF' }, light: { ink: '#1F64A8' },
+      draw: function (c, s) {
+        var d = [[4, 10.5, 13.5], [8, 7.5, 16.5], [12, 4, 20], [16, 8, 16], [20, 10.5, 13.5]].map(function (b) { return V(b[0], b[1], b[2]); }).join('');
+        return L(d, s ? 2.5 : 2.6, c.ink);
+      }
+    },
+    {
+      id: 'silencio', name: 'Silencio · M · silencio',
+      tag: 'Una línea plana que se levanta en una M y vuelve a la calma.',
+      concept: 'El trazo de una noche: silencio, un evento, silencio. La M es la inicial y es también lo único que se graba.',
+      fit: 'Cuenta el producto en un gesto: ignora la línea plana y guarda lo que sobresale.',
+      risk: 'Puede leerse como electrocardiograma (apps de salud) o como montañas. Las colas planas se pierden en el recorte circular.',
+      behave: 'Bien a 48 dp. En monocromo las colas quedan al 45 %. Como glifo es claro.',
+      rate: [4, 4, 3, 4],
+      dark: { ink: '#7CC4FF', ink2: '#4A5B82' }, light: { ink: '#1F64A8', ink2: '#9FAEC8' },
+      muted2: true,
+      draw: function (c, s) {
+        var w = s ? 2.4 : 2.3;
+        return '<g transform="translate(0 .75)">' + L('M2.5 16H5.5M18.5 16H21.5', w, c.ink2, c.o2) + L('M5.5 16L8.5 6.5L12 13.5L15.5 6.5L18.5 16', w, c.ink) + '</g>';
+      }
+    },
+    {
+      id: 'm', name: 'm que se apaga',
+      tag: 'Una m minúscula cuyas jorobas bajan, como un murmullo que se pierde.',
+      concept: 'La m de "murmur": el segundo arco es más bajo y termina en un punto tenue.',
+      fit: 'El nombre es repetición (mur·mur) y la m dibuja justo dos ondas. Se lee a cualquier tamaño.',
+      risk: 'Monogramas de "m" hay muchísimos. Sin el nombre al lado dice poco de noche o de sonido.',
+      behave: 'Muy legible a 48 y 24 dp. En monocromo el punto final queda al 45 %.',
+      rate: [5, 4, 3, 3],
+      dark: { ink: '#7CC4FF', ink2: '#4A5B82' }, light: { ink: '#1F64A8', ink2: '#9FAEC8' },
+      muted2: true,
+      draw: function (c, s) {
+        var w = 2.6;
+        return '<g transform="translate(-1 -1.1)">' + L('M4.5 19V11a3.75 3.75 0 0 1 7.5 0v8', w, c.ink) + L('M12 19v-4.25a3.25 3.25 0 0 1 6.5 0V19', w, c.ink) + L('M21.5 19h0', w, c.ink2, c.o2) + '</g>';
+      }
+    },
+    {
+      id: 'parpado', name: 'Párpado',
+      tag: 'Un ojo cerrado cuyas pestañas son un medidor.',
+      concept: 'Alguien duerme y la app escucha. Las pestañas crecen hacia el centro como barras de nivel.',
+      fit: 'Transmite sueño de forma cálida y humana, sin luna.',
+      risk: 'El ojo cerrado con pestañas es el ícono universal de "ocultar contraseña", y un ojo sugiere vigilancia, justo lo contrario de "privado".',
+      behave: 'Aceptable a 48 dp. A 24 dp las pestañas se juntan, por eso el glifo usa 3.',
+      rate: [4, 3, 2, 3],
+      dark: { ink: '#E7ECF5', ink2: '#7CC4FF' }, light: { ink: '#0E1526', ink2: '#1F64A8' },
+      draw: function (c, s) {
+        var w = s ? 2.4 : 2.2;
+        function y(x) { var t = (x - 3) / 18; return 9 + 16 * t * (1 - t); }
+        var ls = s ? [[7.5, 2.4], [12, 4.2], [16.5, 2.4]] : [[6, 2], [9, 3.4], [12, 4.8], [15, 3.4], [18, 2]];
+        var d = ls.map(function (l) { var y0 = y(l[0]) + (s ? 2.9 : 2.7); return V(l[0], y0, y0 + l[1]); }).join('');
+        return '<g transform="translate(0 -2.75)">' + L('M3 9Q12 17 21 9', w, c.ink) + L(d, w, c.ink2) + '</g>';
+      }
+    },
+    {
+      id: 'eco', name: 'Luna y eco',
+      tag: 'La luna creciente con tres barras que salen de su hueco.',
+      concept: 'Evolución del ícono instalado hoy (luna + ondas): la luna se vuelve sólida y las ondas pasan a ser barras.',
+      fit: 'Continuidad con lo que el usuario ya tiene en el teléfono; se entiende al instante.',
+      risk: 'Luna + sonido es el recurso más usado en apps de sueño y ruido blanco. Correcta, pero poco memorable.',
+      behave: 'Sólida a 48 dp y en monocromo. Glifo claro a 24 dp.',
+      rate: [4, 4, 2, 4],
+      dark: { ink: '#E7ECF5', ink2: '#7CC4FF' }, light: { ink: '#0E1526', ink2: '#1F64A8' },
+      draw: function (c, s) {
+        var id = 'mk' + (uid++), w = s ? 2.4 : 2.2;
+        var moon = '<mask id="' + id + '" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><circle cx="14.2" cy="8.6" r="6.6" fill="#000"/></mask><circle cx="10.5" cy="12.5" r="8" fill="' + c.ink + '" mask="url(#' + id + ')"/>';
+        var d = [[13.9, 1.4], [17, 3.3], [20.1, 1.8]].map(function (b) { return V(b[0], 8.6 - b[1], 8.6 + b[1]); }).join('');
+        return '<g transform="translate(-.4 .2)">' + moon + L(d, w, c.ink2) + '</g>';
+      }
+    }
+  ];
+
+  function cols(m, mode, g) {
+    if (mode === 'color') return Object.assign({ ink2: m.dark.ink, o2: 1 }, m.dark);
+    if (mode === 'light') return Object.assign({ ink2: m.light.ink, o2: 1 }, m.light);
+    return { ink: g, ink2: g, ink3: g, o2: mode === 'mono' && m.muted2 ? 0.45 : 1 };
+  }
+  function svg(m, c, small) { return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + m.draw(c, !!small) + '</svg>'; }
+  function glyph(m, color, size, small) { return '<span class="g" style="width:' + size + 'px;height:' + size + 'px">' + svg(m, cols(m, 'glyph', color), small) + '</span>'; }
+  function tile(m, size, kind) {
+    var c = kind === 'th-l' ? cols(m, 'mono', '#1A3157') : kind === 'th-d' ? cols(m, 'mono', '#C4D6FF') : cols(m, 'color');
+    return '<div class="tile ' + (kind || '') + '" style="--s:' + size + 'px">' + svg(m, c) + '<i class="safe"></i></div>';
+  }
+  function dots(n) { var s = ''; for (var i = 0; i < 5; i++) s += '<i class="' + (i < n ? 'on' : '') + '"></i>'; return s; }
+
+  // Encabezado: la marca recomendada, en el color de acento de la página.
+  document.getElementById('hdr-mark').innerHTML = svg(MARKS[0], { ink: 'currentColor', o2: 1 });
+  document.getElementById('hdr-mark').style.color = 'var(--accent)';
+
+  var wn = '', wl = '', ba = '';
+  MARKS.forEach(function (m) {
+    wn += '<div class="app">' + tile(m, 48) + '<span>' + m.name.split(' · ')[0] + '</span></div>';
+    wl += '<div class="app">' + tile(m, 48) + '<span>' + m.name.split(' · ')[0] + '</span></div>';
+    ba += '<div class="app">' + glyph(m, '#FFFFFF', 24, true) + '<span>' + m.id + '</span></div>';
+  });
+  document.getElementById('wall-n').innerHTML = wn;
+  document.getElementById('wall-l').innerHTML = wl;
+  document.getElementById('bar-all').innerHTML = ba;
+
+  var labels = ['Legible a 48 dp', 'Glifo de 24 dp', 'Originalidad', 'Encaje con Murmur'];
+  var out = '';
+  MARKS.forEach(function (m) {
+    var rate = m.rate.map(function (v, i) { return '<dt>' + labels[i] + '</dt><dd aria-label="' + v + ' de 5">' + dots(v) + '</dd>'; }).join('');
+    out += '<article class="dir' + (m.top ? ' top' : '') + '" id="d-' + m.id + '">' +
+      '<div class="dtext">' +
+        '<div class="dname"><h2>' + m.name + '</h2>' + (m.top ? '<span class="badge">Recomendada ' + m.top + '</span>' : '') + '</div>' +
+        '<p class="tag">' + m.tag + '</p>' +
+        '<dl class="facts">' +
+          '<div><dt>Concepto</dt><dd>' + m.concept + '</dd></div>' +
+          '<div><dt>Por qué encaja</dt><dd>' + m.fit + '</dd></div>' +
+          '<div><dt>Riesgos</dt><dd>' + m.risk + '</dd></div>' +
+          '<div><dt>En el sistema</dt><dd>' + m.behave + '</dd></div>' +
+        '</dl>' +
+        '<dl class="rate" aria-label="Mi evaluación">' + rate + '</dl>' +
+      '</div>' +
+      '<div class="bench">' +
+        '<figure class="hero-tile"><div class="tile big" style="--s:200px">' + svg(m, cols(m, 'color')) + '<i class="safe"></i></div><figcaption class="cap">512 px · Play Store (a escala)</figcaption></figure>' +
+        '<div class="stack">' +
+          '<figure><div class="sizes">' +
+            '<div>' + tile(m, 96) + '<span class="cap">192 px</span></div>' +
+            '<div>' + tile(m, 48) + '<span class="cap">48 dp</span></div>' +
+            '<div>' + tile(m, 48, 'th-l') + '<span class="cap">temático</span></div>' +
+            '<div>' + tile(m, 48, 'th-d') + '<span class="cap">temático osc.</span></div>' +
+          '</div><figcaption class="cap">Launcher a color y capa monocroma de Android 13+</figcaption></figure>' +
+          '<figure class="device">' +
+            '<div class="sb"><span>23:31</span>' + glyph(m, '#FFFFFF', 18, true) + '<span class="sp"></span><span class="batt" aria-hidden="true"></span></div>' +
+            '<div class="notif"><span class="ico">' + glyph(m, '#FFFFFF', 20, true) + '</span><div><b>Murmur</b> · 1 h 12 min<br><small>Escuchando desde las 23:31 · 4 episodios</small></div></div>' +
+            '<figcaption class="cap">Glifo blanco 24 dp · barra de estado y notificación</figcaption>' +
+          '</figure>' +
+          '<figure><div class="qsrow">' +
+            '<div class="qs on">' + glyph(m, '#0A0F1C', 22, true) + '<span><b>Murmur</b><small>Escuchando</small></span></div>' +
+            '<div class="qs off">' + glyph(m, '#E7ECF5', 22, true) + '<span><b>Murmur</b><small>Apagado</small></span></div>' +
+          '</div><figcaption class="cap">Botón de ajustes rápidos</figcaption></figure>' +
+        '</div>' +
+        '<figure style="grid-column:1/-1"><div class="wms">' +
+          '<div class="wm dk"><span class="g">' + svg(m, cols(m, 'color')) + '</span><span><span class="word">Murmur</span><span class="sub">Lo que suena mientras duermes</span></span></div>' +
+          '<div class="wm lt"><span class="g">' + svg(m, cols(m, 'light')) + '</span><span><span class="word">Murmur</span><span class="sub">Lo que suena mientras duermes</span></span></div>' +
+        '</div><figcaption class="cap">Logotipo · Inter Tight 700, fondo oscuro y claro</figcaption></figure>' +
+      '</div>' +
+    '</article>';
+  });
+  document.getElementById('dirs').innerHTML = out;
+
+  var why = {
+    luna: ['Es la más llamativa: una sola silueta que dice noche y sonido a la vez, sin caer en micrófono ni estrellas.', 'Refinaría: número y grosor de barras a 48 dp, la curva de la punta y el glifo de 4 barras.'],
+    umbral: ['La más propia: dibuja la regla que define a Murmur (solo graba lo que supera el umbral) con el lenguaje de instrumento de la interfaz.', 'Refinaría: contraste de las barras apagadas, ritmo de la línea punteada y quizá un guiño nocturno.']
+  };
+  document.getElementById('reco').innerHTML = MARKS.filter(function (m) { return m.top; }).map(function (m) {
+    return '<div class="panel"><div class="tile" style="--s:112px">' + svg(m, cols(m, 'color')) + '</div><div class="body"><span class="rank">Opción ' + m.top + '</span><h3>' + m.name + '</h3><p>' + why[m.id][0] + '</p><p class="muted">' + why[m.id][1] + '</p></div></div>';
+  }).join('');
+
+  var root = document.documentElement;
+  Array.prototype.forEach.call(document.querySelectorAll('#mask button'), function (b) {
+    b.addEventListener('click', function () {
+      root.style.setProperty('--mask-r', b.getAttribute('data-r'));
+      Array.prototype.forEach.call(document.querySelectorAll('#mask button'), function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+    });
+  });
+  document.getElementById('safe').addEventListener('change', function (e) { root.classList.toggle('show-safe', e.target.checked); });
+})();
+</script>

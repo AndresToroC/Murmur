@@ -1,0 +1,79 @@
+package com.nochesonora.core.classification
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.io.File
+import java.util.zip.ZipFile
+
+class SoundTypesTest {
+    /** Las 521 etiquetas reales: el .tflite de MediaPipe lleva `yamnet_label_list.txt` adjunto como zip. */
+    private val yamnetLabels: List<String> by lazy {
+        val model = listOf("src/main/assets/yamnet.tflite", "app/src/main/assets/yamnet.tflite").map(::File).first { it.exists() }
+        ZipFile(model).use { zip ->
+            zip.getInputStream(zip.getEntry("yamnet_label_list.txt")).bufferedReader().readLines().map { it.trim() }.filter { it.isNotEmpty() }
+        }
+    }
+
+    @Test
+    fun everyMappedLabelExistsInYamnet() {
+        assertEquals(521, yamnetLabels.size)
+        val unknown = SoundTypes.mappedLabels - yamnetLabels.toSet()
+        assertTrue("Etiquetas que YAMNet no tiene: $unknown", unknown.isEmpty())
+    }
+
+    @Test
+    fun everyTypeHasAtLeastOneLabelAndMostLabelsAreCovered() {
+        val byType = yamnetLabels.mapNotNull(SoundTypes::of).toSet()
+        assertEquals(SoundType.entries.toSet(), byType)
+        val covered = yamnetLabels.count { SoundTypes.of(it) != null }
+        assertTrue("Solo $covered de 521 etiquetas tienen tipo", covered >= 480)
+    }
+
+    @Test
+    fun commonNightSounds() {
+        assertEquals(SoundType.DOG, SoundTypes.of("Bark"))
+        assertEquals(SoundType.CAT, SoundTypes.of("Meow"))
+        assertEquals(SoundType.DOOR, SoundTypes.of("Knock"))
+        assertEquals(SoundType.FOOTSTEPS, SoundTypes.of("Walk, footsteps"))
+        assertEquals(SoundType.RAIN, SoundTypes.of("Thunder"))
+        assertEquals(SoundType.FIREWORKS, SoundTypes.of("Firecracker"))
+        assertEquals(SoundType.MUSIC_TV, SoundTypes.of("Salsa music"))
+        assertEquals(SoundType.MUSIC_TV, SoundTypes.of("Acoustic guitar"))
+        assertEquals(SoundType.MUSIC_TV, SoundTypes.of("Television"))
+        assertEquals(SoundType.FAN, SoundTypes.of("Mechanical fan"))
+        assertEquals(SoundType.ROOM, SoundTypes.of("Inside, small room"))
+        assertEquals(SoundType.MOVEMENT, SoundTypes.of("Rustle"))
+        assertEquals(SoundType.ALARM, SoundTypes.of("Alarm clock"))
+        // "Wind" no es un instrumento de viento.
+        assertEquals(SoundType.WIND, SoundTypes.of("Wind"))
+        assertNull(SoundTypes.of("Silence"))
+        assertNull(SoundTypes.of(null))
+        assertNull(SoundTypes.of("Desconocido"))
+    }
+
+    @Test
+    fun eventTypeFallsBackToTopLabelsSkippingRoomNoise() {
+        assertEquals(SoundType.DOG, SoundTypes.ofEvent("Bark", listOf("Speech")))
+        assertEquals(SoundType.DOOR, SoundTypes.ofEvent("Desconocido", listOf("Inside, small room", "Silence", "Door")))
+        assertEquals(SoundType.DOOR, SoundTypes.ofEvent("Sin clasificar", listOf("Slam")))
+        // Si solo hay ruido del cuarto, ese es el tipo.
+        assertEquals(SoundType.ROOM, SoundTypes.ofEvent("Inside, small room", listOf("Inside, small room", "Silence")))
+        assertNull(SoundTypes.ofEvent(null, emptyList()))
+    }
+
+    @Test
+    fun countsAreSortedByFrequencyThenEnumOrder() {
+        val counts = SoundTypes.count(listOf(SoundType.DOOR, SoundType.DOG, null, SoundType.DOOR, SoundType.CAT, SoundType.DOG))
+        assertEquals(listOf(SoundType.DOG to 2, SoundType.DOOR to 2, SoundType.CAT to 1), counts)
+    }
+
+    @Test
+    fun soundTypesDoNotChangeCategoryDecisions() {
+        // Presentación pura: LabelMapper sigue igual (p. ej. la risa cuenta como HABLA, el estornudo como TOS).
+        assertEquals(LabelKind.SPEECH, LabelMapper.kind("Laughter"))
+        assertEquals(LabelKind.COUGH, LabelMapper.kind("Sneeze"))
+        assertEquals(LabelKind.OTHER, LabelMapper.kind("Bark"))
+    }
+}

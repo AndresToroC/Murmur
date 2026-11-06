@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo "Luna de barras": una luna creciente hecha de barras de nivel (design/logo/murmur-logo.html),
+     con el corte afinado para que se vean las dos puntas de la luna.
+     El dibujo de 24 unidades se escala ×2,5 y se centra: queda dentro de la zona segura de 66 dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="2.5"
+        android:scaleY="2.5"
+        android:translateX="24"
+        android:translateY="24">
+        <path
+            android:fillColor="#00000000"
+            android:pathData="M5.4,9.56V14.44M7.6,6.2V17.8M9.8,4.6V19.4M12,3.79V6.26M12,15.34V20.21M14.2,3.59V3.59M14.2,17.97V20.45M16.4,19.18V20.16M18.6,19.46V19.46"
+            android:strokeWidth="1.7"
+            android:strokeColor="#7CC4FF"
+            android:strokeLineCap="round" />
+    </group>
+</vector>
