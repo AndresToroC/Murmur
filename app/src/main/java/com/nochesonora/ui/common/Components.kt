@@ -65,7 +65,7 @@ import com.nochesonora.ui.theme.SurfaceHigh
 import com.nochesonora.ui.theme.Track
 import com.nochesonora.ui.theme.color
 
-/** Ícono de pausa (no está en material-icons-core). */
+/** Pause icon (not in material-icons-core). */
 val PauseIcon: ImageVector by lazy {
     materialIcon(name = "Filled.Pause") {
         materialPath {
@@ -75,7 +75,7 @@ val PauseIcon: ImageVector by lazy {
     }
 }
 
-/** Ícono de trazo a partir de un path SVG de 24×24. */
+/** Stroke icon built from a 24×24 SVG path. */
 fun strokeIcon(name: String, path: String, strokeWidth: Float = 1.8f, filled: Boolean = false): ImageVector =
     ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f).addPath(
         pathData = addPathNodes(path),
@@ -86,7 +86,7 @@ fun strokeIcon(name: String, path: String, strokeWidth: Float = 1.8f, filled: Bo
         strokeLineJoin = StrokeJoin.Round,
     ).build()
 
-/** Logo "Luna de barras": luna creciente hecha de barras de nivel (versión pequeña, la misma del botón de ajustes rápidos). */
+/** "Bar moon" logo: a crescent moon made of level bars (small version, the same as the Quick Settings tile). */
 val BarsIcon: ImageVector by lazy {
     strokeIcon("Logo", "M5.2,9.76V14.24M8.8,5.16V18.84M12.4,3.67V5.12M12.4,16.48V20.33M16,19.45V20.33", strokeWidth = 2.2f)
 }
@@ -98,7 +98,7 @@ val ChevronDownIcon: ImageVector by lazy { strokeIcon("ChevronDown", "M6 9l6 6 6
 val ChevronUpIcon: ImageVector by lazy { strokeIcon("ChevronUp", "M6 15l6-6 6 6", strokeWidth = 2f) }
 val ChevronRightIcon: ImageVector by lazy { strokeIcon("ChevronRight", "M9 6l6 6-6 6", strokeWidth = 2f) }
 
-/** Tarjeta del diseño: superficie azul noche con borde fino. */
+/** The design's card: night-blue surface with a thin border. */
 @Composable
 fun MurmurCard(
     modifier: Modifier = Modifier,
@@ -120,13 +120,13 @@ fun MurmurCard(
     )
 }
 
-/** Título de sección en mayúsculas y gris. */
+/** Section title in gray capitals. */
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(text.uppercase(), modifier = modifier, style = Murmur.section, color = OnSurfaceMuted)
 }
 
-/** Casilla con punto de color, cifra monoespaciada y etiqueta. */
+/** Tile with a colored dot, a monospaced figure and a label. */
 @Composable
 fun StatTile(
     value: String,
@@ -158,7 +158,7 @@ fun Dot(color: Color, size: Dp = 8.dp, modifier: Modifier = Modifier) {
 @Composable
 fun CategoryDot(category: Category, modifier: Modifier = Modifier) = Dot(category.color(), 8.dp, modifier)
 
-/** Píldora con borde ("● GRABANDO"). */
+/** Outlined pill ("● RECORDING"). */
 @Composable
 fun StatusPill(text: String, color: Color = OnSurfaceMuted, modifier: Modifier = Modifier) {
     Text(
@@ -171,7 +171,7 @@ fun StatusPill(text: String, color: Color = OnSurfaceMuted, modifier: Modifier =
     )
 }
 
-/** Botón cuadrado de 44 dp con borde (volver, favorita). */
+/** 44 dp outlined square button (back, favorite). */
 @Composable
 fun SquareIconButton(icon: ImageVector, description: String, onClick: () -> Unit, tint: Color = OnSurface) {
     val shape = RoundedCornerShape(12.dp)
@@ -188,7 +188,7 @@ fun SquareIconButton(icon: ImageVector, description: String, onClick: () -> Unit
     }
 }
 
-/** Botón principal relleno con el acento. */
+/** Primary button filled with the accent color. */
 @Composable
 fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     Button(
@@ -200,7 +200,7 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
     ) { Text(text, style = MaterialTheme.typography.labelLarge.copy(fontSize = 17.sp)) }
 }
 
-/** Botón secundario: superficie oscura con borde (p. ej. "Detener"). */
+/** Secondary button: dark outlined surface (e.g. "Stop"). */
 @Composable
 fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, height: Dp = 56.dp, textColor: Color = OnSurface) {
     OutlinedButton(
@@ -219,8 +219,8 @@ fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modi
 }
 
 /**
- * Medidor horizontal de nivel (−90 a 0 dBFS) con la línea base (ámbar) y el umbral (rojo).
- * Se usa en Diagnóstico; Inicio usa [LevelBars].
+ * Horizontal level meter (−90 to 0 dBFS) with the baseline (amber) and the threshold (red).
+ * Used in Diagnostics; Home uses [LevelBars].
  */
 @Composable
 fun LevelMeter(levelDb: Float, baselineDb: Float?, thresholdDb: Float?, modifier: Modifier = Modifier) {
@@ -248,8 +248,8 @@ fun LevelMeter(levelDb: Float, baselineDb: Float?, thresholdDb: Float?, modifier
 }
 
 /**
- * Medidor de barras en vivo: cada barra es un instante reciente (la más nueva a la derecha).
- * Las que superan el umbral se pintan con el acento; la línea punteada marca el umbral.
+ * Live bar meter: each bar is a recent instant (newest on the right).
+ * Bars above the threshold are painted with the accent; the dashed line marks the threshold.
  */
 @Composable
 fun LevelBars(levels: List<Float>, baselineDb: Float?, thresholdDb: Float?, modifier: Modifier = Modifier, bars: Int = 40) {
@@ -309,7 +309,7 @@ fun MutedText(text: String, modifier: Modifier = Modifier, style: TextStyle = Ma
     Text(text, modifier = modifier, style = style, color = OnSurfaceMuted)
 }
 
-/** Encabezado de pantalla: logo de barras + título, y algo opcional a la derecha. */
+/** Screen header: bars logo + title, with optional content on the right. */
 @Composable
 fun ScreenHeader(title: String, modifier: Modifier = Modifier, trailing: @Composable () -> Unit = {}) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -325,8 +325,8 @@ fun ScreenHeader(title: String, modifier: Modifier = Modifier, trailing: @Compos
 }
 
 /**
- * Resumen de una noche en casillas de 3 por fila: duración y cada categoría que tuvo algo
- * (el ronquido como tiempo total, el resto como veces).
+ * Summary of a night in tiles, 3 per row: duration and every category that had something
+ * (snoring as total time, the rest as counts).
  */
 @Composable
 fun NightStatTiles(durationMs: Long, snoreMs: Long, speech: Int, cough: Int, other: Int, modifier: Modifier = Modifier) {
@@ -355,7 +355,7 @@ fun NightStatTiles(durationMs: Long, snoreMs: Long, speech: Int, cough: Int, oth
     }
 }
 
-/** Fila de casillas del mismo ancho. */
+/** Row of equal-width tiles. */
 @Composable
 fun TileRow(modifier: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), content = content)

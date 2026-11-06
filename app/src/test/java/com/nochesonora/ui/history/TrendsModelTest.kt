@@ -75,12 +75,12 @@ class TrendsModelTest {
     @Test
     fun comparesAveragesWithThePreviousSevenDays() {
         val nights = listOf(
-            // Periodo actual (29 oct – 4 nov): 2 noches, 30 min de media, 1 vez hablando de media.
+            // Current period (Oct 29 – Nov 4): 2 nights, 30 min average, talking once on average.
             night(1, at(11, 3, 23), snoreMin = 20, speech = 2),
             night(2, at(11, 1, 23), snoreMin = 40, speech = 0),
-            // Periodo anterior (22 – 28 oct): 1 noche, 40 min, 1 vez hablando, 2 toses.
+            // Previous period (Oct 22 – 28): 1 night, 40 min, talking once, 2 coughs.
             night(3, at(10, 25, 23), snoreMin = 40, speech = 1, cough = 2),
-            // Fuera de los dos periodos: no cuenta.
+            // Outside both periods: does not count.
             night(4, at(10, 10, 23), snoreMin = 300),
         )
         val t = TrendsModel.compute(nights, today, 7, zone)
@@ -94,9 +94,9 @@ class TrendsModelTest {
     @Test
     fun thirtyDayRangeCrossesTheMonthBoundary() {
         val nights = listOf(
-            night(1, at(10, 6, 23), speech = 3), // primer día del rango
-            night(2, at(10, 5, 23), speech = 9), // justo antes: periodo anterior
-            night(3, at(11, 4, 1), cough = 1), // hoy de madrugada
+            night(1, at(10, 6, 23), speech = 3), // first day of the range
+            night(2, at(10, 5, 23), speech = 9), // just before: previous period
+            night(3, at(11, 4, 1), cough = 1), // early this morning
         )
         val t = TrendsModel.compute(nights, today, 30, zone)
         assertEquals(30, t.series.size)
@@ -119,7 +119,7 @@ class TrendsModelTest {
 
     @Test
     fun insightsOnlyAppearWhenTheyApply() {
-        // Una sola noche sin ronquido: ningún destacado.
+        // A single night without snoring: no highlights.
         val one = TrendsModel.compute(listOf(night(1, at(11, 3, 23), speech = 2)), today, 7, zone).insights
         assertNull(one.mostSnore)
         assertNull(one.nightsWithoutTalking)
@@ -147,7 +147,7 @@ class TrendsModelTest {
     fun labelIndicesAvoidCollisions() {
         assertEquals((0 until 7).toList(), TrendsModel.labelIndices(7))
         assertEquals(listOf(0, 7, 14, 21, 29), TrendsModel.labelIndices(30))
-        // 31 días: 28 queda a 2 del último (30), así que se quita.
+        // 31 days: 28 is 2 away from the last (30), so it is dropped.
         assertEquals(listOf(0, 7, 14, 21, 30), TrendsModel.labelIndices(31))
         val idx = TrendsModel.labelIndices(30)
         assertTrue(idx.zipWithNext().all { (a, b) -> b - a >= 4 })

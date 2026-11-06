@@ -1,15 +1,15 @@
-<title>Logo de Murmur</title>
+<title>Murmur Logo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: una columna de "fichas de instrumento"; cada dirección = texto a la izquierda, banco de pruebas a la derecha. */
+/* Layout: one column of "instrument cards"; each direction = text on the left, test bench on the right. */
 :root {
   --bg: #0A0F1C; --surface: #111829; --surface2: #151D31; --border: #1E2940; --border2: #2E3B58;
   --fg: #E7ECF5; --fg2: #C9D3E3; --muted: #93A0B8; --accent: #7CC4FF; --amber: #F2B44B;
   --dot-off: #2A3756;
-  /* Contextos de dispositivo: iguales en ambos temas, porque representan el teléfono. */
+  /* Device contexts: the same in both themes, because they represent the phone. */
   --dev-night: #0A0F1C; --dev-night-hi: #18223D; --dev-ring: rgba(255,255,255,.07);
   --dev-bar: #000000; --dev-notif: #1A2030; --dev-notif-fg: #E7ECF5; --dev-notif-muted: #9AA6B8;
   --dev-wall-n1: #222C4C; --dev-wall-n2: #0B1020; --dev-wall-l1: #E9EEF7; --dev-wall-l2: #CBD6E8;
@@ -49,7 +49,7 @@ p { margin: 0; }
 .muted { color: var(--muted); }
 header { display: grid; gap: 16px; }
 
-/* Controles */
+/* Controls */
 .controls { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .controls .lbl { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .seg { display: inline-flex; border: 1px solid var(--border2); border-radius: 8px; overflow: hidden; }
@@ -60,7 +60,7 @@ header { display: grid; gap: 16px; }
 .chk { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--fg2); cursor: pointer; }
 .chk input { accent-color: var(--accent); width: 16px; height: 16px; }
 
-/* Análisis */
+/* Analysis */
 .analysis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .panel { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
 .panel ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--fg2); font-size: 14px; }
@@ -69,7 +69,7 @@ header { display: grid; gap: 16px; }
 .sw span { display: inline-flex; align-items: center; gap: 6px; font: 400 11px var(--mono); color: var(--muted); }
 .sw i { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border2); display: inline-block; }
 
-/* Bloque de comparación */
+/* Comparison block */
 .sect-head { display: grid; gap: 6px; }
 .compare { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .wall { border-radius: 16px; padding: 22px 16px 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 8px; justify-items: center; min-width: 0; }
@@ -82,7 +82,7 @@ header { display: grid; gap: 16px; }
 .barrow .app { color: var(--dev-notif-muted); font-family: var(--mono); font-size: 10px; }
 .cap { font: 400 11px/1.4 var(--mono); color: var(--muted); }
 
-/* Tiles del ícono */
+/* Icon tiles */
 .tile { width: var(--s); height: var(--s); max-width: 100%; border-radius: var(--mask-r); background: radial-gradient(130% 130% at 28% 18%, var(--dev-night-hi) 0%, var(--dev-night) 62%); box-shadow: inset 0 0 0 1px var(--dev-ring); display: grid; place-items: center; position: relative; overflow: hidden; flex: none; transition: border-radius .25s ease; }
 .tile svg { width: 82%; height: 82%; display: block; }
 .tile.th-l { background: var(--dev-th-l-bg); box-shadow: none; }
@@ -92,7 +92,7 @@ header { display: grid; gap: 16px; }
 .g { display: inline-block; flex: none; }
 .g svg { width: 100%; height: 100%; display: block; }
 
-/* Fichas de dirección */
+/* Direction cards */
 .dirs { display: grid; gap: 24px; }
 .dir { border: 1px solid var(--border); border-radius: 18px; background: var(--surface); display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); overflow: hidden; }
 .dir.top { border-color: var(--border2); }
@@ -140,7 +140,7 @@ header { display: grid; gap: 16px; }
 .wm .g { width: 32px; height: 32px; }
 .wm .sub { font: 400 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; opacity: .6; display: block; margin-top: 4px; }
 
-/* Recomendación */
+/* Recommendation */
 .reco { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .reco .panel { grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: start; padding: 22px; }
 .reco .rank { font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
@@ -165,35 +165,35 @@ header { display: grid; gap: 16px; }
 
 <div class="wrap">
   <header>
-    <div class="eyebrow"><span class="g" id="hdr-mark"></span>Murmur · identidad · v0.4</div>
-    <h1>Logo de Murmur</h1>
-    <p class="lead">Siete direcciones originales para el ícono, cada una probada donde va a vivir: Play Store, pantalla de inicio a 48&nbsp;dp, ícono temático monocromo, glifo blanco de la barra de estado, botón de ajustes rápidos y el logotipo junto al nombre.</p>
-    <div class="controls" role="group" aria-label="Opciones de vista">
-      <span class="lbl">Máscara del launcher</span>
+    <div class="eyebrow"><span class="g" id="hdr-mark"></span>Murmur · identity · v0.4</div>
+    <h1>Murmur logo</h1>
+    <p class="lead">Seven original directions for the icon, each tested where it will live: Play Store, home screen at 48&nbsp;dp, monochrome themed icon, white status bar glyph, Quick Settings tile and the logo next to the name.</p>
+    <div class="controls" role="group" aria-label="View options">
+      <span class="lbl">Launcher mask</span>
       <span class="seg" id="mask">
-        <button type="button" id="mask-circle" data-r="50%" aria-pressed="true">Círculo</button>
+        <button type="button" id="mask-circle" data-r="50%" aria-pressed="true">Circle</button>
         <button type="button" id="mask-squircle" data-r="34%" aria-pressed="false">Squircle</button>
-        <button type="button" id="mask-rounded" data-r="22%" aria-pressed="false">Redondeado</button>
+        <button type="button" id="mask-rounded" data-r="22%" aria-pressed="false">Rounded</button>
       </span>
-      <label class="chk"><input type="checkbox" id="safe"> Zona segura (66 dp)</label>
+      <label class="chk"><input type="checkbox" id="safe"> Safe zone (66 dp)</label>
     </div>
   </header>
 
-  <section class="analysis" aria-label="Análisis">
+  <section class="analysis" aria-label="Analysis">
     <div class="panel">
-      <div class="eyebrow">El nombre</div>
-      <h3>Murmur = murmullo</h3>
-      <p>Un sonido bajo, continuo, apenas audible. La palabra se repite a sí misma (mur·mur), como una respiración o un ronquido que vuelve. Funciona igual en español e inglés y trae una M doble que pide simetría y ritmo.</p>
+      <div class="eyebrow">The name</div>
+      <h3>Murmur = <i>murmullo</i> (Spanish for murmur)</h3>
+      <p>A low, continuous, barely audible sound. The word repeats itself (mur·mur), like a breath or a snore that comes back. It works the same in Spanish and English and brings a double M that calls for symmetry and rhythm.</p>
     </div>
     <div class="panel">
-      <div class="eyebrow">El producto</div>
-      <h3>Un instrumento que escucha de noche</h3>
+      <div class="eyebrow">The product</div>
+      <h3>An instrument that listens at night</h3>
       <ul>
-        <li>Graba solo lo que sobresale del silencio: ronquidos, habla, tos.</li>
-        <li>Todo local y privado: el logo no debe parecer un micrófono espía.</li>
-        <li>Azul noche, bordes finos y cifras mono: más medidor que app de bienestar.</li>
+        <li>It records only what stands out from the silence: snoring, talking, coughing.</li>
+        <li>Everything local and private: the logo must not look like a spy microphone.</li>
+        <li>Night blue, thin borders and monospaced figures: more meter than wellness app.</li>
       </ul>
-      <div class="sw" aria-label="Paleta de la app">
+      <div class="sw" aria-label="App palette">
         <span><i style="background:#0A0F1C"></i>0A0F1C</span>
         <span><i style="background:#7CC4FF"></i>7CC4FF</span>
         <span><i style="background:#F2B44B"></i>F2B44B</span>
@@ -201,35 +201,35 @@ header { display: grid; gap: 16px; }
       </div>
     </div>
     <div class="panel">
-      <div class="eyebrow">Límites técnicos</div>
-      <h3>Lo que el logo tiene que aguantar</h3>
+      <div class="eyebrow">Technical limits</div>
+      <h3>What the logo has to withstand</h3>
       <ul>
-        <li>Ícono adaptativo de 108 dp: todo dentro del círculo de 66 dp, porque cada launcher recorta distinto.</li>
-        <li>Capa <span class="mono">monochrome</span> (Android 13+): una sola tinta; hoy reutiliza el ícono a color.</li>
-        <li>Glifo de 24 dp blanco para la notificación y la barra de estado, y otro para el botón de ajustes rápidos.</li>
-        <li>Evitar lo gastado: micrófono, luna con estrellas, "Zzz", ecualizador suelto.</li>
+        <li>108 dp adaptive icon: everything inside the 66 dp circle, because every launcher crops differently.</li>
+        <li><span class="mono">monochrome</span> layer (Android 13+): a single ink; today it reuses the color icon.</li>
+        <li>A white 24 dp glyph for the notification and the status bar, and another for the Quick Settings tile.</li>
+        <li>Avoid the worn-out: microphone, moon with stars, "Zzz", a lone equalizer.</li>
       </ul>
     </div>
   </section>
 
   <section class="sect-head" aria-labelledby="cmp">
-    <h2 id="cmp">Las siete juntas, a tamaño real</h2>
-    <p class="muted">Íconos a 48&nbsp;dp sobre un fondo oscuro y uno claro, y los glifos de 24&nbsp;dp en una barra de estado.</p>
+    <h2 id="cmp">All seven together, at real size</h2>
+    <p class="muted">Icons at 48&nbsp;dp on a dark and a light background, and the 24&nbsp;dp glyphs in a status bar.</p>
   </section>
   <div class="compare">
-    <div class="wall n" id="wall-n" aria-label="Pantalla de inicio oscura"></div>
-    <div class="wall l" id="wall-l" aria-label="Pantalla de inicio clara"></div>
-    <div class="barrow" id="bar-all" aria-label="Glifos en la barra de estado"></div>
+    <div class="wall n" id="wall-n" aria-label="Dark home screen"></div>
+    <div class="wall l" id="wall-l" aria-label="Light home screen"></div>
+    <div class="barrow" id="bar-all" aria-label="Glyphs in the status bar"></div>
   </div>
 
-  <section class="dirs" id="dirs" aria-label="Direcciones"></section>
+  <section class="dirs" id="dirs" aria-label="Directions"></section>
 
   <section class="sect-head" aria-labelledby="rec">
-    <h2 id="rec">Mi recomendación</h2>
-    <p class="muted">Ordenadas por lo que mejor cumple las tres cosas a la vez: se reconoce a 48&nbsp;dp, sobrevive en una tinta y solo podría ser de Murmur.</p>
+    <h2 id="rec">My recommendation</h2>
+    <p class="muted">Ranked by how well they meet three things at once: recognizable at 48&nbsp;dp, survives in a single ink, and could only belong to Murmur.</p>
   </section>
   <div class="reco" id="reco"></div>
-  <p class="closing">Cualquiera de las dos se puede refinar en la siguiente vuelta: grosores ajustados por tamaño, el <span class="mono">VectorDrawable</span> de 108&nbsp;dp con su capa <span class="mono">monochrome</span> propia, el glifo de notificación y el de ajustes rápidos, y el logotipo con el título "Murmur" en Inter Tight.</p>
+  <p class="closing">Either one can be refined in the next round: stroke widths tuned per size, the 108&nbsp;dp <span class="mono">VectorDrawable</span> with its own <span class="mono">monochrome</span> layer, the notification and Quick Settings glyphs, and the logo with the "Murmur" title in Inter Tight.</p>
 </div>
 
 <script>
@@ -240,7 +240,7 @@ header { display: grid; gap: 16px; }
   }
   function V(x, y1, y2) { return 'M' + x + ' ' + (+y1).toFixed(2) + 'V' + (+y2).toFixed(2); }
 
-  // Barras verticales recortadas por una luna creciente (C1 menos C2).
+  // Vertical bars clipped by a crescent moon (C1 minus C2).
   function crescentBars(xs, w, C1, C2) {
     var d = '';
     xs.forEach(function (x) {
@@ -264,12 +264,12 @@ header { display: grid; gap: 16px; }
 
   var MARKS = [
     {
-      id: 'luna', name: 'Luna de barras', top: 1,
-      tag: 'Una luna creciente hecha de barras de nivel.',
-      concept: 'La silueta de la luna se recorta en barras verticales. Hacia la punta las barras bajan, como un sonido que se apaga.',
-      fit: 'Junta noche y escucha en una sola forma, sin micrófono, y hereda las barras del encabezado de la app.',
-      risk: 'A 24 dp las ranuras se cierran, así que el glifo usa 4 barras gruesas. Lunas hay muchas en apps de sueño; la luna rayada en barras no es común.',
-      behave: 'Silueta fuerte a 48 dp. Una sola tinta, así que el monocromo no pierde nada. Glifo propio de 4 barras.',
+      id: 'moon', name: 'Moon of bars', top: 1,
+      tag: 'A crescent moon made of level bars.',
+      concept: 'The moon silhouette is cut into vertical bars. Toward the tip the bars get shorter, like a sound fading out.',
+      fit: 'It joins night and listening in a single shape, with no microphone, and inherits the bars from the app header.',
+      risk: 'At 24 dp the slits close up, so the glyph uses 4 thick bars. Sleep apps have plenty of moons; a moon striped into bars is not common.',
+      behave: 'Strong silhouette at 48 dp. A single ink, so monochrome loses nothing. Its own 4-bar glyph.',
       rate: [4, 3, 4, 5],
       dark: { ink: '#7CC4FF' }, light: { ink: '#1F64A8' },
       draw: function (c, s) {
@@ -278,12 +278,12 @@ header { display: grid; gap: 16px; }
       }
     },
     {
-      id: 'umbral', name: 'Umbral', top: 2,
-      tag: 'El medidor de la app: solo una barra cruza la línea.',
-      concept: 'Barras de nivel bajo una línea de umbral punteada. Una sola la atraviesa y se enciende. Es como Murmur decide qué grabar.',
-      fit: 'Lo más propio de esta app: sale de la tarjeta "Nivel en vivo", con su umbral punteado y las barras que lo pasan en azul.',
-      risk: 'No dice "noche". Las barras apagadas casi desaparecen a 48 dp en fondos oscuros, y a 24 dp la línea punteada pasa a ser sólida.',
-      behave: 'A 48 dp se lee "barra alta + línea". En monocromo las barras bajas quedan al 45 % y la alta entera. Glifo de 3 barras.',
+      id: 'threshold', name: 'Threshold', top: 2,
+      tag: 'The app meter: only one bar crosses the line.',
+      concept: 'Level bars under a dotted threshold line. Only one crosses it and lights up. It is how Murmur decides what to record.',
+      fit: 'The most specific to this app: it comes from the "Live level" card, with its dotted threshold and the bars that cross it in blue.',
+      risk: 'It does not say "night". The unlit bars almost disappear at 48 dp on dark backgrounds, and at 24 dp the dotted line becomes solid.',
+      behave: 'At 48 dp it reads as "tall bar + line". In monochrome the short bars stay at 45 % and the tall one at full. 3-bar glyph.',
       rate: [4, 4, 5, 4],
       dark: { ink: '#7CC4FF', ink2: '#3A4B72', ink3: '#93A0B8' }, light: { ink: '#1F64A8', ink2: '#B3C0D6', ink3: '#56627C' },
       muted2: true,
@@ -295,12 +295,12 @@ header { display: grid; gap: 16px; }
       }
     },
     {
-      id: 'nivel', name: 'Nivel',
-      tag: 'Las cinco barras de hoy, afinadas.',
-      concept: 'El medidor que ya acompaña al título "Murmur", más grueso y simétrico, en azul acento sobre azul noche.',
-      fit: 'Continuidad total: es el mismo trazo del encabezado y del botón de ajustes rápidos actual.',
-      risk: 'Genérico. Ecualizadores, grabadoras y apps de podcast usan barras casi iguales, y no dice nada de la noche.',
-      behave: 'Impecable a 48 dp y como glifo; el monocromo no cambia nada.',
+      id: 'level', name: 'Level',
+      tag: 'Today\'s five bars, refined.',
+      concept: 'The meter that already sits next to the "Murmur" title, thicker and symmetrical, in accent blue on night blue.',
+      fit: 'Full continuity: it is the same stroke as the header and the current Quick Settings tile.',
+      risk: 'Generic. Equalizers, recorders and podcast apps use almost the same bars, and it says nothing about the night.',
+      behave: 'Flawless at 48 dp and as a glyph; monochrome changes nothing.',
       rate: [5, 5, 2, 3],
       dark: { ink: '#7CC4FF' }, light: { ink: '#1F64A8' },
       draw: function (c, s) {
@@ -309,12 +309,12 @@ header { display: grid; gap: 16px; }
       }
     },
     {
-      id: 'silencio', name: 'Silencio · M · silencio',
-      tag: 'Una línea plana que se levanta en una M y vuelve a la calma.',
-      concept: 'El trazo de una noche: silencio, un evento, silencio. La M es la inicial y es también lo único que se graba.',
-      fit: 'Cuenta el producto en un gesto: ignora la línea plana y guarda lo que sobresale.',
-      risk: 'Puede leerse como electrocardiograma (apps de salud) o como montañas. Las colas planas se pierden en el recorte circular.',
-      behave: 'Bien a 48 dp. En monocromo las colas quedan al 45 %. Como glifo es claro.',
+      id: 'silence', name: 'Silence · M · silence',
+      tag: 'A flat line that rises into an M and returns to calm.',
+      concept: 'The trace of a night: silence, an event, silence. The M is the initial and also the only thing that gets recorded.',
+      fit: 'It tells the product in one gesture: ignore the flat line and keep what stands out.',
+      risk: 'It can read as an electrocardiogram (health apps) or as mountains. The flat tails get lost in the circular crop.',
+      behave: 'Good at 48 dp. In monochrome the tails stay at 45 %. Clear as a glyph.',
       rate: [4, 4, 3, 4],
       dark: { ink: '#7CC4FF', ink2: '#4A5B82' }, light: { ink: '#1F64A8', ink2: '#9FAEC8' },
       muted2: true,
@@ -324,12 +324,12 @@ header { display: grid; gap: 16px; }
       }
     },
     {
-      id: 'm', name: 'm que se apaga',
-      tag: 'Una m minúscula cuyas jorobas bajan, como un murmullo que se pierde.',
-      concept: 'La m de "murmur": el segundo arco es más bajo y termina en un punto tenue.',
-      fit: 'El nombre es repetición (mur·mur) y la m dibuja justo dos ondas. Se lee a cualquier tamaño.',
-      risk: 'Monogramas de "m" hay muchísimos. Sin el nombre al lado dice poco de noche o de sonido.',
-      behave: 'Muy legible a 48 y 24 dp. En monocromo el punto final queda al 45 %.',
+      id: 'm', name: 'Fading m',
+      tag: 'A lowercase m whose humps get lower, like a murmur fading away.',
+      concept: 'The m of "murmur": the second arch is lower and ends in a faint dot.',
+      fit: 'The name is repetition (mur·mur) and the m draws exactly two waves. It reads at any size.',
+      risk: 'There are countless "m" monograms. Without the name next to it, it says little about night or sound.',
+      behave: 'Very legible at 48 and 24 dp. In monochrome the final dot stays at 45 %.',
       rate: [5, 4, 3, 3],
       dark: { ink: '#7CC4FF', ink2: '#4A5B82' }, light: { ink: '#1F64A8', ink2: '#9FAEC8' },
       muted2: true,
@@ -339,12 +339,12 @@ header { display: grid; gap: 16px; }
       }
     },
     {
-      id: 'parpado', name: 'Párpado',
-      tag: 'Un ojo cerrado cuyas pestañas son un medidor.',
-      concept: 'Alguien duerme y la app escucha. Las pestañas crecen hacia el centro como barras de nivel.',
-      fit: 'Transmite sueño de forma cálida y humana, sin luna.',
-      risk: 'El ojo cerrado con pestañas es el ícono universal de "ocultar contraseña", y un ojo sugiere vigilancia, justo lo contrario de "privado".',
-      behave: 'Aceptable a 48 dp. A 24 dp las pestañas se juntan, por eso el glifo usa 3.',
+      id: 'eyelid', name: 'Eyelid',
+      tag: 'A closed eye whose lashes are a meter.',
+      concept: 'Someone sleeps and the app listens. The lashes grow toward the center like level bars.',
+      fit: 'It conveys sleep in a warm, human way, without a moon.',
+      risk: 'A closed eye with lashes is the universal "hide password" icon, and an eye suggests surveillance, the exact opposite of "private".',
+      behave: 'Acceptable at 48 dp. At 24 dp the lashes merge, which is why the glyph uses 3.',
       rate: [4, 3, 2, 3],
       dark: { ink: '#E7ECF5', ink2: '#7CC4FF' }, light: { ink: '#0E1526', ink2: '#1F64A8' },
       draw: function (c, s) {
@@ -356,12 +356,12 @@ header { display: grid; gap: 16px; }
       }
     },
     {
-      id: 'eco', name: 'Luna y eco',
-      tag: 'La luna creciente con tres barras que salen de su hueco.',
-      concept: 'Evolución del ícono instalado hoy (luna + ondas): la luna se vuelve sólida y las ondas pasan a ser barras.',
-      fit: 'Continuidad con lo que el usuario ya tiene en el teléfono; se entiende al instante.',
-      risk: 'Luna + sonido es el recurso más usado en apps de sueño y ruido blanco. Correcta, pero poco memorable.',
-      behave: 'Sólida a 48 dp y en monocromo. Glifo claro a 24 dp.',
+      id: 'echo', name: 'Moon and echo',
+      tag: 'The crescent moon with three bars coming out of its hollow.',
+      concept: 'An evolution of the icon installed today (moon + waves): the moon becomes solid and the waves become bars.',
+      fit: 'Continuity with what the user already has on the phone; it is understood instantly.',
+      risk: 'Moon + sound is the most used device in sleep and white-noise apps. Correct, but not very memorable.',
+      behave: 'Solid at 48 dp and in monochrome. Clear glyph at 24 dp.',
       rate: [4, 4, 2, 4],
       dark: { ink: '#E7ECF5', ink2: '#7CC4FF' }, light: { ink: '#0E1526', ink2: '#1F64A8' },
       draw: function (c, s) {
@@ -386,7 +386,7 @@ header { display: grid; gap: 16px; }
   }
   function dots(n) { var s = ''; for (var i = 0; i < 5; i++) s += '<i class="' + (i < n ? 'on' : '') + '"></i>'; return s; }
 
-  // Encabezado: la marca recomendada, en el color de acento de la página.
+  // Header: the recommended mark, in the page accent color.
   document.getElementById('hdr-mark').innerHTML = svg(MARKS[0], { ink: 'currentColor', o2: 1 });
   document.getElementById('hdr-mark').style.color = 'var(--accent)';
 
@@ -400,56 +400,56 @@ header { display: grid; gap: 16px; }
   document.getElementById('wall-l').innerHTML = wl;
   document.getElementById('bar-all').innerHTML = ba;
 
-  var labels = ['Legible a 48 dp', 'Glifo de 24 dp', 'Originalidad', 'Encaje con Murmur'];
+  var labels = ['Legible at 48 dp', '24 dp glyph', 'Originality', 'Fit with Murmur'];
   var out = '';
   MARKS.forEach(function (m) {
-    var rate = m.rate.map(function (v, i) { return '<dt>' + labels[i] + '</dt><dd aria-label="' + v + ' de 5">' + dots(v) + '</dd>'; }).join('');
+    var rate = m.rate.map(function (v, i) { return '<dt>' + labels[i] + '</dt><dd aria-label="' + v + ' of 5">' + dots(v) + '</dd>'; }).join('');
     out += '<article class="dir' + (m.top ? ' top' : '') + '" id="d-' + m.id + '">' +
       '<div class="dtext">' +
-        '<div class="dname"><h2>' + m.name + '</h2>' + (m.top ? '<span class="badge">Recomendada ' + m.top + '</span>' : '') + '</div>' +
+        '<div class="dname"><h2>' + m.name + '</h2>' + (m.top ? '<span class="badge">Recommended ' + m.top + '</span>' : '') + '</div>' +
         '<p class="tag">' + m.tag + '</p>' +
         '<dl class="facts">' +
-          '<div><dt>Concepto</dt><dd>' + m.concept + '</dd></div>' +
-          '<div><dt>Por qué encaja</dt><dd>' + m.fit + '</dd></div>' +
-          '<div><dt>Riesgos</dt><dd>' + m.risk + '</dd></div>' +
-          '<div><dt>En el sistema</dt><dd>' + m.behave + '</dd></div>' +
+          '<div><dt>Concept</dt><dd>' + m.concept + '</dd></div>' +
+          '<div><dt>Why it fits</dt><dd>' + m.fit + '</dd></div>' +
+          '<div><dt>Risks</dt><dd>' + m.risk + '</dd></div>' +
+          '<div><dt>In the system</dt><dd>' + m.behave + '</dd></div>' +
         '</dl>' +
-        '<dl class="rate" aria-label="Mi evaluación">' + rate + '</dl>' +
+        '<dl class="rate" aria-label="My rating">' + rate + '</dl>' +
       '</div>' +
       '<div class="bench">' +
-        '<figure class="hero-tile"><div class="tile big" style="--s:200px">' + svg(m, cols(m, 'color')) + '<i class="safe"></i></div><figcaption class="cap">512 px · Play Store (a escala)</figcaption></figure>' +
+        '<figure class="hero-tile"><div class="tile big" style="--s:200px">' + svg(m, cols(m, 'color')) + '<i class="safe"></i></div><figcaption class="cap">512 px · Play Store (to scale)</figcaption></figure>' +
         '<div class="stack">' +
           '<figure><div class="sizes">' +
             '<div>' + tile(m, 96) + '<span class="cap">192 px</span></div>' +
             '<div>' + tile(m, 48) + '<span class="cap">48 dp</span></div>' +
-            '<div>' + tile(m, 48, 'th-l') + '<span class="cap">temático</span></div>' +
-            '<div>' + tile(m, 48, 'th-d') + '<span class="cap">temático osc.</span></div>' +
-          '</div><figcaption class="cap">Launcher a color y capa monocroma de Android 13+</figcaption></figure>' +
+            '<div>' + tile(m, 48, 'th-l') + '<span class="cap">themed</span></div>' +
+            '<div>' + tile(m, 48, 'th-d') + '<span class="cap">themed dark</span></div>' +
+          '</div><figcaption class="cap">Color launcher and Android 13+ monochrome layer</figcaption></figure>' +
           '<figure class="device">' +
             '<div class="sb"><span>23:31</span>' + glyph(m, '#FFFFFF', 18, true) + '<span class="sp"></span><span class="batt" aria-hidden="true"></span></div>' +
-            '<div class="notif"><span class="ico">' + glyph(m, '#FFFFFF', 20, true) + '</span><div><b>Murmur</b> · 1 h 12 min<br><small>Escuchando desde las 23:31 · 4 episodios</small></div></div>' +
-            '<figcaption class="cap">Glifo blanco 24 dp · barra de estado y notificación</figcaption>' +
+            '<div class="notif"><span class="ico">' + glyph(m, '#FFFFFF', 20, true) + '</span><div><b>Murmur</b> · 1 h 12 min<br><small>Listening since 23:31 · 4 episodes</small></div></div>' +
+            '<figcaption class="cap">White 24 dp glyph · status bar and notification</figcaption>' +
           '</figure>' +
           '<figure><div class="qsrow">' +
-            '<div class="qs on">' + glyph(m, '#0A0F1C', 22, true) + '<span><b>Murmur</b><small>Escuchando</small></span></div>' +
-            '<div class="qs off">' + glyph(m, '#E7ECF5', 22, true) + '<span><b>Murmur</b><small>Apagado</small></span></div>' +
-          '</div><figcaption class="cap">Botón de ajustes rápidos</figcaption></figure>' +
+            '<div class="qs on">' + glyph(m, '#0A0F1C', 22, true) + '<span><b>Murmur</b><small>Listening</small></span></div>' +
+            '<div class="qs off">' + glyph(m, '#E7ECF5', 22, true) + '<span><b>Murmur</b><small>Off</small></span></div>' +
+          '</div><figcaption class="cap">Quick Settings tile</figcaption></figure>' +
         '</div>' +
         '<figure style="grid-column:1/-1"><div class="wms">' +
-          '<div class="wm dk"><span class="g">' + svg(m, cols(m, 'color')) + '</span><span><span class="word">Murmur</span><span class="sub">Lo que suena mientras duermes</span></span></div>' +
-          '<div class="wm lt"><span class="g">' + svg(m, cols(m, 'light')) + '</span><span><span class="word">Murmur</span><span class="sub">Lo que suena mientras duermes</span></span></div>' +
-        '</div><figcaption class="cap">Logotipo · Inter Tight 700, fondo oscuro y claro</figcaption></figure>' +
+          '<div class="wm dk"><span class="g">' + svg(m, cols(m, 'color')) + '</span><span><span class="word">Murmur</span><span class="sub">What sounds while you sleep</span></span></div>' +
+          '<div class="wm lt"><span class="g">' + svg(m, cols(m, 'light')) + '</span><span><span class="word">Murmur</span><span class="sub">What sounds while you sleep</span></span></div>' +
+        '</div><figcaption class="cap">Logo · Inter Tight 700, dark and light background</figcaption></figure>' +
       '</div>' +
     '</article>';
   });
   document.getElementById('dirs').innerHTML = out;
 
   var why = {
-    luna: ['Es la más llamativa: una sola silueta que dice noche y sonido a la vez, sin caer en micrófono ni estrellas.', 'Refinaría: número y grosor de barras a 48 dp, la curva de la punta y el glifo de 4 barras.'],
-    umbral: ['La más propia: dibuja la regla que define a Murmur (solo graba lo que supera el umbral) con el lenguaje de instrumento de la interfaz.', 'Refinaría: contraste de las barras apagadas, ritmo de la línea punteada y quizá un guiño nocturno.']
+    moon: ['The most striking: a single silhouette that says night and sound at once, without falling into microphones or stars.', 'I would refine: the number and width of bars at 48 dp, the curve of the tip and the 4-bar glyph.'],
+    threshold: ['The most specific: it draws the rule that defines Murmur (it only records what crosses the threshold) in the instrument language of the interface.', 'I would refine: the contrast of the unlit bars, the rhythm of the dotted line and maybe a nocturnal hint.']
   };
   document.getElementById('reco').innerHTML = MARKS.filter(function (m) { return m.top; }).map(function (m) {
-    return '<div class="panel"><div class="tile" style="--s:112px">' + svg(m, cols(m, 'color')) + '</div><div class="body"><span class="rank">Opción ' + m.top + '</span><h3>' + m.name + '</h3><p>' + why[m.id][0] + '</p><p class="muted">' + why[m.id][1] + '</p></div></div>';
+    return '<div class="panel"><div class="tile" style="--s:112px">' + svg(m, cols(m, 'color')) + '</div><div class="body"><span class="rank">Option ' + m.top + '</span><h3>' + m.name + '</h3><p>' + why[m.id][0] + '</p><p class="muted">' + why[m.id][1] + '</p></div></div>';
   }).join('');
 
   var root = document.documentElement;

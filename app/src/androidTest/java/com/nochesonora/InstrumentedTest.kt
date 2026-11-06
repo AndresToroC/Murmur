@@ -81,7 +81,7 @@ class YamnetClassifierTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         YamnetClassifier.create(context).use { classifier ->
             val labels = classifier.classify(FloatArray(Windowing.WINDOW_SAMPLES))
-            assertTrue("YAMNet no devolvió etiquetas", labels.isNotEmpty())
+            assertTrue("YAMNet returned no labels", labels.isNotEmpty())
         }
     }
 }

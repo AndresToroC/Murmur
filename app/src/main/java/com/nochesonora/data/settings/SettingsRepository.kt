@@ -19,13 +19,13 @@ data class AppSettings(
     val saveFullRecording: Boolean = false,
     val retention: Retention = Retention.SIEMPRE,
     val batteryPromptShown: Boolean = false,
-    /** Notificación con el resumen de la noche al detener la sesión. */
+    /** Notification with the night's summary when the session is stopped. */
     val morningSummary: Boolean = true,
-    /** Transcribir en el teléfono lo que se dice dormido (clips de HABLA). */
+    /** Transcribe on the phone what is said while asleep (HABLA clips). */
     val transcribeSpeech: Boolean = true,
-    /** Guardar una sola vez los ruidos ambientales que se repiten (viento, ventilador, lluvia). */
+    /** Save repeating ambient noises only once (wind, fan, rain). */
     val groupRepeats: Boolean = true,
-    /** Sonidos que la persona pidió ignorar desde un clip (el perro, el aire acondicionado…). */
+    /** Sounds the person asked to ignore from a clip (the dog, the air conditioner…). */
     val ignoredSounds: Set<SoundType> = emptySet(),
 )
 

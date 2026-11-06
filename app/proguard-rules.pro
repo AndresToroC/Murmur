@@ -1,1 +1,1 @@
-# Sin minificación en el MVP (isMinifyEnabled = false).
+# No minification in the MVP (isMinifyEnabled = false).

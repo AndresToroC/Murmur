@@ -1,25 +1,25 @@
 package com.nochesonora.core.classification
 
 /**
- * Sonidos que la persona pidió ignorar desde un clip ("Ignorar este sonido": el perro, el aire
- * acondicionado, la nevera…). Un clip OTRO de un tipo ignorado no se guarda, salvo que en él
- * también se oiga habla, ronquido o tos.
+ * Sounds the user asked to ignore from a clip ("Ignore this sound": the dog, the air
+ * conditioner, the fridge…). An OTRO clip of an ignored type is not saved, unless speech,
+ * snoring or a cough can also be heard in it.
  *
- * Lógica pura (sin android.*), probada en la JVM.
+ * Pure logic (no android.*), tested on the JVM.
  */
 object IgnoreFilter {
     /**
-     * Tipos que no se ofrecen para ignorar: su etiqueta ya es un sonido real (ronquido, tos), así
-     * que el filtro nunca los descartaría y el botón engañaría.
+     * Types not offered for ignoring: their label is already a real sound (snoring, cough), so
+     * the filter would never discard them and the button would be misleading.
      */
     private val NOT_IGNORABLE = setOf(SoundType.SNORING, SoundType.COUGH)
 
-    /** Tipos que de por sí suenan a habla: en ellos solo protegen el ronquido y la tos. */
+    /** Types that sound like speech by nature: for them only snoring and cough protect the clip. */
     private val SPEECH_LIKE = setOf(SoundType.VOICES, SoundType.MUSIC_TV, SoundType.LAUGHTER)
 
     fun canIgnore(type: SoundType?): Boolean = type != null && type !in NOT_IGNORABLE
 
-    /** El tipo ignorado de este clip, o null si hay que guardarlo. */
+    /** The ignored type of this clip, or null if it must be saved. */
     fun ignoredType(result: ClassificationResult, ignored: Set<SoundType>): SoundType? {
         if (ignored.isEmpty() || result.category != Category.OTRO) return null
         val type = SoundTypes.ofEvent(result.otherLabel, result.topLabels.map { it.label }) ?: return null

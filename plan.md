@@ -1,89 +1,89 @@
-# Murmur (antes NocheSonora) — Plan de implementación del MVP
+# Murmur (formerly NocheSonora) — Specification and Implementation Plan
 
-> App Android que registra los sonidos relevantes de la noche (ronquidos, habla dormido, tos, otros), ignora el silencio y el ruido de fondo constante, y permite revisar y escuchar todo a la mañana siguiente. 100 % local, sin red.
+> Android app that records the relevant sounds of the night (snoring, sleep talking, coughing, other sounds), ignores silence and constant background noise, and lets you review and listen to everything the next morning. 100% local, no network.
 
-Fecha del plan: 2026-11-03.
+Plan date: 2026-11-03.
 
 ---
 
-## 0. Resumen ejecutivo
+## 0. Executive summary
 
-| Aspecto | Decisión |
+| Aspect | Decision |
 |---|---|
-| Plataforma | Android, minSdk 26, targetSdk 36, compileSdk 37 (al implementar: las bibliotecas de 2026 exigen API 37; ver README A28) |
-| Lenguaje / UI | Kotlin 2.4 + Jetpack Compose (Material 3), tema oscuro por defecto |
-| Arquitectura | MVVM + un repositorio, DI manual con un `AppContainer` |
-| Captura | `AudioRecord` 16 kHz mono PCM16, bloques de 100 ms (1.600 muestras) |
-| Detección | 3 capas: línea base adaptativa → detector de eventos por umbral → YAMNet solo sobre candidatos |
-| Clasificación | MediaPipe Tasks Audio 1.2.1 + `yamnet.tflite` (float32) en `assets/` |
-| Persistencia | Room (sesiones, eventos, episodios, pausas) + DataStore (ajustes) |
-| Audio en disco | WAV por clip en `filesDir/sessions/{sessionId}/{eventId}.wav`; grabación completa opcional en AAC 32 kbps |
-| Ejecución | Foreground Service tipo `microphone` + partial wake lock |
-| Pruebas | Lógica de detección en Kotlin puro con tests JVM y señales sintéticas |
+| Platform | Android, minSdk 26, targetSdk 36, compileSdk 37 (during implementation: the 2026 libraries require API 37; see README A28) |
+| Language / UI | Kotlin 2.4 + Jetpack Compose (Material 3), dark theme by default |
+| Architecture | MVVM + a single repository, manual DI with an `AppContainer` |
+| Capture | `AudioRecord` 16 kHz mono PCM16, 100 ms blocks (1,600 samples) |
+| Detection | 3 layers: adaptive baseline → threshold-based event detector → YAMNet only on candidates |
+| Classification | MediaPipe Tasks Audio 1.2.1 + `yamnet.tflite` (float32) in `assets/` |
+| Persistence | Room (sessions, events, episodes, pauses) + DataStore (settings) |
+| Audio on disk | One WAV per clip in `filesDir/sessions/{sessionId}/{eventId}.wav`; optional full recording in AAC 32 kbps |
+| Execution | Foreground Service of type `microphone` + partial wake lock |
+| Testing | Detection logic in pure Kotlin with JVM tests and synthetic signals |
 
 ---
 
-## 1. Análisis del documento de requisitos
+## 1. Analysis of the requirements document
 
-### 1.1 Lo que está claro y se respeta tal cual
-- Alcance (solo Android, sin backend/red/analítica/auth, interfaz en español).
-- Stack (Compose, Room, Coroutines/Flow, DI manual, `AudioRecord`, MediaPipe + YAMNet).
-- Las 3 capas de procesamiento, los parámetros numéricos y el mapeo de etiquetas.
-- Las 5 pantallas y su contenido.
+### 1.1 What is clear and is followed as is
+- Scope (Android only, no backend/network/analytics/auth, Spanish-language interface).
+- Stack (Compose, Room, Coroutines/Flow, manual DI, `AudioRecord`, MediaPipe + YAMNet).
+- The 3 processing layers, the numeric parameters and the label mapping.
+- The 5 screens and their content.
 
-### 1.2 Huecos, ambigüedades y la decisión tomada
-Todas estas decisiones van también al README (sección "Decisiones de diseño").
+### 1.2 Gaps, ambiguities and the decision taken
+All of these decisions also go into the README ("Design decisions" section).
 
-| # | Ambigüedad / problema | Decisión (la más simple que funciona) |
+| # | Ambiguity / problem | Decision (the simplest one that works) |
 |---|---|---|
-| A1 | El documento termina en "Estructura de paquetes sugerida" sin contenido. | Se propone la estructura de la sección 3. |
-| A2 | MediaPipe en modo `AUDIO_CLIPS` trocea el clip en ventanas de 0,975 s **sin solapamiento**. El requisito pide 50 %. | Ventaneo manual: se llama a `classify()` con exactamente 15.600 muestras por ventana, avanzando 7.800 muestras (salto 0,4875 s). Cada llamada devuelve un solo resultado. |
-| A3 | "Engine sostenido" no está definido. | Las etiquetas `Engine`, `Idling`, `Engine starting` cuentan como FONDO solo si aparecen (≥ 0,30) en ≥ 70 % de las ventanas del evento; si no, cuentan como OTRO. |
-| A4 | "Breathing" va a RONQUIDO "solo si es periódico". ¿Y si no lo es? | Si la heurística de periodicidad no se cumple, `Breathing` vota como OTRO (se guarda la etiqueta original). |
-| A5 | ¿Qué pasa si ninguna ventana supera 0,30? | Categoría OTRO con etiqueta `Desconocido`. No se descarta: el evento superó el umbral de energía y el usuario puede corregirlo o borrarlo. |
-| A6 | Post-roll de 2 s vs. hangover de 2,5 s. | El "fin real" del evento es el último bloque sobre el umbral. El clip = [inicio − 3 s, fin real + 2 s]. Como el hangover (2,5 s) es mayor que el post-roll, el audio ya está en memoria al cerrar el evento; no hay que esperar más. |
-| A7 | Corte a los 60 s: ¿el siguiente evento lleva pre-roll? | No. El evento cortado termina en el segundo 60 sin post-roll y el siguiente empieza en ese mismo instante sin pre-roll (audio contiguo, sin duplicar). |
-| A8 | "Eventos consecutivos de la misma categoría" para episodios. | Se ordenan los eventos de la sesión por hora; un evento se une al episodio anterior si **el evento inmediatamente anterior** es de la misma categoría efectiva y el hueco es < 30 s. Un evento de otra categoría en medio rompe el episodio. Se usa `userCategory ?: category`. |
-| A9 | ¿Cómo se registran las pausas? | Nueva entidad `PauseEntity` (sessionId, startedAt, endedAt, reason). |
-| A10 | El servicio no puede reiniciarse solo en Android 14+: un FGS de micrófono no puede arrancarse desde segundo plano. | No se usa `START_STICKY` para reanudar. Si el proceso muere, la sesión queda INTERRUMPIDA (ver 6.6). |
-| A11 | `full.m4a` (MP4) queda corrupto si el proceso muere antes de cerrar el `MediaMuxer`, que es justo el caso que interesa validar. | Se graba en **AAC ADTS** (`full.aac`), un flujo que sigue siendo reproducible aunque se corte de golpe. ExoPlayer lo reproduce y permite saltar con `FLAG_ENABLE_CONSTANT_BITRATE_SEEKING`. Se documenta como desviación deliberada del requisito. |
-| A12 | El panel "En vivo" de Diagnóstico sin sesión activa. | Muestra los datos del servicio si hay sesión. Sin sesión muestra "Sin sesión activa" y solo está disponible "Probar 10 segundos". Ese botón se desactiva mientras haya sesión (el micrófono está ocupado). |
-| A13 | Aviso de < 500 MB libres: ¿bloquea? | Diálogo con "Cancelar" / "Comenzar igualmente". |
-| A14 | ¿Cuándo se aplica la retención? | Al abrir la app y al terminar cada sesión (sin WorkManager). |
-| A15 | Fuente de audio: `MIC` aplica AGC/supresión de ruido en muchos equipos, lo que falsea la línea base y "borra" el ventilador de forma impredecible. | `UNPROCESSED` si `AudioManager.getProperty(PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED)` es `true`; si no, `VOICE_RECOGNITION` (el CDD lo obliga a no tener AGC). |
-| A16 | Exclusión de optimización de batería. | Se pide una vez, tras explicar el motivo, con `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (permiso `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`). Si falla, se abre `ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`. Esta app no va a Play Store, así que la restricción de Play sobre ese permiso no aplica; queda anotado en el README. |
-| A17 | Corrección manual de categoría a FONDO. | El selector solo ofrece RONQUIDO, HABLA, TOS, OTRO. Para quitar algo se usa "Borrar evento". |
-| A18 | Categoría del episodio cuando el usuario corrige un evento. | Tras cualquier corrección o borrado se reagrupan los episodios de la sesión completa (función pura, barata). |
+| A1 | The document ends at "Suggested package structure" with no content. | The structure in section 3 is proposed. |
+| A2 | In `AUDIO_CLIPS` mode, MediaPipe splits the clip into 0.975 s windows **with no overlap**. The requirement asks for 50%. | Manual windowing: `classify()` is called with exactly 15,600 samples per window, advancing 7,800 samples (0.4875 s hop). Each call returns a single result. |
+| A3 | "Sustained engine" is not defined. | The labels `Engine`, `Idling`, `Engine starting` count as FONDO (background) only if they appear (≥ 0.30) in ≥ 70% of the event's windows; otherwise they count as OTRO (other). |
+| A4 | "Breathing" goes to RONQUIDO (snoring) "only if periodic". What if it is not? | If the periodicity heuristic is not met, `Breathing` votes as OTRO (the original label is kept). |
+| A5 | What if no window exceeds 0.30? | Category OTRO with label `Desconocido` ("unknown"). It is not discarded: the event crossed the energy threshold and the user can correct or delete it. |
+| A6 | 2 s post-roll vs. 2.5 s hangover. | The "real end" of the event is the last block above the threshold. The clip = [start − 3 s, real end + 2 s]. Since the hangover (2.5 s) is longer than the post-roll, the audio is already in memory when the event closes; there is no need to wait any longer. |
+| A7 | Cut at 60 s: does the next event get a pre-roll? | No. The cut event ends at second 60 with no post-roll, and the next one starts at that same instant with no pre-roll (contiguous audio, no duplication). |
+| A8 | "Consecutive events of the same category" for episodes. | The session's events are sorted by time; an event joins the previous episode if **the immediately preceding event** has the same effective category and the gap is < 30 s. An event of another category in between breaks the episode. `userCategory ?: category` is used. |
+| A9 | How are pauses recorded? | New entity `PauseEntity` (sessionId, startedAt, endedAt, reason). |
+| A10 | The service cannot restart itself on Android 14+: a microphone FGS cannot be started from the background. | `START_STICKY` is not used to resume. If the process dies, the session is left INTERRUMPIDA (interrupted) (see 6.6). |
+| A11 | `full.m4a` (MP4) is corrupted if the process dies before the `MediaMuxer` is closed, which is precisely the case worth validating. | Recording uses **AAC ADTS** (`full.aac`), a stream that remains playable even if it is cut off abruptly. ExoPlayer plays it and allows seeking with `FLAG_ENABLE_CONSTANT_BITRATE_SEEKING`. Documented as a deliberate deviation from the requirement. |
+| A12 | The Diagnostics "Live" panel with no active session. | Shows the service's data if there is a session. Without a session it shows "No active session" and only "Test for 10 seconds" is available. That button is disabled while a session is running (the microphone is busy). |
+| A13 | Warning for < 500 MB free: does it block? | Dialog with "Cancel" / "Start anyway". |
+| A14 | When is retention applied? | When the app opens and at the end of each session (no WorkManager). |
+| A15 | Audio source: `MIC` applies AGC/noise suppression on many devices, which skews the baseline and "erases" the fan unpredictably. | `UNPROCESSED` if `AudioManager.getProperty(PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED)` is `true`; otherwise `VOICE_RECOGNITION` (the CDD requires it to have no AGC). |
+| A16 | Battery optimization exemption. | Requested once, after explaining why, with `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (permission `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`). If that fails, `ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS` is opened. This app is not going to the Play Store, so Play's restriction on that permission does not apply; this is noted in the README. |
+| A17 | Manual category correction to FONDO. | The picker only offers RONQUIDO, HABLA (talking), TOS (cough), OTRO. To remove something, use "Delete event". |
+| A18 | Episode category when the user corrects an event. | After any correction or deletion, the episodes of the whole session are regrouped (a pure, cheap function). |
 
-### 1.3 Riesgos principales
-| Riesgo | Impacto | Mitigación |
+### 1.3 Main risks
+| Risk | Impact | Mitigation |
 |---|---|---|
-| El fabricante mata el proceso (Xiaomi, Samsung, Huawei) | Se pierde la noche | FGS + wake lock + exclusión de batería + latido en BD y estado INTERRUMPIDA |
-| AGC/NS del micrófono | Línea base inestable | Fuente `UNPROCESSED`/`VOICE_RECOGNITION` (A15) |
-| YAMNet confunde ronquido con motor/respiración | Mala categoría | Heurística de periodicidad + corrección manual + top-3 guardado |
-| Otra app o una llamada toma el micrófono | Silencio sin aviso (Android 10+ entrega ceros) | `AudioRecordingCallback.isClientSilenced` + chequeo de `AudioManager.mode` + PauseEntity |
-| Memoria en 8 h | OOM | Solo búferes acotados (anillo de 5 s, evento ≤ 65 s ≈ 2 MB) y nada de listas que crezcan |
-| Inferencia lenta bloquea la captura | Bloques perdidos | La captura nunca espera: clasificación en otra corrutina con cola acotada |
-| Disco | Lleno a mitad de noche | Verificación de 500 MB al inicio; cada clip ocupa como mucho ~2 MB |
-| Entorno: hoy no hay JDK ni Android SDK en el equipo | No se puede compilar aquí | Instalar Android Studio (incluye el JBR 21) y el SDK 36 antes de compilar |
+| The manufacturer kills the process (Xiaomi, Samsung, Huawei) | The night is lost | FGS + wake lock + battery exemption + heartbeat in the DB and INTERRUMPIDA status |
+| Microphone AGC/NS | Unstable baseline | `UNPROCESSED`/`VOICE_RECOGNITION` source (A15) |
+| YAMNet confuses snoring with engine/breathing | Wrong category | Periodicity heuristic + manual correction + stored top-3 |
+| Another app or a call takes the microphone | Silence with no warning (Android 10+ delivers zeros) | `AudioRecordingCallback.isClientSilenced` + check of `AudioManager.mode` + PauseEntity |
+| Memory over 8 h | OOM | Only bounded buffers (5 s ring, event ≤ 65 s ≈ 2 MB) and no growing lists |
+| Slow inference blocks capture | Lost blocks | Capture never waits: classification runs in another coroutine with a bounded queue |
+| Disk | Full in the middle of the night | 500 MB check at start; each clip takes at most ~2 MB |
+| Environment: there is currently no JDK or Android SDK on the machine | Cannot build here | Install Android Studio (includes JBR 21) and SDK 36 before building |
 
 ---
 
-## 2. Versiones (verificadas el 2026-11-03)
+## 2. Versions (verified on 2026-11-03)
 
-Comprobadas en Google Maven / Maven Central / services.gradle.org:
+Checked on Google Maven / Maven Central / services.gradle.org:
 
 ```toml
 [versions]
 agp = "9.5.0"
 kotlin = "2.4.21"
-ksp = "2.3.13"              # KSP2, numeración propia; comprobar compatibilidad al sincronizar
+ksp = "2.3.13"              # KSP2, its own version numbering; check compatibility when syncing
 composeBom = "2026.09.00"
 activityCompose = "1.13.0"
-lifecycle = "2.11.0"          # corregido al implementar (2.10.2 no existe)
-navigationCompose = "2.10.2"  # corregido al implementar (2.11.0 no existe)
+lifecycle = "2.11.0"          # corrected during implementation (2.10.2 does not exist)
+navigationCompose = "2.10.2"  # corrected during implementation (2.11.0 does not exist)
 room = "2.8.5"
-datastore = "1.3.0"           # comprobar al sincronizar
+datastore = "1.3.0"           # check when syncing
 coroutines = "1.11.0"
 media3 = "1.11.1"
 mediapipeTasksAudio = "1.2.1"
@@ -91,14 +91,14 @@ junit = "4.13.2"
 ```
 
 - Gradle wrapper: **9.8.2**.
-- Modelo YAMNet (URL verificada, HTTP 200, 4.126.810 bytes):
+- YAMNet model (verified URL, HTTP 200, 4,126,810 bytes):
   `https://storage.googleapis.com/mediapipe-models/audio_classifier/yamnet/float32/1/yamnet.tflite`
-  Se descarga una sola vez al montar el proyecto y se copia a `app/src/main/assets/yamnet.tflite`; la app nunca usa la red. Se agrega `androidResources { noCompress += "tflite" }`.
-- `abiFilters`: `arm64-v8a`, `armeabi-v7a`, `x86_64` (emulador) para limitar el tamaño de las librerías nativas de MediaPipe.
+  Downloaded only once, when setting up the project, and copied to `app/src/main/assets/yamnet.tflite`; the app never uses the network. `androidResources { noCompress += "tflite" }` is added.
+- `abiFilters`: `arm64-v8a`, `armeabi-v7a`, `x86_64` (emulator), to limit the size of MediaPipe's native libraries.
 
 ---
 
-## 3. Estructura del proyecto y de paquetes
+## 3. Project and package structure
 
 ```
 Murmur/
@@ -114,52 +114,52 @@ Murmur/
       ├─ main/
       │  ├─ AndroidManifest.xml
       │  ├─ assets/yamnet.tflite
-      │  ├─ res/ (strings en español, íconos, tema)
+      │  ├─ res/ (Spanish strings, icons, theme)
       │  └─ java/com/nochesonora/
-      │     ├─ MurmurApp.kt            # Application: crea AppContainer, marca sesiones huérfanas, aplica retención
-      │     ├─ AppContainer.kt              # DI manual
+      │     ├─ MurmurApp.kt            # Application: creates AppContainer, marks orphaned sessions, applies retention
+      │     ├─ AppContainer.kt              # manual DI
       │     ├─ MainActivity.kt
       │     │
-      │     ├─ core/                        # ⚠ Kotlin puro, sin imports de android.*
+      │     ├─ core/                        # ⚠ pure Kotlin, no android.* imports
       │     │  ├─ audio/
       │     │  │  ├─ Pcm.kt                 # rms→dBFS, short→float
-      │     │  │  ├─ RingBuffer.kt          # anillo de ShortArray (5 s)
-      │     │  │  └─ WavWriter.kt           # escribe WAV a un OutputStream
+      │     │  │  ├─ RingBuffer.kt          # ShortArray ring buffer (5 s)
+      │     │  │  └─ WavWriter.kt           # writes WAV to an OutputStream
       │     │  ├─ detection/
-      │     │  │  ├─ DetectorConfig.kt      # todos los parámetros numéricos
-      │     │  │  ├─ BaselineTracker.kt     # capa 1
-      │     │  │  ├─ EventDetector.kt       # capa 2 (máquina de estados)
-      │     │  │  └─ DetectorState.kt       # CALIBRANDO / ESCUCHANDO / EVENTO
+      │     │  │  ├─ DetectorConfig.kt      # all numeric parameters
+      │     │  │  ├─ BaselineTracker.kt     # layer 1
+      │     │  │  ├─ EventDetector.kt       # layer 2 (state machine)
+      │     │  │  └─ DetectorState.kt       # CALIBRATING / LISTENING / ONSET / EVENT
       │     │  ├─ classification/
       │     │  │  ├─ Category.kt            # RONQUIDO, HABLA, TOS, OTRO, FONDO
-      │     │  │  ├─ LabelMapper.kt         # etiqueta YAMNet → categoría
-      │     │  │  ├─ SnoreHeuristic.kt      # periodicidad 2–6 s + energía < 500 Hz
-      │     │  │  ├─ VotingClassifier.kt    # votación ponderada + top-3
-      │     │  │  └─ Windowing.kt           # ventanas 15.600 / salto 7.800
+      │     │  │  ├─ LabelMapper.kt         # YAMNet label → category
+      │     │  │  ├─ SnoreHeuristic.kt      # 2–6 s periodicity + energy < 500 Hz
+      │     │  │  ├─ VotingClassifier.kt    # weighted voting + top-3
+      │     │  │  └─ Windowing.kt           # 15,600-sample windows / 7,800 hop
       │     │  └─ episodes/
-      │     │     └─ EpisodeGrouper.kt      # agrupación < 30 s
+      │     │     └─ EpisodeGrouper.kt      # grouping < 30 s
       │     │
-      │     ├─ audio/                       # Android: captura y codificación
-      │     │  ├─ AudioCapture.kt           # AudioRecord + Flow<ShortArray>, fuente de audio, reintentos
-      │     │  ├─ YamnetClassifier.kt       # wrapper de MediaPipe AudioClassifier
+      │     ├─ audio/                       # Android: capture and encoding
+      │     │  ├─ AudioCapture.kt           # AudioRecord + Flow<ShortArray>, audio source, retries
+      │     │  ├─ YamnetClassifier.kt       # MediaPipe AudioClassifier wrapper
       │     │  ├─ AacFullRecorder.kt        # MediaCodec → ADTS
-      │     │  └─ InterruptionMonitor.kt    # micrófono silenciado / llamada
+      │     │  └─ InterruptionMonitor.kt    # silenced microphone / call
       │     │
       │     ├─ service/
-      │     │  ├─ NightSessionService.kt    # FGS, wake lock, notificación
-      │     │  ├─ SessionEngine.kt          # orquesta captura → detector → clasificador → repositorio
-      │     │  ├─ LiveState.kt              # StateFlow con nivel, base, estado, contadores, top-3
+      │     │  ├─ NightSessionService.kt    # FGS, wake lock, notification
+      │     │  ├─ SessionEngine.kt          # orchestrates capture → detector → classifier → repository
+      │     │  ├─ LiveState.kt              # StateFlow with level, baseline, state, counters, top-3
       │     │  └─ SessionNotification.kt
       │     │
       │     ├─ data/
-      │     │  ├─ db/ (AppDatabase, entidades, DAOs, Converters)
+      │     │  ├─ db/ (AppDatabase, entities, DAOs, Converters)
       │     │  ├─ settings/SettingsRepository.kt   # DataStore
-      │     │  ├─ files/SessionFileStore.kt        # rutas, borrado, tamaño ocupado, espacio libre
-      │     │  ├─ RetentionPolicy.kt               # lógica pura de qué borrar
-      │     │  └─ NightRepository.kt               # el repositorio único
+      │     │  ├─ files/SessionFileStore.kt        # paths, deletion, space used, free space
+      │     │  ├─ RetentionPolicy.kt               # pure logic for what to delete
+      │     │  └─ NightRepository.kt               # the single repository
       │     │
       │     └─ ui/
-      │        ├─ theme/ (Color.kt con colores por categoría, Theme.kt, Type.kt)
+      │        ├─ theme/ (Color.kt with per-category colors, Theme.kt, Type.kt)
       │        ├─ navigation/NavGraph.kt
       │        ├─ common/ (ClipPlayer, LevelMeter, CategoryChip, ConfirmDialog)
       │        ├─ home/ (HomeScreen, HomeViewModel)
@@ -168,134 +168,134 @@ Murmur/
       │        ├─ settings/ (SettingsScreen, SettingsViewModel)
       │        └─ diagnostics/ (DiagnosticsScreen, DiagnosticsViewModel)
       │
-      └─ test/java/com/nochesonora/core/…   # tests JVM de todo `core/`
+      └─ test/java/com/nochesonora/core/…   # JVM tests for all of `core/`
 ```
 
-Regla: `core/` no puede importar `android.*`, `androidx.*` ni MediaPipe. Así se testea en la JVM.
+Rule: `core/` must not import `android.*`, `androidx.*` or MediaPipe. That way it can be tested on the JVM.
 
 ---
 
-## 4. Pipeline de audio en detalle
+## 4. Audio pipeline in detail
 
 ```
-AudioRecord (16 kHz, mono, PCM16, bloques de 1.600 muestras = 100 ms)
+AudioRecord (16 kHz, mono, PCM16, blocks of 1,600 samples = 100 ms)
    │
-   ├──► RingBuffer (5 s = 80.000 muestras) ─────────────┐ pre-roll
-   ├──► AacFullRecorder (si está activado)              │
-   ▼                                                    │
-dBFS del bloque ──► BaselineTracker ──► EventDetector ──┘
-                                            │ (evento cerrado: PCM del clip)
-                                            ▼
-                              Channel(capacidad 4) ──► worker de clasificación
-                                                          │ Windowing → YAMNet → Voting + SnoreHeuristic
-                                                          ▼
-                                     FONDO: se descarta  |  otra: WAV + EventEntity + reagrupar episodios
+   ├──► RingBuffer (5 s = 80,000 samples) ────────┐ pre-roll
+   ├──► AacFullRecorder (if enabled)              │
+   ▼                                              │
+block dBFS ──► BaselineTracker ──► EventDetector ──┘
+                                        │ (event closed: clip PCM)
+                                        ▼
+                          Channel(capacity 4) ──► classification worker
+                                                      │ Windowing → YAMNet → Voting + SnoreHeuristic
+                                                      ▼
+                                 FONDO: discarded  |  other: WAV + EventEntity + regroup episodes
 ```
 
-### 4.1 Captura (`AudioCapture`)
-- `AudioRecord.getMinBufferSize` × 4 como búfer interno; lectura bloqueante de 1.600 muestras en un hilo dedicado (`Dispatchers.IO.limitedParallelism(1)`).
-- Fuente de audio según A15.
-- Tiempo: cada tramo continuo de captura guarda un ancla `(wallClockMs, samplesRead = 0)`. La hora de un bloque = `ancla + samplesRead / 16`. Esto evita la deriva de llamar al reloj en cada bloque. Al reanudar tras una pausa se crea un ancla nueva.
-- Si `read()` devuelve un error (`ERROR_DEAD_OBJECT`, `ERROR_INVALID_OPERATION`) se libera el `AudioRecord` y se reintenta con espera exponencial (1, 2, 4… hasta 30 s), registrando una pausa.
+### 4.1 Capture (`AudioCapture`)
+- `AudioRecord.getMinBufferSize` × 4 as the internal buffer; blocking reads of 1,600 samples on a dedicated thread (`Dispatchers.IO.limitedParallelism(1)`).
+- Audio source as per A15.
+- Timing: each continuous capture segment stores an anchor `(wallClockMs, samplesRead = 0)`. A block's time = `anchor + samplesRead / 16`. This avoids the drift of reading the clock on every block. When resuming after a pause, a new anchor is created.
+- If `read()` returns an error (`ERROR_DEAD_OBJECT`, `ERROR_INVALID_OPERATION`), the `AudioRecord` is released and recreated with exponential backoff (1, 2, 4… up to 30 s), and a pause is recorded.
 
-### 4.2 Nivel
-- `dBFS = 20·log10(rms / 32768)`, con piso de −100 dB para bloques de ceros.
+### 4.2 Level
+- `dBFS = 20·log10(rms / 32768)`, with a floor of −100 dB for all-zero blocks.
 
-### 4.3 Capa 1 — `BaselineTracker`
-Parámetros en `DetectorConfig`:
+### 4.3 Layer 1 — `BaselineTracker`
+Parameters in `DetectorConfig`:
 - `calibrationMs = 60_000`, `percentileWindowMs = 30_000`, `percentile = 0.20`, `emaTauMs = 120_000`.
 
-Algoritmo, por cada bloque de 100 ms:
-1. **Calibración (primeros 60 s):** se acumulan los niveles de los bloques que no son de un evento. Al terminar, `baseline = p20(niveles)` y `variabilidad = p80 − p20` (se guarda en la sesión como dato de diagnóstico). **Desde los 5 s (calentamiento) hay una base provisional** = p20 de lo acumulado hasta ese momento, y el detector ya abre eventos. La UI muestra "Escuchando · calibrando 0:42 / 1:00". *(Cambio tras la prueba en el teléfono, ver §12: con la versión anterior el detector no disparaba durante 60 s y una prueba de 1 minuto daba siempre 0 eventos.)*
-2. **Seguimiento:** solo si el bloque **no** pertenece a un evento (estado ≠ EVENTO y ≠ ONSET), se agrega a una ventana deslizante de los últimos 300 niveles (30 s). Cada bloque:
-   `objetivo = p20(ventana)`;
-   `baseline += (objetivo − baseline) · (Δt / τ)` con Δt = 100 ms y τ = 120 s (α ≈ 0,00083).
-3. Sale `baselineDb` y `thresholdDb = baselineDb + sensibilidad` (14 / 10 / 7 dB).
+Algorithm, for each 100 ms block:
+1. **Calibration (first 60 s):** the levels of blocks that are not part of an event are accumulated. At the end, `baseline = p20(levels)` and `variability = p80 − p20` (stored in the session as diagnostic data). **From 5 s on (warm-up) there is a provisional baseline** = p20 of what has been accumulated so far, and the detector already opens events. The UI shows "Listening · calibrating 0:42 / 1:00". *(Change made after the phone test, see §12: with the previous version the detector did not fire for 60 s, and a 1-minute test always gave 0 events.)*
+2. **Tracking:** only if the block does **not** belong to an event (state ≠ EVENT and ≠ ONSET) is it added to a sliding window of the last 300 levels (30 s). On each block:
+   `target = p20(window)`;
+   `baseline += (target − baseline) · (Δt / τ)` with Δt = 100 ms and τ = 120 s (α ≈ 0.00083).
+3. Outputs `baselineDb` and `thresholdDb = baselineDb + sensitivity` (14 / 10 / 7 dB).
 
-El percentil hace a la base robusta frente a picos; la EMA lenta hace que un ventilador que se enciende pase a ser el "nuevo silencio" en ~2–4 min. Mientras ese ventilador sube la base, puede abrirse un evento que el clasificador descartará como FONDO; es lo esperado.
+The percentile makes the baseline robust against spikes; the slow EMA makes a fan that gets switched on become the "new silence" in ~2–4 min. While that fan is raising the baseline, an event may open that the classifier will discard as FONDO; this is expected.
 
-Detalle: si un evento dura mucho (por ejemplo ronquido continuo), la base no se actualiza durante ese tiempo; está bien, porque son 60 s como máximo por evento y la base solo se congela en ese tramo.
+Detail: if an event lasts a long time (for example, continuous snoring), the baseline is not updated during that time; this is fine, because an event lasts 60 s at most and the baseline is only frozen during that stretch.
 
-### 4.4 Capa 2 — `EventDetector` (máquina de estados)
-Parámetros: `onsetMs = 300`, `hangoverMs = 2_500`, `maxEventMs = 60_000`, `preRollMs = 3_000`, `postRollMs = 2_000`.
+### 4.4 Layer 2 — `EventDetector` (state machine)
+Parameters: `onsetMs = 300`, `hangoverMs = 2_500`, `maxEventMs = 60_000`, `preRollMs = 3_000`, `postRollMs = 2_000`.
 
 ```
-CALIBRANDO ──(fin del calentamiento, 5 s)──► ESCUCHANDO   (la calibración sigue de fondo hasta los 60 s)
-ESCUCHANDO ──(nivel > umbral)──► ONSET (contador = 1)
-ONSET ──(3 bloques seguidos > umbral)──► EVENTO   (inicio = primer bloque del onset)
-ONSET ──(bloque ≤ umbral)──► ESCUCHANDO
-EVENTO ──(bloque > umbral)──► actualiza últimoActivo, pico
-EVENTO ──(25 bloques seguidos ≤ umbral)──► cierra: clip = [inicio − 3 s, últimoActivo + 2 s]
-EVENTO ──(duración ≥ 60 s)──► cierra sin post-roll y abre otro EVENTO en el mismo instante
+CALIBRATING ──(end of warm-up, 5 s)──► LISTENING   (calibration continues in the background until 60 s)
+LISTENING ──(level > threshold)──► ONSET (counter = 1)
+ONSET ──(3 consecutive blocks > threshold)──► EVENT   (start = first block of the onset)
+ONSET ──(block ≤ threshold)──► LISTENING
+EVENT ──(block > threshold)──► updates lastActive, peak
+EVENT ──(25 consecutive blocks ≤ threshold)──► closes: clip = [start − 3 s, lastActive + 2 s]
+EVENT ──(duration ≥ 60 s)──► closes with no post-roll and opens another EVENT at the same instant
 ```
 
-- Entrada: `onBlock(timestampMs, samples, levelDb)`. Salida: `DetectorOutput` (estado + `ClosedEvent?` con PCM, inicio, fin, pico dB).
-- El PCM del evento se acumula en un `ShortArray` con crecimiento acotado (máximo (3 + 60 + 2,5) s × 16.000 ≈ 1,06 M muestras ≈ 2,1 MB).
-- El pre-roll se copia del `RingBuffer` al entrar en EVENTO (los 3 s anteriores al inicio del onset).
-- Al cerrar se recorta el PCM sobrante del hangover más allá de `últimoActivo + 2 s`.
-- Una pausa (micrófono perdido) cierra el evento abierto inmediatamente con lo que haya.
+- Input: `onBlock(timestampMs, samples, levelDb)`. Output: `DetectorOutput` (state + `ClosedEvent?` with PCM, start, end, peak dB).
+- The event's PCM is accumulated in a `ShortArray` with bounded growth (maximum (3 + 60 + 2.5) s × 16,000 ≈ 1.06 M samples ≈ 2.1 MB).
+- The pre-roll is copied from the `RingBuffer` when entering EVENT (the 3 s before the start of the onset).
+- On close, the leftover hangover PCM beyond `lastActive + 2 s` is trimmed.
+- A pause (microphone lost) immediately closes the open event with whatever it has.
 
-### 4.5 Capa 3 — Clasificación
+### 4.5 Layer 3 — Classification
 **`YamnetClassifier` (Android):**
 - `AudioClassifier.createFromOptions(context, AudioClassifierOptions.builder().setBaseOptions(BaseOptions.builder().setModelAssetPath("yamnet.tflite").build()).setRunningMode(RunningMode.AUDIO_CLIPS).setMaxResults(10).setScoreThreshold(0.05f).build())`.
-- Por ventana: `AudioData.create(AudioDataFormat.builder().setNumOfChannels(1).setSampleRate(16000f).build(), 15600)`, `load(FloatArray)` (PCM16 / 32768) y `classify(audioData)`.
-- Una única instancia creada al iniciar la sesión y cerrada al final. Corre en un worker de un solo hilo.
+- Per window: `AudioData.create(AudioDataFormat.builder().setNumOfChannels(1).setSampleRate(16000f).build(), 15600)`, `load(FloatArray)` (PCM16 / 32768) and `classify(audioData)`.
+- A single instance, created when the session starts and closed at the end. Runs on a single-threaded worker.
 
-**`Windowing` (puro):** ventanas de 15.600 muestras con salto de 7.800. Si el clip es más corto que una ventana o queda una cola, se rellena con ceros (YAMNet lo tolera). Un clip de 65 s da ~132 ventanas; en un teléfono medio son entre 1 y 3 s de inferencia, que corren fuera del hilo de captura.
+**`Windowing` (pure):** windows of 15,600 samples with a hop of 7,800. If the clip is shorter than one window, or a tail is left over, it is zero-padded (YAMNet tolerates this). A 65 s clip yields ~132 windows; on an average phone that is between 1 and 3 s of inference, which runs off the capture thread.
 
-**`LabelMapper` (puro):** coincidencia exacta con el nombre que devuelve MediaPipe (`category.categoryName()`):
+**`LabelMapper` (pure):** exact match against the name MediaPipe returns (`category.categoryName()`):
 
-| Categoría | Etiquetas |
+| Category | Labels |
 |---|---|
-| RONQUIDO | `Snoring`, `Gasp`, `Breathing` (solo si es periódico, A4) |
+| RONQUIDO | `Snoring`, `Gasp`, `Breathing` (only if periodic, A4) |
 | HABLA | `Speech`, `Conversation`, `Whispering`, `Babbling`, `Narration, monologue`, `Shout`, `Laughter` |
 | TOS | `Cough`, `Sneeze`, `Throat clearing` |
-| FONDO | `Mechanical fan`, `Air conditioning`, `Hum`, `White noise`, `Pink noise`, `Silence`, `Static`, motor sostenido (A3) |
-| OTRO | cualquier otra etiqueta ≥ 0,30 (se guarda el nombre original) |
+| FONDO | `Mechanical fan`, `Air conditioning`, `Hum`, `White noise`, `Pink noise`, `Silence`, `Static`, sustained engine (A3) |
+| OTRO | any other label ≥ 0.30 (the original name is kept) |
 
-**`SnoreHeuristic` (pura)** sobre el PCM del evento:
-1. Envolvente de energía en bloques de 100 ms; suavizado de 3 bloques.
-2. Picos: máximos locales ≥ mediana + 6 dB, con separación mínima de 1,5 s.
-3. Periódico si hay ≥ 3 intervalos entre picos, todos en [2 s, 6 s], con coeficiente de variación < 0,35.
-4. Baja frecuencia: energía < 500 Hz / energía total ≥ 0,6. Se calcula con un filtro paso bajo IIR de 2º orden (biquad, fc = 500 Hz) en lugar de una FFT, para mantenerlo simple.
-5. `isSnoreLike = periódico && bajaFrecuencia`. También se expone `isPeriodic` (sirve para `Breathing`).
+**`SnoreHeuristic` (pure)** on the event's PCM:
+1. Energy envelope in 100 ms blocks; 3-block smoothing.
+2. Peaks: local maxima ≥ median + 6 dB, with a minimum separation of 1.5 s.
+3. Periodic if there are ≥ 3 intervals between peaks, all within [2 s, 6 s], with a coefficient of variation < 0.35.
+4. Low frequency: energy < 500 Hz / total energy ≥ 0.6. Computed with a 2nd-order IIR low-pass filter (biquad, fc = 500 Hz) instead of an FFT, to keep it simple.
+5. `isSnoreLike = periodic && lowFrequency`. `isPeriodic` is also exposed (used for `Breathing`).
 
-**`VotingClassifier` (puro):**
-1. Por ventana, cada etiqueta con score ≥ 0,30 suma su score a su categoría (`Breathing` va a RONQUIDO solo si `isPeriodic`; el motor se resuelve con A3 después de contar ventanas).
-2. Si `isSnoreLike`: `score[RONQUIDO] = score[RONQUIDO] · 1,5 + 0,3 · nVentanas`. Así se refuerza incluso si YAMNet no dijo "Snoring".
-3. Categoría final = argmax. Sin votos → OTRO / `Desconocido` (A5).
-4. `confidence = score[final] / nVentanas`, acotada a [0, 1].
-5. `topLabels` = las 3 etiquetas con mayor score medio entre ventanas → JSON `[{"label":"Snoring","score":0.62},…]`.
-6. Para OTRO, `otherLabel` = la etiqueta de OTRO con más peso.
-7. **El fondo nunca le gana a un sonido real:** si RONQUIDO, HABLA o TOS tienen algún voto, el puntaje de FONDO se anula. FONDO solo puede ganarle a OTRO. *(Cambio tras la prueba en el teléfono, ver §12.)*
-8. Si la final es FONDO → se descarta (no se escribe el WAV, nada en BD; en Diagnóstico y en Inicio se ve como "Ignorado").
+**`VotingClassifier` (pure):**
+1. Per window, each label with score ≥ 0.30 adds its score to its category (`Breathing` goes to RONQUIDO only if `isPeriodic`; the engine labels are resolved with A3 after counting windows).
+2. If `isSnoreLike`: `score[RONQUIDO] = score[RONQUIDO] · 1.5 + 0.3 · nWindows`. This reinforces snoring even if YAMNet did not say "Snoring".
+3. Final category = argmax. No votes → OTRO / `Desconocido` (A5).
+4. `confidence = score[final] / nWindows`, clamped to [0, 1].
+5. `topLabels` = the 3 labels with the highest mean score across windows → JSON `[{"label":"Snoring","score":0.62},…]`.
+6. For OTRO, `otherLabel` = the OTRO label with the most weight.
+7. **Background never beats a real sound:** if RONQUIDO, HABLA or TOS have any vote, the FONDO score is zeroed. FONDO can only beat OTRO. *(Change made after the phone test, see §12.)*
+8. If the final category is FONDO → it is discarded (no WAV is written, nothing goes into the DB; in Diagnostics and on Home it shows as "Ignored").
 
-### 4.6 Episodios — `EpisodeGrouper` (puro)
-`fun group(events: List<EventLite>): List<EpisodeLite>`: ordena por `startedAt` y une un evento al episodio actual si la categoría efectiva es igual y `event.startedAt − episodio.endedAt < 30 s`. En el repositorio, tras insertar, corregir o borrar un evento, se recalculan los episodios de esa sesión dentro de una transacción (borrar episodios + insertar + actualizar `episodeId` de cada evento). Son unas pocas centenas de filas como mucho, así que el coste es despreciable.
+### 4.6 Episodes — `EpisodeGrouper` (pure)
+`fun group(events: List<EventLite>): List<EpisodeLite>`: sorts by `startedAt` and joins an event to the current episode if the effective category is the same and `event.startedAt − episode.endedAt < 30 s`. In the repository, after inserting, correcting or deleting an event, the episodes of that session are recomputed inside a transaction (delete episodes + insert + update each event's `episodeId`). That is a few hundred rows at most, so the cost is negligible.
 
-### 4.7 Grabación completa (opcional) — `AacFullRecorder`
-- `MediaCodec` AAC-LC, 16 kHz, mono, 32 kbps. Se alimenta con los mismos bloques PCM (no se abre otro `AudioRecord`).
-- Cada frame de salida se escribe con una cabecera ADTS de 7 bytes en `full.aac` (A11). Se hace flush cada 10 s.
-- Durante las pausas no hay audio, así que la hora real de un evento no coincide con el offset en el archivo. Se guarda el **offset en ms del archivo** al inicio de cada tramo de captura: `PauseEntity` lo guarda, y para saltar a un evento se calcula `offset = horaEvento − inicioSesión − Σ duración de las pausas anteriores`.
-- Tamaño estimado: 32 kbps × 8 h ≈ 115 MB (mostrarlo en el diálogo antes de activarlo).
+### 4.7 Full recording (optional) — `AacFullRecorder`
+- `MediaCodec` AAC-LC, 16 kHz, mono, 32 kbps. Fed with the same PCM blocks (no second `AudioRecord` is opened).
+- Each output frame is written to `full.aac` with a 7-byte ADTS header (A11). Flushed every 10 s.
+- During pauses there is no audio, so an event's real time does not match its offset in the file. The **file offset in ms** at the start of each capture segment is stored: `PauseEntity` holds it, and to seek to an event the offset is computed as `offset = eventTime − sessionStart − Σ duration of the previous pauses`.
+- Estimated size: 32 kbps × 8 h ≈ 115 MB (shown in the dialog before enabling it).
 
 ---
 
-## 5. Modelo de datos (Room, versión 1, `exportSchema = true`)
+## 5. Data model (Room, version 1, `exportSchema = true`)
 
 ```kotlin
 enum class SessionStatus { EN_CURSO, COMPLETADA, INTERRUMPIDA }
-enum class Category { RONQUIDO, HABLA, TOS, OTRO, FONDO }   // FONDO nunca se persiste
+enum class Category { RONQUIDO, HABLA, TOS, OTRO, FONDO }   // FONDO is never persisted
 
 @Entity("sessions")
 data class SessionEntity(
   @PrimaryKey(autoGenerate = true) val id: Long = 0,
   val startedAt: Long,
-  val endedAt: Long?,                 // null mientras está EN_CURSO
+  val endedAt: Long?,                 // null while EN_CURSO
   val status: SessionStatus,
-  val baselineDbAtStart: Float?,      // se llena al terminar la calibración
-  val lastHeartbeatAt: Long,          // latido cada 30 s (para INTERRUMPIDA)
-  val sensitivityDb: Int,             // umbral usado en esa noche
+  val baselineDbAtStart: Float?,      // filled in when calibration ends
+  val lastHeartbeatAt: Long,          // heartbeat every 30 s (for INTERRUMPIDA)
+  val sensitivityDb: Int,             // threshold used that night
   val fullRecordingPath: String?,
   val isFavorite: Boolean = false,
   val notes: String?
@@ -307,7 +307,7 @@ data class EventEntity(
   val sessionId: Long,
   val episodeId: Long?,
   val category: Category,
-  val otherLabel: String?,            // etiqueta YAMNet original cuando es OTRO
+  val otherLabel: String?,            // original YAMNet label when OTRO
   val startedAt: Long, val endedAt: Long,
   val peakDb: Float,
   val confidence: Float,
@@ -327,19 +327,19 @@ data class EpisodeEntity(
 data class PauseEntity(
   @PrimaryKey(autoGenerate = true) val id: Long = 0,
   val sessionId: Long, val startedAt: Long, val endedAt: Long?,
-  val reason: String                 // "MICROFONO_OCUPADO", "LLAMADA", "ERROR_AUDIO"
+  val reason: String                 // stored values: "MICROFONO_OCUPADO", "LLAMADA", "ERROR_AUDIO", "USUARIO"
 )
 ```
 
-Cambios frente al documento: `lastHeartbeatAt`, `sensitivityDb`, `isFavorite`, `otherLabel` y la tabla `pauses`. Son todos necesarios para cumplir otros requisitos (sesión interrumpida, favoritas, OTRO con etiqueta original, registro de pausas).
+Changes from the requirements document: `lastHeartbeatAt`, `sensitivityDb`, `isFavorite`, `otherLabel` and the `pauses` table. All of them are needed to meet other requirements (interrupted session, favorites, OTRO with its original label, pause log).
 
-**Consultas clave:** `observeSessionsWithSummary()` (Flow con duración y conteos por categoría efectiva: minutos de ronquido = suma de la duración de los episodios RONQUIDO), `observeSessionDetail(id)`, `findOrphanSessions()` (EN_CURSO).
+**Key queries:** `observeSessionsWithSummary()` (Flow with duration and counts per effective category: snoring minutes = sum of the durations of the RONQUIDO episodes), `observeSessionDetail(id)`, `findOrphanSessions()` (EN_CURSO, i.e. in progress).
 
-**Ajustes (DataStore):** `sensitivity` (BAJA/MEDIA/ALTA, por defecto MEDIA), `saveFullRecording` (false), `retention` (SIEMPRE/DIAS_7/DIAS_30, por defecto SIEMPRE), `batteryPromptShown` (false).
+**Settings (DataStore):** `sensitivity` (BAJA/MEDIA/ALTA, i.e. low/medium/high; default MEDIA), `saveFullRecording` (false), `retention` (SIEMPRE/DIAS_7/DIAS_30, i.e. always/7 days/30 days; default SIEMPRE), `batteryPromptShown` (false).
 
-**Archivos (`SessionFileStore`):** `filesDir/sessions/{sessionId}/{eventId}.wav`. El evento se inserta primero para tener el `id`; luego se escribe el WAV a `.tmp` y se renombra (escritura atómica); luego se actualiza `filePath`. Si falla la escritura, se borra la fila. Borrar una sesión borra la carpeta completa y la fila (cascada).
+**Files (`SessionFileStore`):** `filesDir/sessions/{sessionId}/{eventId}.wav`. The event is inserted first to obtain its `id`; then the WAV is written to `.tmp` and renamed (atomic write); then `filePath` is updated. If the write fails, the row is deleted. Deleting a session deletes the whole folder and the row (cascade).
 
-**Retención (`RetentionPolicy`, pura):** dada `now`, la política y la lista `(id, endedAt, isFavorite, status)`, devuelve los ids a borrar. Nunca borra favoritas ni la sesión EN_CURSO.
+**Retention (`RetentionPolicy`, pure):** given `now`, the policy and the list `(id, endedAt, isFavorite, status)`, it returns the ids to delete. It never deletes favorites or the EN_CURSO session.
 
 ---
 
@@ -358,249 +358,256 @@ Cambios frente al documento: `lastHeartbeatAt`, `sensitivityDb`, `isFavorite`, `
          android:exported="false"
          android:foregroundServiceType="microphone"/>
 ```
-Sin permiso `INTERNET`: es una garantía verificable de que nada sale del teléfono.
+No `INTERNET` permission: a verifiable guarantee that nothing leaves the phone.
 
-### 6.2 Inicio (siempre desde la UI en primer plano)
-1. Permisos: `RECORD_AUDIO` (obligatorio) y `POST_NOTIFICATIONS` en 33+ (si se niega, la sesión funciona igual; se avisa).
-2. Primera vez: diálogo explicando la optimización de batería → A16. Se guarda `batteryPromptShown`.
-3. Espacio libre ≥ 500 MB (`StatFs(filesDir)`), si no → A13.
-4. `ContextCompat.startForegroundService()`; en `onStartCommand`: `ServiceCompat.startForeground(id, notif, FOREGROUND_SERVICE_TYPE_MICROPHONE)` **antes** de cualquier otra cosa.
-5. Crea la `SessionEntity` (EN_CURSO), adquiere `PARTIAL_WAKE_LOCK` (`"Murmur:session"`, sin timeout, liberado en `finally`) y arranca `SessionEngine` en un `CoroutineScope(SupervisorJob() + Dispatchers.Default)`.
+### 6.2 Start (always from the foreground UI)
+1. Permissions: `RECORD_AUDIO` (required) and `POST_NOTIFICATIONS` on 33+ (if denied, the session still works; the user is warned).
+2. First time: dialog explaining battery optimization → A16. `batteryPromptShown` is saved.
+3. Free space ≥ 500 MB (`StatFs(filesDir)`), otherwise → A13.
+4. `ContextCompat.startForegroundService()`; in `onStartCommand`: `ServiceCompat.startForeground(id, notif, FOREGROUND_SERVICE_TYPE_MICROPHONE)` **before** anything else.
+5. Creates the `SessionEntity` (EN_CURSO), acquires `PARTIAL_WAKE_LOCK` (`"Murmur:session"`, no timeout, released in `finally`) and starts `SessionEngine` in a `CoroutineScope(SupervisorJob() + Dispatchers.Default)`.
 
-### 6.3 Notificación
-- Canal "Sesión nocturna", importancia LOW (sin sonido).
-- Título "Escuchando la noche", `setUsesChronometer(true)` + `setWhen(startedAt)` para el tiempo transcurrido sin redibujar cada segundo.
-- Texto "N eventos detectados", que se actualiza solo cuando cambia el contador.
-- Acción "Detener" → `PendingIntent` al servicio con `ACTION_STOP`. Toque → abre `MainActivity`.
-- `setOngoing(true)` y `setForegroundServiceBehavior(FOREGROUND_SERVICE_IMMEDIATE)`.
+### 6.3 Notification
+- Channel "Night session", importance LOW (no sound).
+- Title "Listening to the night", `setUsesChronometer(true)` + `setWhen(startedAt)` for the elapsed time without redrawing every second.
+- Text "N events detected", updated only when the counter changes.
+- "Stop" action → `PendingIntent` to the service with `ACTION_STOP`. Tap → opens `MainActivity`.
+- `setOngoing(true)` and `setForegroundServiceBehavior(FOREGROUND_SERVICE_IMMEDIATE)`.
 
-### 6.4 Detener
-`ACTION_STOP` o botón en Inicio → cierra el evento abierto (se clasifica y guarda), vacía la cola de clasificación (espera máximo 10 s), cierra el AAC, marca COMPLETADA con `endedAt`, libera AudioRecord, MediaPipe y wake lock, aplica la retención, `stopForeground` + `stopSelf`.
+### 6.4 Stopping
+`ACTION_STOP` or the button on Home → closes the open event (it is classified and saved), drains the classification queue (waiting at most 10 s), closes the AAC, marks the session COMPLETADA (completed) with `endedAt`, releases AudioRecord, MediaPipe and the wake lock, applies retention, `stopForeground` + `stopSelf`.
 
-### 6.5 Interrupciones (`InterruptionMonitor`)
-- API 29+: `AudioManager.registerAudioRecordingCallback`; si la configuración de nuestra sesión tiene `isClientSilenced == true` → pausa `MICROFONO_OCUPADO`; al volver a `false` → reanudar.
-- Llamadas: sondeo de `AudioManager.mode` cada 2 s (`MODE_IN_CALL`/`MODE_IN_COMMUNICATION` → pausa `LLAMADA`). No requiere `READ_PHONE_STATE`.
-- Errores de `read()` → pausa `ERROR_AUDIO` + reintento (4.1).
-- API 26–28: solo el camino de errores + sondeo de modo (no existe el callback).
-- Al pausar: cerrar el evento abierto, insertar `PauseEntity` y mostrar "En pausa (micrófono ocupado)" en la UI y la notificación. Al reanudar: cerrar la pausa, nueva ancla de tiempo y **no** se recalibra (se mantiene la base).
+### 6.5 Interruptions (`InterruptionMonitor`)
+- API 29+: `AudioManager.registerAudioRecordingCallback`; if our session's configuration has `isClientSilenced == true` → pause `MICROFONO_OCUPADO`; when it goes back to `false` → resume.
+- Calls: poll `AudioManager.mode` every 2 s (`MODE_IN_CALL`/`MODE_IN_COMMUNICATION` → pause `LLAMADA`). Does not require `READ_PHONE_STATE`.
+- `read()` errors → pause `ERROR_AUDIO` + retry (4.1).
+- API 26–28: only the error path + mode polling (the callback does not exist).
+- On pause: close the open event, insert a `PauseEntity` and show "Paused (microphone busy)" in the UI and the notification. On resume: close the pause, create a new time anchor, and **do not** recalibrate (the baseline is kept).
 
-### 6.6 Muerte del proceso
-- Latido: `lastHeartbeatAt = now` cada 30 s y en cada evento guardado.
-- En `MurmurApp.onCreate` (y antes de iniciar una sesión): toda sesión EN_CURSO cuyo servicio no esté vivo (`LiveState.activeSessionId != id`) pasa a INTERRUMPIDA con `endedAt = lastHeartbeatAt`. Los clips ya escritos se conservan. Con ADTS, `full.aac` sigue siendo reproducible.
-- `onStartCommand` devuelve `START_NOT_STICKY` (A10). `onTaskRemoved` no detiene la sesión (deslizar la app en "recientes" no debe matarla).
+### 6.6 Process death
+- Heartbeat: `lastHeartbeatAt = now` every 30 s and on every saved event.
+- In `MurmurApp.onCreate` (and before starting a session): every EN_CURSO session whose service is not alive (`LiveState.activeSessionId != id`) becomes INTERRUMPIDA with `endedAt = lastHeartbeatAt`. Clips already written are kept. With ADTS, `full.aac` remains playable.
+- `onStartCommand` returns `START_NOT_STICKY` (A10). `onTaskRemoved` does not stop the session (swiping the app away in "Recents" must not kill it).
 
-### 6.7 Estado en vivo
-`LiveState` es un singleton en `AppContainer` (mismo proceso, sin binding). Expone un `StateFlow<LiveSnapshot>` con `sessionId, startedAt, phase (CALIBRANDO/ESCUCHANDO/EVENTO/PAUSA), levelDb, baselineDb, thresholdDb, calibrationProgress, countsByCategory, lastTop3`. El nivel se publica a 10 Hz como máximo; la UI hace `collectAsStateWithLifecycle`, así que con la pantalla apagada no cuesta nada.
-
----
-
-## 7. Pantallas (Compose, Navigation Compose, barra inferior Inicio / Historial / Ajustes)
-
-Colores por categoría (en tema oscuro, contraste AA): RONQUIDO ámbar `#FFB74D`, HABLA azul `#64B5F6`, TOS rojo `#E57373`, OTRO gris `#B0BEC5`. Fondo `#0E1116`. Tema oscuro siempre por defecto (sin seguir al sistema, para que no deslumbre de noche).
-
-### 7.1 Inicio
-- Sin sesión: botón grande circular "Comenzar noche"; tarjeta "🔌 Deja el teléfono conectado al cargador"; enlace a la última noche.
-- Con sesión: botón "Detener" (con confirmación); cronómetro; estado ("Midiendo el silencio…" los primeros 5 s, "Escuchando · calibrando 0:42 / 1:00", "Escuchando", "Evento en curso", "En pausa"); medidor de nivel horizontal con la línea base y el umbral marcados; "Base: −52 dBFS · Umbral: −42 dBFS"; **"Fondo detectado: Ventilador · se ignora"** (YAMNet sobre 5 s de audio sin eventos, a los 5 s y al terminar la calibración); cuatro chips con contadores por categoría; tarjeta **"Lo último que se escuchó"** con los 6 clips más recientes (hora + categoría, o "Ignorado (fondo: …)") y el total ignorado como fondo.
-- Mantener la pantalla encendida **no**: se puede apagar.
-
-### 7.2 Historial
-- `LazyColumn` de tarjetas: fecha ("Lun 2 nov · 23:14 → 06:51"), duración, insignia de estado, resumen ("Ronquido 42 min · Habló 3 veces · Tos 5 · Otros 7").
-- Estrella para favorita; borrar desde un menú con `AlertDialog` de confirmación.
-- Estado vacío: "Aún no hay noches registradas".
-
-### 7.3 Detalle de la noche
-- **Línea de tiempo** (`Canvas`): eje de la hora de inicio a la de fin, marcas de color por episodio (ancho proporcional, mínimo 3 dp), franjas grises para las pausas, marcas horarias cada hora. Al tocar una marca se hace scroll al episodio y se expande.
-- **Resumen numérico**: mismos datos que en el historial, más la base inicial y la sensibilidad usada.
-- **Episodios**: tarjeta expandible (categoría, hora, duración, n.º de clips). Al expandirla se ven los eventos: hora, duración, pico dB, confianza, top-3 (texto pequeño), reproductor, menú "Cambiar categoría" (RONQUIDO/HABLA/TOS/OTRO) y "Borrar" (con confirmación).
-- **Reproductor**: un único `ExoPlayer` en el ViewModel (liberado en `onCleared`); el clip activo muestra play/pausa y un `Slider` de progreso. Al reproducir otro clip se detiene el anterior.
-- **Grabación completa** (si existe): reproductor arriba; cada evento tiene "Ir a esta hora en la grabación completa" (offset según 4.7).
-
-### 7.4 Ajustes
-- Sensibilidad: segmented button Baja / Media / Alta (con "14 / 10 / 7 dB" debajo). Se aplica a la siguiente sesión.
-- "Guardar grabación completa de la noche": switch; al activarlo, diálogo "Ocupa ~115 MB por cada 8 horas".
-- Retención: Siempre / 7 días / 30 días, con la nota "Las favoritas nunca se borran".
-- Almacenamiento: "La app ocupa 312 MB · Libre en el teléfono 21 GB"; botón "Borrar todo" (doble confirmación; deshabilitado durante una sesión).
-- Entrada a "Diagnóstico".
-- Versión de la app y "Todo se procesa en tu teléfono. Nada sale del dispositivo."
-
-### 7.5 Diagnóstico
-- En vivo (si hay sesión): nivel dBFS, base, umbral, estado del detector, top-3 de la última ventana clasificada (incluye los eventos descartados como FONDO, con la marca "descartado").
-- "Probar 10 segundos" (sin sesión): pide el permiso si hace falta, graba 10 s en el ViewModel (`AudioCapture` directo, en primer plano), clasifica con ventanas al 50 %, y muestra el nivel medio, la categoría resultante, `isSnoreLike` y la lista de etiquetas con su score medio. No guarda nada.
+### 6.7 Live state
+`LiveState` is a singleton in `AppContainer` (same process, no binding). It exposes a `StateFlow<LiveSnapshot>` with `sessionId, startedAt, phase (CALIBRATING/LISTENING/EVENT/PAUSED), levelDb, baselineDb, thresholdDb, calibrationProgress, countsByCategory, lastTop3`. The level is published at 10 Hz at most; the UI uses `collectAsStateWithLifecycle`, so with the screen off it costs nothing.
 
 ---
 
-## 8. Estrategia de pruebas
+## 7. Screens (Compose, Navigation Compose, bottom bar Home / History / Settings)
 
-### 8.1 Tests JVM (`app/src/test`, JUnit 4), con un generador de señales sintéticas en `test/…/SignalGen.kt`
-| Clase | Casos |
+Per-category colors (on the dark theme, AA contrast): RONQUIDO amber `#FFB74D`, HABLA blue `#64B5F6`, TOS red `#E57373`, OTRO gray `#B0BEC5`. Background `#0E1116`. Dark theme always on by default (it does not follow the system, so it does not dazzle at night).
+
+### 7.1 Home
+- No session: large round "Start night" button; card "🔌 Keep the phone plugged into the charger"; link to the last night.
+- With a session: "Stop" button (with confirmation); stopwatch; status ("Measuring the silence…" for the first 5 s, "Listening · calibrating 0:42 / 1:00", "Listening", "Sound in progress", "Paused"); horizontal level meter with the baseline and the threshold marked; "Baseline: −52 dBFS · Threshold: −42 dBFS"; **"Background detected: Fan · ignored"** (YAMNet on 5 s of event-free audio, at 5 s and when calibration ends); four chips with per-category counters; **"Recently heard"** card with the 6 most recent clips (time + category, or "Ignored · background (…)") and the total ignored as background.
+- Keep the screen on: **no**; it can be turned off.
+
+### 7.2 History
+- `LazyColumn` of cards: date ("Mon, Nov 2 · 23:14 → 06:51"), duration, status badge, summary ("Snoring 42 min · Talked 3 times · Cough 5 · Other 7").
+- Star to mark as favorite; delete from a menu with a confirmation `AlertDialog`.
+- Empty state: "No nights recorded yet".
+
+### 7.3 Night detail
+- **Timeline** (`Canvas`): axis from the start time to the end time, colored marks per episode (proportional width, minimum 3 dp), gray bands for pauses, hour ticks every hour. Tapping a mark scrolls to the episode and expands it.
+- **Numeric summary**: the same data as in History, plus the initial baseline and the sensitivity used.
+- **Episodes**: expandable card (category, time, duration, number of clips). When expanded, it shows the events: time, duration, peak dB, confidence, top-3 (small text), player, "Change category" menu (RONQUIDO/HABLA/TOS/OTRO) and "Delete" (with confirmation).
+- **Player**: a single `ExoPlayer` in the ViewModel (released in `onCleared`); the active clip shows play/pause and a progress `Slider`. Playing another clip stops the previous one.
+- **Full recording** (if it exists): player at the top; each event has "Go to this time in the full recording" (offset as per 4.7).
+
+### 7.4 Settings
+- Sensitivity: segmented button Low / Medium / High (with "14 / 10 / 7 dB" below). Applies to the next session.
+- "Save the full night recording": switch; when turned on, a dialog says "Takes ~115 MB per 8 hours".
+- Retention: Forever / 7 days / 30 days, with the note "Favorites are never deleted".
+- Storage: "The app uses 312 MB · Free on the phone 21 GB"; "Delete everything" button (double confirmation; disabled during a session).
+- Entry to "Diagnostics".
+- App version and "Everything is processed on the phone. Nothing leaves the device."
+
+### 7.5 Diagnostics
+- Live (if there is a session): dBFS level, baseline, threshold, detector state, top-3 of the last classified window (includes the events discarded as FONDO, marked "discarded").
+- "Test for 10 seconds" (without a session): requests the permission if needed, records 10 s in the ViewModel (`AudioCapture` directly, in the foreground), classifies with 50%-overlapping windows, and shows the mean level, the resulting category, `isSnoreLike` and the list of labels with their mean score. Saves nothing.
+
+---
+
+## 8. Testing strategy
+
+### 8.1 JVM tests (`app/src/test`, JUnit 4), with a synthetic signal generator in `test/…/SignalGen.kt`
+| Class | Cases |
 |---|---|
-| `Pcm` | ceros → −100 dB; seno de escala completa → ≈ −3 dBFS |
-| `RingBuffer` | escritura con vuelta, lectura de los últimos N ms |
-| `WavWriter` | cabecera de 44 bytes correcta y tamaños |
-| `BaselineTracker` | calibra a p20; un pico de 1 s no mueve la base; un escalón de +15 dB sostenido es absorbido en ~4 min; los bloques de evento no la actualizan |
-| `EventDetector` | 200 ms de ruido no disparan; 300 ms sí; hangover de 2,4 s mantiene un solo evento y 2,6 s lo parte en dos; corte a 60 s; pre-roll de 3 s y post-roll de 2 s exactos; pausa cierra el evento |
-| `Windowing` | número de ventanas, solapamiento y relleno |
-| `LabelMapper` / `VotingClassifier` | mapeo de todas las etiquetas; votación ponderada; umbral 0,30; motor sostenido vs. puntual; sin votos → OTRO/Desconocido; FONDO; top-3 |
-| `SnoreHeuristic` | pulsos de ruido filtrado a 150 Hz cada 3,5 s → snore-like; voz sintética aperiódica → no; pulsos cada 1 s → no |
-| `EpisodeGrouper` | huecos de 29 s / 31 s; categoría intercalada rompe; `userCategory` manda |
-| `RetentionPolicy` | 7/30 días, favoritas, EN_CURSO |
+| `Pcm` | zeros → −100 dB; full-scale sine → ≈ −3 dBFS |
+| `RingBuffer` | write with wrap-around, read of the last N ms |
+| `WavWriter` | correct 44-byte header and sizes |
+| `BaselineTracker` | calibrates to p20; a 1 s spike does not move the baseline; a sustained +15 dB step is absorbed in ~4 min; event blocks do not update it |
+| `EventDetector` | 200 ms of noise does not trigger; 300 ms does; a 2.4 s hangover keeps a single event and 2.6 s splits it in two; cut at 60 s; exact 3 s pre-roll and 2 s post-roll; a pause closes the event |
+| `Windowing` | number of windows, overlap and padding |
+| `LabelMapper` / `VotingClassifier` | mapping of all labels; weighted voting; 0.30 threshold; sustained vs. one-off engine; no votes → OTRO/Desconocido; FONDO; top-3 |
+| `SnoreHeuristic` | noise pulses filtered at 150 Hz every 3.5 s → snore-like; aperiodic synthetic voice → not; pulses every 1 s → not |
+| `EpisodeGrouper` | gaps of 29 s / 31 s; an interleaved category breaks the episode; `userCategory` takes precedence |
+| `RetentionPolicy` | 7/30 days, favorites, EN_CURSO |
 
-### 8.2 Tests instrumentados (mínimos)
-- DAO de Room: cascada al borrar sesión, resumen por categoría.
-- `YamnetClassifier`: carga del modelo desde assets y clasificación de 1 s de ceros (sin crash, devuelve resultados).
+### 8.2 Instrumented tests (minimal)
+- Room DAO: cascade on session deletion, per-category summary.
+- `YamnetClassifier`: loading the model from assets and classifying 1 s of zeros (no crash, returns results).
 
-### 8.3 Validación manual del MVP (checklist del README)
-1. Diagnóstico → "Probar 10 s" hablando, tosiendo, con el ventilador encendido.
-2. Sesión de 15 min con el ventilador encendido todo el tiempo → 0 eventos FONDO guardados.
-3. Encender el ventilador a mitad de la sesión → la base sube y no hay una avalancha de eventos.
-4. Durante la sesión, abrir la grabadora de voz o recibir una llamada → pausa registrada y reanudación automática.
-5. Forzar la detención desde Ajustes del sistema → al reabrir, la sesión aparece INTERRUMPIDA con la hora del último latido.
-6. Noche real completa de 8 h con "Guardar grabación completa": batería consumida, memoria estable (sin crecimiento) y comparación de los eventos detectados con la grabación.
-7. Probar en al menos un Samsung o Xiaomi con la optimización de batería por defecto.
-
----
-
-## 9. Fases de implementación (orden recomendado)
-
-Cada fase deja la app compilando.
-
-> Estado (2026-11-03): código de F0–F8 escrito. `assembleDebug`, `test` (71 tests JVM en verde), `compileDebugAndroidTestKotlin` y `lintDebug` pasan (compilado con JDK 21 + SDK de Android dentro de Docker). Falta ejecutarlo en un teléfono: tests instrumentados y checklist §8.3. Ver README, sección "Estado".
-
-- [x] **F0 — Esqueleto**: proyecto Gradle (KTS, version catalog, wrapper 9.8.2), `app` con Compose + tema oscuro + navegación con 3 pestañas vacías, `AppContainer`, `yamnet.tflite` en assets, README inicial.
-- [x] **F1 — Núcleo puro + tests**: `core/audio`, `core/detection`, `core/classification`, `core/episodes`, `RetentionPolicy`, con todos los tests de 8.1 en verde.
-- [x] **F2 — Datos**: entidades, DAOs, `AppDatabase`, `SettingsRepository`, `SessionFileStore`, `NightRepository` (incluye reagrupar episodios y borrado de sesión con archivos).
-- [x] **F3 — Audio Android**: `AudioCapture`, `YamnetClassifier`, `InterruptionMonitor`, `AacFullRecorder`.
-- [x] **F4 — Servicio**: `NightSessionService`, `SessionEngine`, `LiveState`, notificación, wake lock, latido, sesiones huérfanas.
-- [x] **F5 — Inicio + permisos**: flujo completo de comenzar y detener, batería, espacio libre, UI en vivo.
-- [x] **F6 — Historial + Detalle**: lista, favoritas, borrar, línea de tiempo, episodios, reproductor, corrección de categoría, grabación completa.
-- [x] **F7 — Ajustes + Diagnóstico**: todas las opciones, almacenamiento, borrar todo, prueba de 10 s.
-- [x] **F8 — Endurecimiento**: retención automática, revisión de fugas (wake lock, AudioRecord, ExoPlayer, MediaPipe), README final con decisiones y checklist de validación.
+### 8.3 Manual MVP validation (README checklist)
+1. Diagnostics → "Test for 10 s" while talking, coughing, and with the fan on.
+2. 15-minute session with the fan on the whole time → 0 FONDO events saved.
+3. Turn the fan on in the middle of the session → the baseline rises and there is no avalanche of events.
+4. During the session, open the voice recorder or receive a call → pause recorded and automatic resume.
+5. Force stop from the system Settings → on reopening, the session shows as INTERRUMPIDA with the time of the last heartbeat.
+6. A full real 8-hour night with "Save the full night recording": battery consumed, stable memory (no growth) and comparison of the detected events against the recording.
+7. Test on at least one Samsung or Xiaomi with the default battery optimization.
 
 ---
 
-## 10. Criterios de aceptación del MVP
+## 9. Implementation phases (recommended order)
 
-1. Una sesión de 8 h con el cargador conectado termina COMPLETADA, sin crash y con memoria estable.
-2. Con un ventilador constante, la app no guarda eventos de ventilador.
-3. Ronquidos continuos aparecen como uno o pocos episodios, no como cientos de filas.
-4. Cada evento tiene un WAV reproducible con 3 s de pre-roll y 2 s de post-roll.
-5. Si se mata el proceso, la sesión queda INTERRUMPIDA con la hora del último dato.
-6. Una llamada o el micrófono ocupado generan una pausa visible y la captura se reanuda sola.
-7. Borrar una sesión elimina sus archivos; la retención respeta las favoritas.
-8. El APK no declara `INTERNET`.
-9. `./gradlew test` en verde.
+Each phase leaves the app compiling.
+
+> Status (2026-11-03): code for F0–F8 written. `assembleDebug`, `test` (71 JVM tests green), `compileDebugAndroidTestKotlin` and `lintDebug` pass (built with JDK 21 + the Android SDK inside Docker). It still has to be run on a phone: instrumented tests and the §8.3 checklist. See the README, "Status" section.
+
+- [x] **F0 — Skeleton**: Gradle project (KTS, version catalog, wrapper 9.8.2), `app` with Compose + dark theme + navigation with 3 empty tabs, `AppContainer`, `yamnet.tflite` in assets, initial README.
+- [x] **F1 — Pure core + tests**: `core/audio`, `core/detection`, `core/classification`, `core/episodes`, `RetentionPolicy`, with all the tests in 8.1 green.
+- [x] **F2 — Data**: entities, DAOs, `AppDatabase`, `SettingsRepository`, `SessionFileStore`, `NightRepository` (includes episode regrouping and session deletion with its files).
+- [x] **F3 — Android audio**: `AudioCapture`, `YamnetClassifier`, `InterruptionMonitor`, `AacFullRecorder`.
+- [x] **F4 — Service**: `NightSessionService`, `SessionEngine`, `LiveState`, notification, wake lock, heartbeat, orphaned sessions.
+- [x] **F5 — Home + permissions**: full start and stop flow, battery, free space, live UI.
+- [x] **F6 — History + Detail**: list, favorites, delete, timeline, episodes, player, category correction, full recording.
+- [x] **F7 — Settings + Diagnostics**: all options, storage, delete everything, 10 s test.
+- [x] **F8 — Hardening**: automatic retention, leak review (wake lock, AudioRecord, ExoPlayer, MediaPipe), final README with decisions and validation checklist.
 
 ---
 
-## 11. Fuera de alcance (explícitamente)
-iOS, backend, sincronización, cuentas, exportar o compartir clips, widgets, estadísticas de varias noches, alarma inteligente, entrenamiento de modelos propios, idiomas distintos del español.
+## 10. MVP acceptance criteria
+
+1. An 8-hour session with the charger connected ends COMPLETADA, with no crash and with stable memory.
+2. With a constant fan, the app does not save fan events.
+3. Continuous snoring shows up as one or a few episodes, not as hundreds of rows.
+4. Every event has a playable WAV with 3 s of pre-roll and 2 s of post-roll.
+5. If the process is killed, the session is left INTERRUMPIDA with the time of the last data.
+6. A call or a busy microphone produces a visible pause, and capture resumes by itself.
+7. Deleting a session removes its files; retention respects favorites.
+8. The APK does not declare `INTERNET`.
+9. `./gradlew test` is green.
 
 ---
 
-## 12. Fase 2 — Validación en teléfono y siguientes pasos
+## 11. Out of scope (explicitly)
+iOS, backend, sync, accounts, exporting or sharing clips, widgets, multi-night statistics, smart alarm, training custom models, languages other than Spanish.
 
-### 12.1 Bitácora de la primera prueba en un teléfono (2026-11-03)
-| # | Lo que se vio | Causa | Corrección | Estado |
+---
+
+## 12. Phase 2 — Phone validation and next steps
+
+### 12.1 Log of the first test on a phone (2026-11-03)
+| # | What was seen | Cause | Fix | Status |
 |---|---|---|---|---|
-| B1 | Sesión de ~1 min hablando y tosiendo: "0 eventos". | La calibración de 60 s bloqueaba la detección: todo el minuto caía dentro de ella. | Base provisional desde los 5 s; los bloques de evento no alimentan la calibración (§4.3). | Corregido, con tests `detectsEventsWhileStillCalibrating` y `SessionSimulationTest` |
-| B2 | Toses y ronquidos se habrían borrado igual pasado el minuto. | Votación: "Silence"/ventilador aparece en todas las ventanas del clip (pre/post-roll) y la tos en 1–2; sumando ventanas ganaba FONDO y el evento se descartaba. Comprobado con YAMNet real (mismo `.tflite`) sobre clips de ESC-50: **6 de 6** toses/ronquidos en cuarto silencioso salían FONDO. | El fondo nunca le gana a RONQUIDO/HABLA/TOS (§4.5 paso 7). Con la regla nueva, 15 de 15 clips salen bien. | Corregido, con tests `shortCoughAmongSilenceIsCough`, `speechOverFanIsSpeech` |
-| B3 | Durante la noche no se ve qué está oyendo la app (el Diagnóstico sí lo mostraba). | Inicio solo mostraba contadores. | "Fondo detectado" + "Lo último que se escuchó" + total ignorado (§7.1). | Hecho |
-| **B4** | **Sesión de 2 min (pasada la calibración): sigue sin mostrar nada. Causa principal del "0 eventos".** | `SessionFileStore.writeWav` cerraba el archivo y **después** llamaba a `fd.sync()`, que sobre un archivo cerrado lanza `SyncFailedException` siempre. El repositorio lo tomaba como fallo de escritura, borraba la fila y seguía **sin avisar**: ningún evento se guardó jamás. Reproducido en la JVM con el mismo orden de llamadas. | Orden correcto flush → sync → close en `WavWriter.writeFileAtomic` (núcleo puro, con test `atomicWriteSucceedsAndLeavesNoTmp`). Además, todo fallo de guardado se muestra ahora en Inicio en rojo ("NO SE GUARDÓ" + contador de errores) en lugar de perderse en el log. | Corregido |
-| **B5** | **Prueba de 3 min (14:21–14:25) tras "corregir" B1–B4: "Sin eventos · 0 clips"; base −47 dBFS.** | Cada compilación se hizo en un contenedor nuevo, y la clave de firma de depuración (`~/.android/debug.keystore`) no se guardaba: **cada APK salía firmado con una clave distinta**. Android no instala una actualización firmada con otra clave encima de la app existente, así que lo más probable es que el teléfono siguiera con la **primera** versión, que tenía B1–B4. Además todas decían "0.1.0": no había forma de saber cuál estaba instalada. | Clave de depuración fija dentro del proyecto (`app/debug.keystore`, credenciales estándar `android`/`androiddebugkey`). Versión **0.2.0** (versionCode 2) visible en Inicio y en Ajustes; se sube en cada APK que se entrega. **Hay que desinstalar la app una vez** para pasar a la clave nueva. | Corregido |
-| B6 | No había forma de probar la sesión completa sin un teléfono. | `SessionEngine` creaba el micrófono y YAMNet por dentro. | Se inyectan (`AudioSource`, `WindowClassifier`) y `SessionEngineTest` (Robolectric) corre la sesión real — motor → detector → clasificador → Room → WAV — con audio grabado: 2,5 min a −47 dBFS con habla en la calibración, habla, tos y ronquidos ⇒ 5 eventos con su WAV, 0 errores. Corre en el contenedor de compilación (Docker, máx. 3 GB / 2 CPU). | Hecho |
-| B7 | La primera corrida de `SessionEngineTest` guardó 4 de 5 sonidos. | La cola de clasificación tenía capacidad 4 y descartaba (`trySend`) si se llenaba: una ráfaga de eventos (ronquidos seguidos, clips largos) podía perder eventos. | Capacidad 16 (≈ 32 MB en el peor caso). El test ahora guarda 5 de 5. | Corregido |
-| — | Diagnóstico "Probar 10 s" reconoce bien tos, ronquido, habla y ventilador. | — | Confirma que captura + YAMNet funcionan en el teléfono. | OK |
+| B1 | ~1 min session talking and coughing: "0 events". | The 60 s calibration blocked detection: the whole minute fell inside it. | Provisional baseline from 5 s on; event blocks do not feed the calibration (§4.3). | Fixed, with tests `detectsEventsWhileStillCalibrating` and `SessionSimulationTest` |
+| B2 | Coughs and snores would have been deleted anyway after the first minute. | Voting: "Silence"/fan appears in every window of the clip (pre/post-roll) and the cough in only 1–2; summing over windows, FONDO won and the event was discarded. Verified with real YAMNet (same `.tflite`) on ESC-50 clips: **6 of 6** coughs/snores in a quiet room came out as FONDO. | Background never beats RONQUIDO/HABLA/TOS (§4.5 step 7). With the new rule, 15 of 15 clips come out right. | Fixed, with tests `shortCoughAmongSilenceIsCough`, `speechOverFanIsSpeech` |
+| B3 | During the night there is no way to see what the app is hearing (Diagnostics did show it). | Home only showed counters. | "Background detected" + "Recently heard" + total ignored (§7.1). | Done |
+| **B4** | **2 min session (past calibration): still shows nothing. Main cause of the "0 events".** | `SessionFileStore.writeWav` closed the file and **then** called `fd.sync()`, which always throws `SyncFailedException` on a closed file. The repository treated this as a write failure, deleted the row and carried on **without any warning**: no event was ever saved. Reproduced on the JVM with the same call order. | Correct order flush → sync → close in `WavWriter.writeFileAtomic` (pure core, with test `atomicWriteSucceedsAndLeavesNoTmp`). In addition, every save failure is now shown on Home in red ("NOT SAVED" + error counter) instead of getting lost in the log. | Fixed |
+| **B5** | **3 min test (14:21–14:25) after "fixing" B1–B4: "No events · 0 clips"; baseline −47 dBFS.** | Each build ran in a new container, and the debug signing key (`~/.android/debug.keystore`) was not persisted: **each APK was signed with a different key**. Android does not install an update signed with a different key over the existing app, so most likely the phone was still running the **first** version, which had B1–B4. On top of that, they all said "0.1.0": there was no way to tell which one was installed. | A fixed debug key kept inside the project (`app/debug.keystore`, standard credentials `android`/`androiddebugkey`). Version **0.2.0** (versionCode 2) visible on Home and in Settings; bumped with every APK delivered. **The app has to be uninstalled once** to switch to the new key. | Fixed |
+| B6 | There was no way to test the full session without a phone. | `SessionEngine` created the microphone and YAMNet internally. | They are now injected (`AudioSource`, `WindowClassifier`), and `SessionEngineTest` (Robolectric) runs the real session — engine → detector → classifier → Room → WAV — with recorded audio: 2.5 min at −47 dBFS with talking during calibration, talking, coughing and snoring ⇒ 5 events with their WAVs, 0 errors. Runs in the build container (Docker, max. 3 GB / 2 CPU). | Done |
+| B7 | The first run of `SessionEngineTest` saved 4 of 5 sounds. | The classification queue had capacity 4 and dropped events (`trySend`) when full: a burst of events (consecutive snores, long clips) could lose events. | Capacity 16 (≈ 32 MB in the worst case). The test now saves 5 of 5. | Fixed |
+| — | Diagnostics "Test for 10 s" correctly recognizes cough, snoring, talking and fan. | — | Confirms that capture + YAMNet work on the phone. | OK |
 
-### 12.2 Cómo probar ahora en el teléfono (prueba corta, 3 min)
-1. **Esta vez, desinstalar NocheSonora primero** (mantener presionado el ícono → Desinstalar) y luego instalar el APK nuevo. Abrir la app: abajo en Inicio debe decir **"Versión 0.2.0"**. Si dice otra cosa, el APK nuevo no se instaló. Desde ahora las actualizaciones se instalan encima sin desinstalar.
-2. Ventilador encendido. "Comenzar noche" y dejar el teléfono quieto 10 s: debe aparecer "Fondo detectado: …".
-3. Hablar 3–4 s, esperar 5 s, toser 2–3 veces, esperar 5 s, roncar/imitar ronquido 10 s.
-4. Cada sonido debe aparecer en "Lo último que se escuchó" unos 3–5 s después de terminar (el hangover es 2,5 s), y sumar en los contadores. Si aparece algo en rojo ("NO SE GUARDÓ" o "Errores"), anotar el texto exacto.
-5. Detener y abrir la noche en Historial: deben estar los clips y poder escucharse.
+### 12.2 How to test on the phone now (short test, 3 min)
+1. **This time, uninstall NocheSonora first** (long-press the icon → Uninstall) and then install the new APK. Open the app: at the bottom of Home it should say **"Version 0.2.0"**. If it says anything else, the new APK was not installed. From now on, updates install over the existing app without uninstalling.
+2. Fan on. Tap "Start night" and leave the phone still for 10 s: "Background detected: …" should appear.
+3. Talk for 3–4 s, wait 5 s, cough 2–3 times, wait 5 s, snore/imitate snoring for 10 s.
+4. Each sound should appear in "Recently heard" about 3–5 s after it ends (the hangover is 2.5 s), and add to the counters. If anything appears in red ("NOT SAVED" or "Errors"), write down the exact text.
+5. Stop and open the night in History: the clips should be there and playable.
 
-### 12.3 Cómo se compila y valida (sin instalar nada en el equipo)
-Todo corre en contenedores Docker que se borran al terminar (`--rm`), con recursos acotados:
-- **Compilación + tests** (`eclipse-temurin:21-jdk`, máx. **3 GB RAM / 2 CPU**): `testDebugUnitTest assembleDebug`. Volúmenes persistentes: SDK de Android, caché de Gradle, caché de Maven de Robolectric y copia de trabajo (`nochesonora-android-sdk`, `nochesonora-gradle-home`, `nochesonora-m2`, `nochesonora-work`). Robolectric baja su `android-all` (~150 MB) de Maven Central; si responde 429 (límite de descargas), usar el espejo de Google con `-e JAVA_TOOL_OPTIONS=-Drobolectric.dependency.repo.url=https://maven-central.storage-download.googleapis.com/maven2`.
-- **Capturas de pantalla sin teléfono:** `-e NS_SCREENSHOTS=1` y `testDebugUnitTest --tests com.nochesonora.ui.ScreenshotTest` → PNG en `app/build/screenshots` (Inicio en vivo y en reposo, detalle de la noche, historial, medidor y onda). Limitación: capturan el primer cuadro, así que el medidor en vivo y la onda del clip (que se llenan después) se revisan aparte en `5_componentes.png`.
-- **Si una prueba en el teléfono vuelve a fallar sin explicación:** contenedor mínimo con `adb` (Alpine + android-tools, ~15 MB, 256 MB RAM) conectado al teléfono por **depuración inalámbrica** (Opciones de desarrollador → Depuración inalámbrica → Vincular con código). Permite leer el log real de la app (`adb logcat`) e instalar el APK directo, sin cable ni instalar nada en Windows.
+### 12.3 How it is built and validated (without installing anything on the machine)
+Everything runs in Docker containers that are removed when they finish (`--rm`), with bounded resources:
+- **Build + tests** (`eclipse-temurin:21-jdk`, max. **3 GB RAM / 2 CPU**): `testDebugUnitTest assembleDebug`. Persistent volumes: Android SDK, Gradle cache, Robolectric's Maven cache and the working copy (`nochesonora-android-sdk`, `nochesonora-gradle-home`, `nochesonora-m2`, `nochesonora-work`). Robolectric downloads its `android-all` (~150 MB) from Maven Central; if it responds with 429 (download limit), use Google's mirror with `-e JAVA_TOOL_OPTIONS=-Drobolectric.dependency.repo.url=https://maven-central.storage-download.googleapis.com/maven2`.
+- **Screenshots without a phone:** `-e NS_SCREENSHOTS=1` and `testDebugUnitTest --tests com.nochesonora.ui.ScreenshotTest` → PNGs in `app/build/screenshots` (Home live and idle, night detail, history, meter and waveform). Limitation: they capture the first frame, so the live meter and the clip waveform (which fill in later) are checked separately in `5_componentes.png`.
+- **If a test on the phone fails again with no explanation:** a minimal container with `adb` (Alpine + android-tools, ~15 MB, 256 MB RAM) connected to the phone over **wireless debugging** (Developer options → Wireless debugging → Pair device with pairing code). This makes it possible to read the app's real log (`adb logcat`) and install the APK directly, with no cable and without installing anything on Windows.
 
-### 12.4 Siguientes pasos (en orden)
-- [x] **P1 — Repetir la prueba con el APK corregido (0.2.0).** Primera noche real el 2026-11-03: 23:31 → 03:04 (3 h 33 min, detenida a mano), estado COMPLETADA (sin muerte del proceso), base −52 dBFS, sensibilidad 10 dB, **17 clips**: Habló 8 veces, Otros 9, sin ronquidos ni tos. La mayoría de los eventos entre 23:31 y 23:41 (al acostarse); después, sueltos hacia 00:00, 01:15, 02:00, 02:25 y 02:40. **Pendiente: saber si se perdió algo** (P2). Detalle visto: episodios cortos se muestran como "0 s"; deberían decir "< 1 s".
-- [ ] **P2 — Prueba de 1 hora** con ventilador y la grabación completa activada: comparar los eventos contra el audio completo (¿se perdió algo?, ¿cuántos "Ignorado" hubo y eran fondo de verdad?).
-- [ ] **P3 — Ajustar sensibilidad con datos**: si se pierden sonidos suaves (habla en susurro), probar Alta (7 dB); si hay demasiado OTRO, revisar qué etiquetas YAMNet lo causan (top-3 guardado en cada evento).
-- [ ] **P4 — Noche completa (8 h)** con cargador: batería, memoria estable, sin muerte del proceso. Repetir en un Samsung o Xiaomi.
-- [ ] **P5 — Tests instrumentados** (`connectedAndroidTest`) con el teléfono conectado por USB.
-- [ ] **P6 — APK más liviano** (opcional): hoy pesa ~125 MB porque incluye MediaPipe para 3 arquitecturas; un APK solo `arm64-v8a` en release bajaría mucho.
-- [x] **P7 — Nuevo diseño (0.3.0).** Se eligió la dirección A del prototipo (§12.5). Falta verlo en el teléfono.
+### 12.4 Next steps (in order)
+- [x] **P1 — Repeat the test with the fixed APK (0.2.0).** First real night on 2026-11-03: 23:31 → 03:04 (3 h 33 min, stopped manually), status COMPLETADA (no process death), baseline −52 dBFS, sensitivity 10 dB, **17 clips**: Talked 8 times, Other 9, no snoring or coughing. Most of the events between 23:31 and 23:41 (while going to bed); after that, isolated ones around 00:00, 01:15, 02:00, 02:25 and 02:40. **Pending: find out whether anything was missed** (P2). Detail noticed: short episodes are shown as "0 s"; they should say "< 1 s".
+- [ ] **P2 — 1-hour test** with the fan on and full recording enabled: compare the events against the full audio (was anything missed? how many "Ignored" were there, and were they really background?).
+- [ ] **P3 — Tune sensitivity with data**: if soft sounds are missed (whispered talking), try High (7 dB); if there is too much OTRO, check which YAMNet labels cause it (top-3 stored on every event).
+- [ ] **P4 — Full night (8 h)** on the charger: battery, stable memory, no process death. Repeat on a Samsung or Xiaomi.
+- [ ] **P5 — Instrumented tests** (`connectedAndroidTest`) with the phone connected over USB.
+- [ ] **P6 — Lighter APK** (optional): it currently weighs ~125 MB because it includes MediaPipe for 3 architectures; a release APK with only `arm64-v8a` would be much smaller.
+- [x] **P7 — New design (0.3.0).** Direction A of the prototype was chosen (§12.5). Still needs to be checked on the phone.
 
-### 12.5 Diseño "Murmur · Instrumento" (0.3.0, 2026-11-04)
-Prototipo de 3 direcciones en Claude (A Murmur, B Hush, C Nocturne); se eligió **A**. Solo cambia la interfaz: detección, clasificación y datos son los mismos.
-- **Tema** (`ui/theme`): fondo `#0A0F1C`, superficies `#111829` con borde `#1E2940`, acento `#7CC4FF`; categorías ronquido `#F2B44B`, habla `#7CC4FF`, tos `#FF8A80`, otro `#9AA6B8`. Textos en Inter Tight; horas, dB y cifras en JetBrains Mono (fuentes variables en `res/font`, licencia OFL, sin red).
-- **Inicio en vivo:** reloj de sesión grande `01:12:40`, "Escuchando · desde las 23:31", tarjeta "Nivel en vivo" con medidor de barras (las que pasan el umbral en azul, umbral punteado) y `base / umbral / fondo`, 4 casillas por categoría, "Lo último que se escuchó" con hora en mono, botón Detener abajo.
-- **Inicio en reposo:** hora actual, consejos "Antes de dormir", tarjeta de la última noche con casillas, botón "Comenzar noche".
-- **Detalle de la noche:** botones cuadrados volver/favorita (estrella), casillas (duración + categorías con algo), línea de tiempo con barras por episodio y horas debajo, episodios en tarjetas; al abrir: reproductor con la **onda real del WAV** (tocar para saltar), pico/confianza/top-3, "Cambiar categoría" y "Borrar".
-- **Historial, Ajustes, Diagnóstico y barra inferior** con el mismo estilo.
-- Episodios cortos ahora dicen "< 1 s" (antes "0 s").
-- El nombre de la app pasó a ser Murmur en 0.3.1 (ver §12.6).
+### 12.5 "Murmur · Instrument" design (0.3.0, 2026-11-04)
+A prototype of 3 directions in Claude (A Murmur, B Hush, C Nocturne); **A** was chosen. Only the interface changes: detection, classification and data stay the same.
+- **Theme** (`ui/theme`): background `#0A0F1C`, surfaces `#111829` with border `#1E2940`, accent `#7CC4FF`; categories: snoring `#F2B44B`, talking `#7CC4FF`, cough `#FF8A80`, other `#9AA6B8`. Text in Inter Tight; times, dB values and figures in JetBrains Mono (variable fonts in `res/font`, OFL license, no network).
+- **Home, live:** large session clock `01:12:40`, "Listening · since 23:31", "Live level" card with a bar meter (bars above the threshold in blue, dotted threshold) and `base / threshold / bg`, 4 per-category tiles, "Recently heard" with times in mono, Stop button at the bottom.
+- **Home, idle:** current time, "Before you sleep" tips, last-night card with tiles, "Start night" button.
+- **Night detail:** square back/favorite (star) buttons, tiles (duration + the categories that have something), timeline with one bar per episode and the hours below, episodes in cards; when an episode is opened: player with the **real WAV waveform** (tap to seek), peak/confidence/top-3, "Change category" and "Delete".
+- **History, Settings, Diagnostics and the bottom bar** in the same style.
+- Short episodes now say "< 1 s" (previously "0 s").
+- The app name became Murmur in 0.3.1 (see §12.6).
 
-### 12.6 Cambio de nombre a Murmur (0.3.1, 2026-11-04)
+### 12.6 Rename to Murmur (0.3.1, 2026-11-04)
 
-- Visible: `app_name` (ícono y notificación), encabezado de Inicio, línea de versión en Ajustes y el texto que pide ignorar la optimización de batería.
-- Código: `NocheSonoraApp` → `MurmurApp`, `NocheSonoraTheme` → `MurmurTheme`, `Theme.NocheSonora` → `Theme.Murmur`, etiqueta del wake lock `Murmur:session`, nombres de los hilos, `rootProject.name`.
-- Carpeta del proyecto: `Desktop/Personal/Murmur` (antes `Desktop/Personal/NocheSonora`). En los comandos de Docker, el volumen `/src` debe apuntar a la carpeta nueva. APK: `Murmur-debug.apk`.
-- **Se mantienen a propósito:** `applicationId` y paquete Kotlin `com.nochesonora`, y la base de datos `nochesonora.db`. Cambiar el `applicationId` haría que Android la trate como otra app: no se instalaría encima y las noches grabadas quedarían en la app vieja. Los volúmenes de Docker (`nochesonora-*`) también conservan su nombre para no volver a descargar el SDK y las cachés.
+- Visible: `app_name` (icon and notification), Home header, version line in Settings and the text asking to ignore battery optimization.
+- Code: `NocheSonoraApp` → `MurmurApp`, `NocheSonoraTheme` → `MurmurTheme`, `Theme.NocheSonora` → `Theme.Murmur`, wake lock tag `Murmur:session`, thread names, `rootProject.name`.
+- Project folder: `Desktop/Personal/Murmur` (previously `Desktop/Personal/NocheSonora`). In the Docker commands, the `/src` volume must point to the new folder. APK: `Murmur-debug.apk`.
+- **Kept on purpose:** the `applicationId` and the Kotlin package `com.nochesonora`, and the `nochesonora.db` database. Changing the `applicationId` would make Android treat it as a different app: it would not install over the existing one, and the recorded nights would stay in the old app. The Docker volumes (`nochesonora-*`) also keep their names so the SDK and caches do not have to be downloaded again.
 
-### 12.7 Calendario, calibración visible e idioma (0.4.0, 2026-11-04)
+### 12.7 Calendar, visible calibration and language (0.4.0, 2026-11-04)
 
-- **Historial = calendario.** Mes con flechas (desde el mes de la noche más antigua hasta el actual). Cada día con grabaciones lleva hasta 3 puntos del color de lo que se oyó (ronquido, habla, tos, otros; un punto azul si la noche no tuvo eventos). Al tocar un día se listan sus noches debajo; al abrir, queda seleccionado el día de la noche más reciente. Una noche pertenece al día en que **empezó** (23:31 del 3 → día 3). Lógica pura en `ui/history/CalendarModel.kt` con `CalendarModelTest`. Semana desde el lunes en español y desde el domingo en inglés.
-- **Minuto de calibración.** Mientras `calibrationProgress < 1`: píldora "◌ MIDIENDO", estado "Midiendo el entorno" y una tarjeta con barra de progreso (0:23 / 1:00, "faltan 37 s"), qué está pasando y el paso siguiente. Al terminar, 12 s de aviso "Entorno medido" con el fondo detectado y la base; después "● GRABANDO". La detección no cambió: desde los 5 s ya hay umbral provisional y lo que suene en ese minuto se registra.
-- **"Última noche" en Inicio** es la sesión terminada más reciente (completada o interrumpida); la que está en curso no cuenta. Es la misma primera fila del Historial.
-- **Idioma.** Ajustes → Idioma: Español / English (español por defecto). Textos en `res/values*/strings.xml` y `strings_screens.xml`. Se guarda en SharedPreferences (`AppLanguage`) porque hay que leerlo de forma síncrona en `attachBaseContext` de la actividad, la `Application` y el servicio; al cambiarlo se recrea la actividad. Las fechas siguen el idioma ("Mar 3 nov" / "Tue, Nov 3"). En inglés las etiquetas de YAMNet se muestran tal cual. Si se cambia durante una sesión, la notificación cambia en la noche siguiente. Los mensajes técnicos de error del motor siguen en español.
+- **History = calendar.** A month view with arrows (from the month of the oldest night to the current month). Each day with recordings carries up to 3 dots in the colors of what was heard (snoring, talking, cough, other; one blue dot if the night had no events). Tapping a day lists its nights below; on opening, the day of the most recent night is selected. A night belongs to the day it **started** (23:31 on the 3rd → day 3). Pure logic in `ui/history/CalendarModel.kt` with `CalendarModelTest`. Weeks start on Monday in Spanish and on Sunday in English.
+- **Calibration minute.** While `calibrationProgress < 1`: a "◌ MEASURING" pill, the status "Measuring the room" and a card with a progress bar (0:23 / 1:00, "37 s left"), what is happening and the next step. When it finishes, a 12 s "Room measured" notice with the detected background and the baseline; then "● RECORDING". Detection did not change: from 5 s on there is already a provisional threshold, and anything that sounds during that minute is recorded.
+- **"Last night" on Home** is the most recent finished session (completed or interrupted); the one in progress does not count. It is the same as the first row in History.
+- **Language.** Settings → Language: Español / English (Spanish by default). Strings in `res/values*/strings.xml` and `strings_screens.xml`. Stored in SharedPreferences (`AppLanguage`) because it has to be read synchronously in `attachBaseContext` of the activity, the `Application` and the service; changing it recreates the activity. Dates follow the language ("Mar 3 nov" / "Tue, Nov 3"). In English, YAMNet labels are shown as they are. If the language is changed during a session, the notification changes on the next night. The engine's technical error messages remain in Spanish.
 
-### 12.8 La noche fuera de la app, tendencias, transcripción y más sonidos (0.5.0, 2026-11-04)
+### 12.8 The night outside the app, trends, transcription and more sounds (0.5.0, 2026-11-04)
 
-- **Pausar / continuar.** Desde la notificación (visible con el teléfono bloqueado: canal `night_session_v2` con importancia DEFAULT sin sonido, `VISIBILITY_PUBLIC`; el canal viejo se borra) y desde Inicio (Pausar / Continuar junto a Detener). La pausa manual (`PauseReason.USUARIO`) cierra el evento abierto, **suelta el micrófono** (se apaga el indicador verde de Android) y se registra como pausa en la línea de tiempo; al continuar se reabre el micrófono y se sigue con la misma base, sin recalibrar. Test `userPauseReleasesTheMicrophoneAndResumes`.
-- **Resumen al despertar.** Al detener la sesión, notificación "Tu noche · Mar 3 nov" con duración, veces que habló, ronquido, tos y otros; tocarla abre esa noche. Canal propio sin sonido. Se puede apagar en Ajustes. Test `NightSummaryTest`.
-- **Botón de ajustes rápidos** (`MurmurTileService`). Sin sesión: abre la app y empieza la noche por el mismo camino que el botón de Inicio (permisos, batería, espacio); así Android permite arrancar el micrófono, que no se puede iniciar desde segundo plano. Con sesión: la detiene. Muestra "Grabando" / "En pausa".
-- **Widget** (`MurmurWidget`, RemoteViews sin dependencias nuevas). En reposo: la última noche y "Comenzar noche". Grabando: cronómetro y "Detener". Lo refrescan el servicio (empezar, pausar, continuar, terminar) y la app al abrirse; no se actualiza por tiempo.
-- **Tendencias** (Historial → Tendencias): 7 o 30 días; noches, ronquido y habla por noche y tos total, con la comparación contra el periodo anterior; gráficas por día; noches destacadas. Lógica pura en `TrendsModel` con tests.
-- **Transcripción** (Android 13+): solo el reconocedor **en el teléfono** (`createOnDeviceSpeechRecognizer`), leyendo el WAV del clip; nunca el de red, y la app sigue sin `INTERNET`. Si falta el idioma, el detalle ofrece "Descargar idioma" (lo descarga el sistema). Se transcriben solos los clips de habla al abrir la noche (se puede apagar en Ajustes). `events.transcript`: null = no intentado, "" = no se entendió. **Base de datos v2** con migración `MIGRATION_1_2` (no se pierden noches).
-- **Más sonidos.** Los eventos "Otro" muestran uno de 28 tipos (perro, gato, bebé, puerta, pasos, alarma, tráfico, lluvia, música/TV, estornudo, ruido del cuarto…), a partir de 503 de las 521 etiquetas de YAMNet. Solo cambia cómo se muestra: la clasificación en RONQUIDO / HABLA / TOS / OTRO es la misma. Sección "Sonidos identificados" en el detalle.
+- **Pause / resume.** From the notification (visible with the phone locked: channel `night_session_v2` with DEFAULT importance and no sound, `VISIBILITY_PUBLIC`; the old channel is deleted) and from Home (Pause / Resume next to Stop). A manual pause (`PauseReason.USUARIO`) closes the open event, **releases the microphone** (Android's green indicator turns off) and is recorded as a pause on the timeline; on resume, the microphone is reopened and recording continues with the same baseline, without recalibrating. Test `userPauseReleasesTheMicrophoneAndResumes`.
+- **Morning summary.** When the session stops, a "Your night · Tue, Nov 3" notification with the duration, times talked, snoring, coughing and other sounds; tapping it opens that night. Its own silent channel. Can be turned off in Settings. Test `NightSummaryTest`.
+- **Quick Settings tile** (`MurmurTileService`). Without a session: opens the app and starts the night through the same path as the Home button (permissions, battery, space); that way Android allows the microphone to start, since it cannot be started from the background. With a session: stops it. Shows "Recording" / "Paused".
+- **Widget** (`MurmurWidget`, RemoteViews with no new dependencies). Idle: the last night and "Start night". Recording: stopwatch and "Stop". It is refreshed by the service (start, pause, resume, finish) and by the app when it opens; it does not update on a timer.
+- **Trends** (History → Trends): 7 or 30 days; nights, snoring and talking per night, and total coughs, compared against the previous period; daily charts; highlighted nights. Pure logic in `TrendsModel` with tests.
+- **Transcription** (Android 13+): only the **on-device** recognizer (`createOnDeviceSpeechRecognizer`), reading the clip's WAV; never the network one, and the app still has no `INTERNET`. If the language is missing, the detail screen offers "Download language to transcribe" (the system downloads it). Talking clips are transcribed automatically when the night is opened (can be turned off in Settings). `events.transcript`: null = not attempted, "" = not understood. **Database v2** with migration `MIGRATION_1_2` (no nights are lost).
+- **More sounds.** "Other" events show one of 28 types (dog, cat, baby, door, footsteps, alarm, traffic, rain, music/TV, sneeze, room noise…), derived from 503 of YAMNet's 521 labels. Only the display changes: classification into RONQUIDO / HABLA / TOS / OTRO is the same. "Sounds identified" section in the detail screen.
 
-**Pendiente de comprobar en el teléfono:** notificación en la pantalla de bloqueo y sus botones; que al pausar se apague el indicador del micrófono; el resumen al detener; añadir el botón de ajustes rápidos y el widget; la transcripción (depende de que el teléfono tenga reconocimiento en el dispositivo para español).
+**Still to be checked on the phone:** the lock-screen notification and its buttons; that pausing turns off the microphone indicator; the summary on stop; adding the Quick Settings tile and the widget; transcription (depends on the phone having on-device recognition for Spanish).
 
-### 12.9 Logo "Luna de barras" (0.5.1, 2026-11-04)
+### 12.9 "Luna de barras" (bar moon) logo (0.5.1, 2026-11-04)
 
-- Elegido entre las 7 propuestas de `design/logo/murmur-logo.html`. Luna creciente recortada en barras verticales: dice noche y sonido a la vez, sin micrófono ni estrellas, y sigue el lenguaje de barras de la app.
-- **Afinado respecto a la propuesta:** con 6 barras y el corte arriba a la derecha se leía como una gráfica de barras descendente. Ahora son 9 barras más finas y el corte es el de una luna clásica (una "C" abierta a la derecha), así se ven las dos puntas. Se eligió entre 4 variantes renderizadas.
-- **Dónde está:** ícono adaptativo (`ic_launcher_foreground` sobre un fondo azul noche con brillo suave, dentro de la zona segura de 66 dp) con capa monocroma propia para los íconos temáticos de Android 13+ (`ic_launcher_monochrome`); versión pequeña de 5 barras con huecos más anchos para la notificación (`ic_stat_moon`), el botón de ajustes rápidos y el widget (`ic_tile`) y el encabezado de la app (`BarsIcon`).
-- Las geometrías salen de recortar barras verticales con dos círculos (luna = C1 − C2); captura `13_logo` en `ScreenshotTest`.
+- Chosen from the 7 proposals in `design/logo/murmur-logo.html`. A crescent moon cut into vertical bars: it says night and sound at the same time, without a microphone or stars, and follows the app's bar language.
+- **Refined from the proposal:** with 6 bars and the cut at the top right, it read as a descending bar chart. It now has 9 thinner bars, and the cut is that of a classic moon (a "C" open to the right), so both tips are visible. Chosen from 4 rendered variants.
+- **Where it is used:** adaptive icon (`ic_launcher_foreground` on a night-blue background with a soft glow, inside the 66 dp safe zone) with its own monochrome layer for Android 13+ themed icons (`ic_launcher_monochrome`); a small 5-bar version with wider gaps for the notification (`ic_stat_moon`), the Quick Settings tile and the widget (`ic_tile`), and the app header (`BarsIcon`).
+- The geometries come from cutting vertical bars with two circles (moon = C1 − C2); screenshot `13_logo` in `ScreenshotTest`.
 
-### 12.10 Transcripción más fiable (0.5.2, 2026-11-04)
+### 12.10 More reliable transcription (0.5.2, 2026-11-04)
 
-- **Problema en el teléfono:** clips en los que se oye claro lo que se dijo salían como "No se entendió" o con solo un trozo del texto.
-- **Causas:** (1) la voz dormida es baja y el reconocedor la descartaba; (2) el clip empieza con ~3 s de pre-roll en silencio; (3) el reconocedor cortaba en la primera pausa, y la sesión segmentada no la respetan todos los reconocedores.
-- **Arreglo (`transcription/SpeechPrep.kt`, lógica pura con pruebas):** filtro paso alto a ~80 Hz; detección de voz por energía relativa al ruido del propio clip (tramas de 30 ms, umbral = 2× el percentil 20, mínimo -66 dBFS); une tramos con pausas < 0,5 s en frases, descarta golpes sueltos < 150 ms, parte frases > 20 s por su punto más silencioso y como mucho 12 frases por clip; sube cada frase a -20 dBFS (máximo +30 dB, nunca baja) con limitador suave; 0,3 s de silencio antes y 1,2 s después.
-- `SpeechTranscriber` reconoce cada frase con su propio reconocedor (sin sesión segmentada), con resultados parciales como respaldo si el final llega vacío o se acaba el tiempo, y un reintento ante errores pasajeros del servicio. Una frase que falla no tumba las demás.
-- Si el reconocedor falla, el clip lo dice ("El reconocedor del teléfono no pudo con este clip") en vez de quedarse en blanco.
-- Al actualizar, las transcripciones hechas con 0.5.0–0.5.1 se borran una vez (`MurmurApp`, preferencia `maintenance/transcript_pipeline`) y se rehacen solas al abrir cada noche.
+- **Problem on the phone:** clips in which what was said can be heard clearly came out as "No words could be made out" or with only a fragment of the text.
+- **Causes:** (1) sleep speech is quiet and the recognizer discarded it; (2) the clip starts with ~3 s of silent pre-roll; (3) the recognizer stopped at the first pause, and not all recognizers honor the segmented session.
+- **Fix (`transcription/SpeechPrep.kt`, pure logic with tests):** high-pass filter at ~80 Hz; voice detection by energy relative to the clip's own noise (30 ms frames, threshold = 2× the 20th percentile, minimum -66 dBFS); merges segments separated by pauses < 0.5 s into phrases, discards isolated bumps < 150 ms, splits phrases > 20 s at their quietest point, and keeps at most 12 phrases per clip; raises each phrase to -20 dBFS (maximum +30 dB, never lowers) with a soft limiter; 0.3 s of silence before and 1.2 s after.
+- `SpeechTranscriber` recognizes each phrase with its own recognizer (no segmented session), with partial results as a fallback if the final result arrives empty or time runs out, and one retry on transient service errors. A phrase that fails does not bring down the others.
+- If the recognizer fails, the clip says so ("The phone's speech recognizer couldn't handle this clip") instead of staying blank.
+- On update, transcripts made with 0.5.0–0.5.1 are deleted once (`MurmurApp`, preference `maintenance/transcript_pipeline`) and redone automatically when each night is opened.
 
-### 12.11 Ruidos repetidos y filtro por categoría (0.6.0, 2026-11-05)
+### 12.11 Repeated noises and category filter (0.6.0, 2026-11-05)
 
-- **Problema en el teléfono:** durmiendo con el ventilador prendido, una noche guardó 124 clips de "viento" (el aire del ventilador sobre el micrófono da ráfagas que superan la base), y los 5 clips de habla quedaban perdidos entre ellos.
-- **Ruidos repetidos (`core/classification/RepeatFilter.kt`, lógica pura con pruebas):** si un clip queda en OTRO con un tipo ambiental (viento, ventilador, lluvia o ruido del cuarto), el primero se guarda normal y los siguientes del mismo tipo se suman a él como repeticiones (sin WAV ni fila nueva) mientras no pase 1 hora sin oírlo; la hora cuenta desde la última repetición. Nunca se pliega un clip en el que YAMNet también oyó habla, ronquido o tos (score medio ≥ 0,04): ese se guarda igual. Si el clip de referencia se borró, se guarda uno nuevo.
-- Base de datos v3: `events.repeats` (NOT NULL DEFAULT 0) y `events.lastRepeatAt`; migración `MIGRATION_2_3`, las noches existentes se conservan.
-- Ajustes: "Guardar una sola vez los ruidos repetidos" (activado por defecto). Inicio muestra "Repetido · viento (ya guardado)" en lo último que se escuchó y cuántos se contaron sin guardar.
-- **Detalle de la noche:** filtro de episodios por categoría con el número de clips de cada una (Todas · Ronquido · Habla · Tos · Otro; solo las que hay). Tocar en la línea de tiempo un episodio de otra categoría quita el filtro. El clip agrupado dice "Se repitió N veces más, hasta las HH:MM. Solo se guardó este clip." y "Sonidos identificados" cuenta todas las repeticiones.
-- Pruebas: `RepeatFilterTest` y dos sesiones completas en `SessionEngineTest` (4 ráfagas de viento → 1 clip con 3 repeticiones; con el ajuste apagado → 4 clips). Captura `14_detalle_filtro`.
-- Las noches ya grabadas no se compactan (sus clips siguen ahí); el filtro sirve para verlas.
+- **Problem on the phone:** sleeping with the fan on, one night saved 124 "wind" clips (the fan's airflow over the microphone produces gusts that exceed the baseline), and the 5 talking clips were lost among them.
+- **Repeated noises (`core/classification/RepeatFilter.kt`, pure logic with tests):** if a clip ends up as OTRO with an ambient type (wind, fan, rain or room noise), the first one is saved normally and the following ones of the same type are added to it as repeats (no WAV and no new row) as long as 1 hour does not go by without hearing it; the hour counts from the last repeat. A clip in which YAMNet also heard talking, snoring or coughing (mean score ≥ 0.04) is never folded in: it is saved anyway. If the reference clip was deleted, a new one is saved.
+- Database v3: `events.repeats` (NOT NULL DEFAULT 0) and `events.lastRepeatAt`; migration `MIGRATION_2_3`, existing nights are kept.
+- Settings: "Save repeated noises only once" (on by default). Home shows "Repeated · wind (already saved)" in the recently heard list, and how many were counted without being saved.
+- **Night detail:** episode filter by category with the number of clips in each (All · Snoring · Talking · Cough · Other; only the ones present). Tapping an episode of another category on the timeline clears the filter. The grouped clip says "Heard N more times, until HH:MM. Only this clip was saved." and "Sounds identified" counts all repeats.
+- Tests: `RepeatFilterTest` and two full sessions in `SessionEngineTest` (4 gusts of wind → 1 clip with 3 repeats; with the setting off → 4 clips). Screenshot `14_detail_filter`.
+- Nights already recorded are not compacted (their clips are still there); the filter helps to browse them.
 
-### 12.12 Sonidos ignorados (0.7.0, 2026-11-05)
+### 12.12 Ignored sounds (0.7.0, 2026-11-05)
 
-- **Pedido:** poder enseñarle a Murmur qué sonidos no guardar (el perro, el aire acondicionado, la nevera…), como se hizo con el ventilador pero elegido por la persona y para cualquier tipo de sonido.
-- **En cada clip OTRO**, botón "Ignorar este sonido" (no se ofrece para ronquido ni tos, ni si ese tipo ya está ignorado). Abre un diálogo "¿Ignorar «Perro»?" con la casilla "Borrar también los N clips de este sonido que ya están guardados, de todas las noches" (desmarcada por defecto). Así se pueden limpiar noches viejas, como los 124 clips de viento.
-- **Filtro (`core/classification/IgnoreFilter.kt`, lógica pura con pruebas):** un clip OTRO cuyo tipo (`SoundTypes.ofEvent`, el mismo que muestra el detalle) está en la lista no se guarda (ni WAV ni fila), salvo que YAMNet también oyera habla, ronquido o tos (`RepeatFilter.hasRealSound`). En voces, TV y risas la habla no protege (esos sonidos ya suenan a habla); ronquido y tos sí. Va antes del agrupado de repeticiones.
-- La lista se guarda en DataStore (`ignoredSounds`, nombres de `SoundType`). El servicio la sigue en vivo: marcar un sonido a mitad de la noche cuenta desde ese momento.
-- Ajustes → "Sonidos ignorados": la lista con "Dejar de ignorar", o cómo agregar uno si está vacía. Inicio muestra "Ignorado · Perro (está en tu lista)" y cuántos se ignoraron en la noche.
-- Repositorio: `clipsOfType` (clips OTRO de todas las noches de un tipo) y `deleteEvents` (borra filas y WAV y rehace los episodios una vez por noche). Sin cambio de base de datos (sigue v3).
-- Pruebas: `IgnoreFilterTest` (4) y tres en `SessionEngineTest` (viento ignorado → 0 clips; ignorar otro tipo no afecta; borrar los clips de un tipo). Captura `15_sonidos_ignorados`.
+- **Request:** to be able to teach Murmur which sounds not to save (the dog, the air conditioner, the fridge…), as was done with the fan, but chosen by the user and for any type of sound.
+- **On each OTRO clip**, an "Ignore this sound" button (not offered for snoring or cough, nor if that type is already ignored). It opens an "Ignore “Dog”?" dialog with the checkbox "Also delete the N clips of this sound already saved, from every night" (unchecked by default). This makes it possible to clean up old nights, such as the 124 wind clips.
+- **Filter (`core/classification/IgnoreFilter.kt`, pure logic with tests):** an OTRO clip whose type (`SoundTypes.ofEvent`, the same one the detail screen shows) is on the list is not saved (neither WAV nor row), unless YAMNet also heard talking, snoring or coughing (`RepeatFilter.hasRealSound`). For voices, TV and laughter, talking does not protect the clip (those sounds already sound like talking); snoring and coughing do. It runs before repeat grouping.
+- The list is stored in DataStore (`ignoredSounds`, `SoundType` names). The service follows it live: marking a sound in the middle of the night takes effect from that moment.
+- Settings → "Ignored sounds": the list with "Stop ignoring", or how to add one if it is empty. Home shows "Ignored · Dog (on your list)" and how many were ignored during the night.
+- Repository: `clipsOfType` (OTRO clips of one type across all nights) and `deleteEvents` (deletes rows and WAVs and rebuilds the episodes once per night). No database change (still v3).
+- Tests: `IgnoreFilterTest` (4) and three in `SessionEngineTest` (ignored wind → 0 clips; ignoring another type has no effect; deleting the clips of one type). Screenshot `15_ignored_sounds`.
+
+### 12.13 Repository in English (2026-11-06)
+
+- Comments, KDoc, log and exception messages, test names, this plan, the README and the logo page are now in English. No behavior changed: a token comparison against the previous commit shows only the renames below.
+- Renamed because they are never stored: `DetectorState` and `LivePhase` values (`CALIBRATING`, `LISTENING`, `ONSET`, `EVENT`, `PAUSED`), the `PauseReason` constant names (`MIC_BUSY`, `CALL`, `AUDIO_ERROR`, `USER`; their stored values stay `"MICROFONO_OCUPADO"`, `"LLAMADA"`, `"ERROR_AUDIO"`, `"USUARIO"`), the navigation routes, the thread names and the screenshot file names.
+- Kept in Spanish on purpose, because they are stored in the database or in DataStore and renaming them would need a migration: `Category` (`RONQUIDO`, `HABLA`, `TOS`, `OTRO`, `FONDO`), `SessionStatus` (`EN_CURSO`, `COMPLETADA`, `INTERRUMPIDA`), `Sensitivity` (`BAJA`, `MEDIA`, `ALTA`), `Retention` (`SIEMPRE`, `DIAS_7`, `DIAS_30`), the stored labels `"Desconocido"` and `"Sin clasificar"`, the package `com.nochesonora` and the file `nochesonora.db`.
+- Also kept: the Spanish UI translation in `res/values/`, the Spanish YAMNet display names in `Sounds.kt`, and two diagnostic messages that the Home screen shows directly (`SessionEngine.lastError`).

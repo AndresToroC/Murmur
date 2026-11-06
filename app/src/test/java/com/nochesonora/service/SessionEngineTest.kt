@@ -30,9 +30,9 @@ import kotlin.math.log10
 import kotlin.math.sqrt
 
 /**
- * La sesión completa tal como corre en el teléfono — motor del servicio → detector → clasificador →
- * Room → archivos WAV — con audio grabado en lugar del micrófono y un YAMNet simulado.
- * Reproduce la prueba manual que daba "Sin eventos · 0 clips" (plan §12).
+ * The full session as it runs on the phone — service engine → detector → classifier →
+ * Room → WAV files — with recorded audio instead of the microphone and a fake YAMNet.
+ * Reproduces the manual test that showed "Sin eventos · 0 clips" (plan §12).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], application = Application::class)
@@ -51,11 +51,11 @@ class SessionEngineTest {
     @After
     fun tearDown() = db.close()
 
-    /** Reproduce un PCM en bloques de 100 ms y pide detener la sesión al terminar. */
+    /** Plays back a PCM buffer in 100 ms blocks and asks the session to stop when it ends. */
     private class RecordedAudio(private val pcm: ShortArray, private val onEnd: () -> Unit) : AudioSource {
         private var pos = 0
         override var isOpen = false
-        override val sourceName = "GRABACION"
+        override val sourceName = "RECORDING"
         override val audioSessionId = 1
         override fun open(): Boolean { isOpen = true; return true }
         override fun release() { isOpen = false }
@@ -71,7 +71,7 @@ class SessionEngineTest {
         }
     }
 
-    /** YAMNet simulado: "Silence" siempre; la etiqueta del sonido solo en ventanas fuertes. */
+    /** Fake YAMNet: always "Silence"; the sound's label only in loud windows. */
     private fun fakeYamnet(labelAt: (rmsDb: Double) -> String?) = WindowClassifier { window ->
         val rms = sqrt(window.sumOf { (it * it).toDouble() } / window.size)
         val db = 20 * log10(rms + 1e-12)
@@ -100,16 +100,16 @@ class SessionEngineTest {
         session.id
     }
 
-    /** Cuarto con ruido de fondo como el del teléfono de la prueba (base ≈ −47 dBFS). */
+    /** A room with background noise like the test phone's (baseline ≈ −47 dBFS). */
     private fun room(seconds: Double) = SignalGen.whiteNoise(seconds, amplitude = 250.0)
 
     @Test
     fun twoAndAHalfMinuteSessionSavesEverySoundWithItsClip() {
         val pcm = room(150.0)
-        SignalGen.mixInto(pcm, SignalGen.voiceBurst(2.0, 8_000.0), 20.0) // habla durante la calibración
-        SignalGen.mixInto(pcm, SignalGen.voiceBurst(3.0, 8_000.0), 70.0) // habla
-        SignalGen.mixInto(pcm, SignalGen.whiteNoise(0.5, 9_000.0, seed = 5), 85.0) // tos
-        SignalGen.mixInto(pcm, SignalGen.lowBurst(1.5, 9_000.0), 100.0) // ronquido
+        SignalGen.mixInto(pcm, SignalGen.voiceBurst(2.0, 8_000.0), 20.0) // speech during calibration
+        SignalGen.mixInto(pcm, SignalGen.voiceBurst(3.0, 8_000.0), 70.0) // speech
+        SignalGen.mixInto(pcm, SignalGen.whiteNoise(0.5, 9_000.0, seed = 5), 85.0) // cough
+        SignalGen.mixInto(pcm, SignalGen.lowBurst(1.5, 9_000.0), 100.0) // snore
         SignalGen.mixInto(pcm, SignalGen.lowBurst(1.5, 9_000.0), 106.0)
 
         val sessionId = runSession(pcm, fakeYamnet { if (it > -35) "Speech" else null })
@@ -118,31 +118,31 @@ class SessionEngineTest {
         val t0 = runBlocking { db.nightDao().getSession(sessionId)!!.startedAt }
         val live = liveState.snapshot.value
         assertEquals(
-            "eventos guardados en Room: inicios ${events.map { (it.startedAt - t0) / 1000.0 }} s; " +
-                "descartados=${live.discardedCount} perdidos por cola=${live.droppedEvents} errores=${live.saveErrors} " +
-                "recientes=${live.recent.map { "${(it.atMs - t0) / 1000.0}:${it.category}" }}",
+            "events saved in Room: starts ${events.map { (it.startedAt - t0) / 1000.0 }} s; " +
+                "discarded=${live.discardedCount} dropped by queue=${live.droppedEvents} errors=${live.saveErrors} " +
+                "recent=${live.recent.map { "${(it.atMs - t0) / 1000.0}:${it.category}" }}",
             5,
             events.size,
         )
         assertTrue(events.all { it.category == Category.HABLA })
         for (e in events) {
             val wav = File(e.filePath)
-            assertTrue("falta el WAV ${e.filePath}", wav.isFile)
-            assertTrue(wav.length() > WavWriter.HEADER_SIZE + Pcm.msToSamples(5_000) * 2) // pre + post-roll como mínimo
+            assertTrue("missing WAV ${e.filePath}", wav.isFile)
+            assertTrue(wav.length() > WavWriter.HEADER_SIZE + Pcm.msToSamples(5_000) * 2) // at least pre + post-roll
         }
         assertEquals(0, liveState.snapshot.value.saveErrors)
         assertEquals(5, liveState.snapshot.value.counts[Category.HABLA])
-        assertTrue("sin archivos temporales", File(events[0].filePath).parentFile!!.list()!!.none { it.endsWith(".tmp") })
+        assertTrue("no temporary files",File(events[0].filePath).parentFile!!.list()!!.none { it.endsWith(".tmp") })
     }
 
     /**
-     * Pausa desde la notificación: suelta el micrófono, registra la pausa USUARIO y al continuar
-     * reabre el micrófono y sigue detectando con la misma base.
+     * Pause from the notification: releases the microphone, records the USER pause and, on
+     * resume, reopens the microphone and keeps detecting with the same baseline.
      */
     @Test
     fun userPauseReleasesTheMicrophoneAndResumes() {
         val pcm = room(100.0)
-        SignalGen.mixInto(pcm, SignalGen.voiceBurst(3.0, 8_000.0), 80.0) // habla después de continuar
+        SignalGen.mixInto(pcm, SignalGen.voiceBurst(3.0, 8_000.0), 80.0) // speech after resuming
         var opens = 0
         var releasesWhilePaused = 0
         val session = runBlocking { repository.createSession(System.currentTimeMillis(), Sensitivity.MEDIA.marginDb, saveFullRecording = false) }
@@ -152,13 +152,13 @@ class SessionEngineTest {
             private var paused = false
             private var inPause = false
             override var isOpen = false
-            override val sourceName = "GRABACION"
+            override val sourceName = "RECORDING"
             override val audioSessionId = 1
             override fun open(): Boolean { opens++; inPause = false; isOpen = true; return true }
             override fun release() { if (inPause) releasesWhilePaused++; isOpen = false }
             override fun readBlock(buffer: ShortArray): Int {
                 if (pos == Pcm.msToSamples(70_000).toInt() && !paused) {
-                    // A los 70 s la persona pausa; 600 ms después toca "Continuar".
+                    // At 70 s the user pauses; 600 ms later they tap "Resume".
                     paused = true
                     inPause = true
                     engine.setUserPaused(true)
@@ -188,25 +188,25 @@ class SessionEngineTest {
         runBlocking { engine.run(session, Sensitivity.MEDIA) }
 
         val pauses = runBlocking { db.nightDao().observePauses(session.id).first() }
-        assertEquals(listOf(com.nochesonora.data.db.PauseReason.USUARIO), pauses.map { it.reason })
-        assertTrue("la pausa quedó cerrada", pauses.single().endedAt != null)
-        assertEquals("se soltó el micrófono durante la pausa", 1, releasesWhilePaused)
-        assertEquals("se volvió a abrir al continuar", 2, opens)
+        assertEquals(listOf(com.nochesonora.data.db.PauseReason.USER), pauses.map { it.reason })
+        assertTrue("the pause was closed", pauses.single().endedAt != null)
+        assertEquals("the microphone was released during the pause", 1, releasesWhilePaused)
+        assertEquals("it was reopened on resume", 2, opens)
         assertEquals(1, runBlocking { db.nightDao().getEvents(session.id) }.size)
-        assertEquals(LivePhase.ESCUCHANDO, liveState.snapshot.value.phase)
+        assertEquals(LivePhase.LISTENING, liveState.snapshot.value.phase)
     }
 
     @Test
     fun backgroundOnlySessionSavesNothing() {
         val pcm = room(90.0)
-        SignalGen.mixInto(pcm, SignalGen.whiteNoise(2.0, 4_000.0, seed = 9), 70.0) // ruido de fondo puntual
+        SignalGen.mixInto(pcm, SignalGen.whiteNoise(2.0, 4_000.0, seed = 9), 70.0) // brief background noise
         val sessionId = runSession(pcm, fakeYamnet { null })
         assertEquals(0, runBlocking { db.nightDao().getEvents(sessionId) }.size)
         assertEquals(1, liveState.snapshot.value.discardedCount)
         assertEquals(0, liveState.snapshot.value.saveErrors)
     }
 
-    /** El aire del ventilador sobre el micrófono: ráfagas que YAMNet oye como viento. */
+    /** Air from a fan blowing on the microphone: gusts that YAMNet hears as wind. */
     private fun windyNight(): ShortArray {
         val pcm = room(150.0)
         listOf(70.0, 85.0, 100.0, 115.0).forEachIndexed { i, at ->
@@ -215,7 +215,7 @@ class SessionEngineTest {
         return pcm
     }
 
-    /** El viento se oye en todo el clip (más fuerte en la ráfaga), como con un ventilador cerca. */
+    /** Wind is heard throughout the clip (louder in the gust), as with a fan nearby. */
     private val windYamnet = WindowClassifier { window ->
         val rms = sqrt(window.sumOf { (it * it).toDouble() } / window.size)
         val loud = 20 * log10(rms + 1e-12) > -35
@@ -234,7 +234,7 @@ class SessionEngineTest {
         assertEquals(3, live.repeatedCount)
         assertEquals(1, live.counts[Category.OTRO])
         assertEquals(0, live.saveErrors)
-        // Solo un WAV en disco.
+        // Only one WAV on disk.
         assertEquals(1, File(events.single().filePath).parentFile!!.list()!!.count { it.endsWith(".wav") })
     }
 

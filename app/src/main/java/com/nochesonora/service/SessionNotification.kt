@@ -13,16 +13,16 @@ import com.nochesonora.R
 import com.nochesonora.data.db.PauseReason
 
 /**
- * Notificación permanente de la sesión. Se ve también con el teléfono bloqueado y permite
- * pausar, continuar y detener sin abrir la app.
+ * The session's ongoing notification. It is also visible with the phone locked and lets the
+ * user pause, resume and stop without opening the app.
  */
 object SessionNotification {
     const val NOTIFICATION_ID = 1001
 
     /**
-     * v2: importancia DEFAULT (sin sonido ni vibración) para que Android la muestre en la pantalla
-     * de bloqueo; con LOW quedaba entre las "silenciosas", que muchos teléfonos ocultan ahí.
-     * La importancia de un canal no se puede cambiar después de crearlo, por eso es un canal nuevo.
+     * v2: DEFAULT importance (no sound or vibration) so Android shows it on the lock screen;
+     * with LOW it ended up among the "silent" ones, which many phones hide there.
+     * A channel's importance cannot be changed after it is created, hence a new channel.
      */
     private const val CHANNEL_ID = "night_session_v2"
     private const val OLD_CHANNEL_ID = "night_session"
@@ -43,7 +43,7 @@ object SessionNotification {
             setShowBadge(false)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
-        // Volver a crear un canal existente solo actualiza nombre y descripción (idioma).
+        // Re-creating an existing channel only updates its name and description (language).
         nm.createNotificationChannel(channel)
     }
 
@@ -55,12 +55,12 @@ object SessionNotification {
             Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val userPaused = pauseReason == PauseReason.USUARIO
+        val userPaused = pauseReason == PauseReason.USER
         val text = when (pauseReason) {
             null -> context.resources.getQuantityString(R.plurals.notif_events, events, events)
-            PauseReason.USUARIO -> context.getString(R.string.notif_paused_user)
-            PauseReason.LLAMADA -> context.getString(R.string.notif_paused_call)
-            PauseReason.ERROR_AUDIO -> context.getString(R.string.notif_paused_retry)
+            PauseReason.USER -> context.getString(R.string.notif_paused_user)
+            PauseReason.CALL -> context.getString(R.string.notif_paused_call)
+            PauseReason.AUDIO_ERROR -> context.getString(R.string.notif_paused_retry)
             else -> context.getString(R.string.notif_paused_busy)
         }
         val toggle = if (userPaused) {
@@ -78,7 +78,7 @@ object SessionNotification {
             .setContentTitle(context.getString(if (userPaused) R.string.notif_title_paused else R.string.notif_title))
             .setContentText(text)
             .setWhen(startedAt)
-            // En pausa el cronómetro seguiría corriendo y confunde: se oculta.
+            // While paused the chronometer would keep running, which is confusing: hide it.
             .setUsesChronometer(!userPaused)
             .setShowWhen(!userPaused)
             .setOngoing(true)
@@ -105,7 +105,7 @@ object SessionNotification {
             context.getSystemService(NotificationManager::class.java)
                 ?.notify(NOTIFICATION_ID, build(context, startedAt, events, pauseReason))
         } catch (e: SecurityException) {
-            Log.w(TAG, "Sin permiso de notificaciones", e)
+            Log.w(TAG, "No notification permission", e)
         }
     }
 }

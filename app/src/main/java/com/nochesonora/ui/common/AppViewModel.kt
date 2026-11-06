@@ -12,7 +12,7 @@ import com.nochesonora.MurmurApp
 @Composable
 fun appContainer(): AppContainer = (LocalContext.current.applicationContext as MurmurApp).container
 
-/** ViewModel creado con el [AppContainer] (DI manual, sin Hilt). */
+/** ViewModel created with the [AppContainer] (manual DI, no Hilt). */
 @Composable
 inline fun <reified VM : ViewModel> appViewModel(crossinline create: (AppContainer) -> VM): VM {
     val container = appContainer()

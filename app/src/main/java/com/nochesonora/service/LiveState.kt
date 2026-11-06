@@ -8,36 +8,36 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-enum class LivePhase { CALIBRANDO, ESCUCHANDO, EVENTO, PAUSA }
+enum class LivePhase { CALIBRATING, LISTENING, EVENT, PAUSED }
 
-/** Un clip ya clasificado durante la sesión, para la lista "Lo último que se escuchó". */
+/** A clip already classified during the session, for the "Recently heard" list. */
 data class HeardItem(
     val atMs: Long,
     val category: Category,
-    /** Etiqueta YAMNet principal del clip. */
+    /** The clip's main YAMNet label. */
     val label: String?,
-    /** true si se descartó como fondo (no se guardó). */
+    /** true if it was discarded as background (not saved). */
     val discarded: Boolean,
-    /** true si era un sonido real pero no se pudo guardar. */
+    /** true if it was a real sound but could not be saved. */
     val saveFailed: Boolean = false,
-    /** true si era un ruido ambiental ya guardado esta noche: se sumó como repetición, sin clip. */
+    /** true if it was an ambient noise already saved tonight: counted as a repeat, with no clip. */
     val repeated: Boolean = false,
-    /** El tipo de sonido si no se guardó porque la persona lo marcó como ignorado. */
+    /** The sound type, if it was not saved because the user marked it as ignored. */
     val ignoredType: SoundType? = null,
 )
 
 data class LiveSnapshot(
-    /** true desde que se pide iniciar hasta que el servicio termina de cerrar la sesión. */
+    /** true from the start request until the service finishes closing the session. */
     val serviceRunning: Boolean = false,
     val sessionId: Long? = null,
     val startedAt: Long = 0L,
-    val phase: LivePhase = LivePhase.CALIBRANDO,
+    val phase: LivePhase = LivePhase.CALIBRATING,
     val levelDb: Float = -100f,
     val baselineDb: Float? = null,
     val thresholdDb: Float? = null,
     val calibrationProgress: Float = 0f,
     val counts: Map<Category, Int> = emptyMap(),
-    /** Top-3 del último clip clasificado (incluye los descartados como FONDO). */
+    /** Top 3 of the last classified clip (includes those discarded as FONDO). */
     val lastTop3: List<LabelScore> = emptyList(),
     val lastCategory: Category? = null,
     val lastDiscarded: Boolean = false,
@@ -45,17 +45,17 @@ data class LiveSnapshot(
     val audioSource: String = "",
     val classifierAvailable: Boolean = true,
     val droppedEvents: Int = 0,
-    /** Los últimos clips clasificados, el más nuevo primero (máximo [RECENT_MAX]). */
+    /** The latest classified clips, newest first (at most [RECENT_MAX]). */
     val recent: List<HeardItem> = emptyList(),
-    /** Clips descartados como fondo en esta sesión. */
+    /** Clips discarded as background in this session. */
     val discardedCount: Int = 0,
-    /** Ruidos ambientales repetidos que no se volvieron a guardar en esta sesión. */
+    /** Repeated ambient noises that were not saved again in this session. */
     val repeatedCount: Int = 0,
-    /** Sonidos de la lista de ignorados que no se guardaron en esta sesión. */
+    /** Sounds on the ignore list that were not saved in this session. */
     val ignoredCount: Int = 0,
-    /** Lo que YAMNet oye como fondo al calibrar (p. ej. "Mechanical fan"). */
+    /** What YAMNet hears as background during calibration (e.g. "Mechanical fan"). */
     val backgroundLabel: String? = null,
-    /** Sonidos reales que no se pudieron guardar o procesar. Debe ser 0. */
+    /** Real sounds that could not be saved or processed. Should be 0. */
     val saveErrors: Int = 0,
     val lastError: String? = null,
 ) {
@@ -66,7 +66,7 @@ data class LiveSnapshot(
     val totalEvents: Int get() = counts.values.sum()
 }
 
-/** Estado en vivo de la sesión. Singleton del proceso (sin binding al servicio, §6.7). */
+/** Live session state. Process-wide singleton (no service binding, §6.7). */
 class LiveState {
     private val state = MutableStateFlow(LiveSnapshot())
     val snapshot: StateFlow<LiveSnapshot> = state.asStateFlow()

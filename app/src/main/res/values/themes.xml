@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema de ventana: oscuro siempre, para que no deslumbre de noche. El resto lo pinta Compose. -->
+    <!-- Window theme: always dark, so it does not glare at night. Compose draws the rest. -->
     <style name="Theme.Murmur" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/background</item>
         <item name="android:statusBarColor">@color/background</item>

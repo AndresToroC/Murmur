@@ -3,7 +3,7 @@ package com.nochesonora.data.db
 import androidx.room.TypeConverter
 import com.nochesonora.core.classification.Category
 
-/** Los enums se guardan por nombre para que las consultas puedan compararlos como texto. */
+/** Enums are stored by name so queries can compare them as text. */
 class Converters {
     @TypeConverter fun categoryToString(c: Category?): String? = c?.name
     @TypeConverter fun stringToCategory(s: String?): Category? = s?.let { Category.valueOf(it) }

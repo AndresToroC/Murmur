@@ -12,13 +12,13 @@ import java.time.ZonedDateTime
 class CalendarModelTest {
     @Test
     fun november2026StartsOnSundaySoMondayGridHasSixLeadingBlanks() {
-        // 1 de noviembre de 2026 es domingo.
+        // November 1, 2026 is a Sunday.
         val cells = monthGrid(YearMonth.of(2026, 11), DayOfWeek.MONDAY)
         assertEquals(6, cells.takeWhile { it == null }.size)
         assertEquals(LocalDate.of(2026, 11, 1), cells[6])
         assertEquals(0, cells.size % 7)
         assertEquals(30, cells.count { it != null })
-        assertEquals(42, cells.size) // 6 + 30 = 36 → 6 filas
+        assertEquals(42, cells.size) // 6 + 30 = 36 → 6 rows
     }
 
     @Test
@@ -31,7 +31,7 @@ class CalendarModelTest {
 
     @Test
     fun february2027FitsInFourRowsWhenItStartsOnMonday() {
-        // 1 de febrero de 2027 es lunes y el mes tiene 28 días.
+        // February 1, 2027 is a Monday and the month has 28 days.
         val cells = monthGrid(YearMonth.of(2027, 2), DayOfWeek.MONDAY)
         assertEquals(28, cells.size)
         assertEquals(LocalDate.of(2027, 2, 28), cells.last())

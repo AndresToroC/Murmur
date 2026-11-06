@@ -33,41 +33,42 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.resume
 
-/** Si el teléfono puede transcribir, y en qué idioma. */
+/** Whether the phone can transcribe, and in which language. */
 sealed interface TranscriberAvailability {
-    /** Android < 13 o sin reconocimiento de voz en el teléfono (sin conexión). */
+    /** Android < 13 or no on-device (offline) speech recognition. */
     data object NotSupported : TranscriberAvailability
-    /** El reconocedor del teléfono no tiene el idioma de la app. */
+    /** The phone's recognizer does not have the app's language. */
     data object LanguageMissing : TranscriberAvailability
-    /** El idioma se puede descargar (lo descarga el sistema). */
+    /** The language can be downloaded (the system downloads it). */
     data class NeedsDownload(val languageTag: String) : TranscriberAvailability
     data class Ready(val languageTag: String) : TranscriberAvailability
 }
 
 sealed interface TranscriptResult {
-    /** "" = se escuchó pero no se entendió ninguna palabra. */
+    /** "" = something was heard but no word was understood. */
     data class Text(val text: String) : TranscriptResult
-    /** El modelo del idioma no está en el teléfono. */
+    /** The language model is not on the phone. */
     data object LanguageUnavailable : TranscriptResult
     data class Failed(val error: Int) : TranscriptResult
 }
 
 /**
- * Transcribe clips WAV con el reconocedor de voz **del teléfono, sin conexión**
- * (`createOnDeviceSpeechRecognizer`). Nunca usa el reconocedor en red y la app sigue sin el permiso
- * INTERNET. El audio se le pasa desde el archivo (API 33+, `EXTRA_AUDIO_SOURCE`), no del micrófono.
+ * Transcribes WAV clips with the **phone's offline** speech recognizer
+ * (`createOnDeviceSpeechRecognizer`). It never uses the network recognizer, and the app still has
+ * no INTERNET permission. Audio is fed from the file (API 33+, `EXTRA_AUDIO_SOURCE`), not the mic.
  *
- * Antes, [SpeechPrep] recorta los silencios, sube el volumen y parte el clip en frases; cada frase
- * se reconoce aparte (así el reconocedor no se rinde con un murmullo ni corta en la primera pausa).
+ * First, [SpeechPrep] trims silences, raises the volume and splits the clip into phrases; each
+ * phrase is recognized separately (so the recognizer neither gives up on a mumble nor cuts off at
+ * the first pause).
  *
- * SpeechRecognizer exige el hilo principal: todas sus llamadas van en `Dispatchers.Main`; la lectura
- * del WAV y la escritura al pipe, en IO. Una sola transcripción a la vez en todo el proceso.
+ * SpeechRecognizer requires the main thread: all its calls run on `Dispatchers.Main`; reading the
+ * WAV and writing to the pipe run on IO. Only one transcription at a time in the whole process.
  */
 class SpeechTranscriber(private val context: Context) {
 
     private val candidates: List<String>
         get() {
-            // Idioma del sistema (no el de la app, que ya viene forzado por AppLanguage.wrap).
+            // System language (not the app's, which AppLanguage.wrap already forces).
             val device = Resources.getSystem().configuration.locales[0]
             return TranscriptionSupport.candidateTags(AppLanguage.get(context).tag, device)
         }
@@ -92,7 +93,7 @@ class SpeechTranscriber(private val context: Context) {
         }
     }
 
-    /** Pide al sistema que descargue el idioma (la descarga la hace Android, no Murmur). */
+    /** Asks the system to download the language (Android downloads it, not Murmur). */
     suspend fun downloadLanguage(languageTag: String) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
         withContext(Dispatchers.Main) {
@@ -100,7 +101,7 @@ class SpeechTranscriber(private val context: Context) {
             try {
                 recognizer.triggerModelDownload(recognizeIntent(languageTag))
             } catch (e: Exception) {
-                Log.w(TAG, "No se pudo pedir la descarga del idioma $languageTag", e)
+                Log.w(TAG, "Could not request download of language $languageTag", e)
             } finally {
                 recognizer.destroy()
             }
@@ -114,7 +115,7 @@ class SpeechTranscriber(private val context: Context) {
                 TranscriptionSupport.pcmFromWav(File(wavPath).readBytes())
                     ?.let { SpeechPrep.phrases(SpeechPrep.toSamples(it)) }
             } catch (e: IOException) {
-                Log.w(TAG, "No se pudo leer $wavPath", e)
+                Log.w(TAG, "Could not read $wavPath", e)
                 null
             }
         } ?: return TranscriptResult.Failed(SpeechRecognizer.ERROR_CLIENT)
@@ -122,8 +123,8 @@ class SpeechTranscriber(private val context: Context) {
     }
 
     /**
-     * Reconoce cada frase por separado y une lo que se entendió. Una frase que falla no tumba las
-     * demás; si el idioma no está, se para ahí.
+     * Recognizes each phrase separately and joins what was understood. A failing phrase does not
+     * sink the others; if the language is missing, it stops there.
      */
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private suspend fun recognizePhrases(phrases: List<ShortArray>, languageTag: String): TranscriptResult {
@@ -131,7 +132,7 @@ class SpeechTranscriber(private val context: Context) {
         var lastError: Int? = null
         var anyHeard = false
         for ((i, phrase) in phrases.withIndex()) {
-            if (i > 0) delay(BETWEEN_PHRASES_MS) // el servicio libera el reconocedor anterior
+            if (i > 0) delay(BETWEEN_PHRASES_MS) // the service releases the previous recognizer
             val pcm = SpeechPrep.toBytes(phrase)
             var outcome = recognizeOnce(pcm, languageTag)
             if (outcome is Outcome.Error && outcome.error in RETRYABLE) {
@@ -145,7 +146,7 @@ class SpeechTranscriber(private val context: Context) {
                 }
                 Outcome.LanguageUnavailable -> return TranscriptResult.LanguageUnavailable
                 is Outcome.Error -> {
-                    Log.w(TAG, "Frase ${i + 1}/${phrases.size}: error ${outcome.error}")
+                    Log.w(TAG, "Phrase ${i + 1}/${phrases.size}: error ${outcome.error}")
                     lastError = outcome.error
                 }
             }
@@ -156,9 +157,9 @@ class SpeechTranscriber(private val context: Context) {
         else TranscriptResult.Failed(error)
     }
 
-    /** Resultado de reconocer una frase. */
+    /** Result of recognizing one phrase. */
     private sealed interface Outcome {
-        /** "" = sin palabras reconocibles. */
+        /** "" = no recognizable words. */
         data class Heard(val text: String) : Outcome
         data object LanguageUnavailable : Outcome
         data class Error(val error: Int) : Outcome
@@ -167,9 +168,9 @@ class SpeechTranscriber(private val context: Context) {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private suspend fun recognizeOnce(pcm: ByteArray, languageTag: String): Outcome {
         val (readSide, writeSide) = ParcelFileDescriptor.createPipe()
-        // Escritor aparte (no hijo de esta corrutina): el pipe se bloquea hasta que el reconocedor
-        // lee, y si el reconocedor deja de leer no debe colgar la transcripción. Escribe por
-        // trozos para poder pararse; al cerrar, el reconocedor ve el fin del audio.
+        // Separate writer (not a child of this coroutine): the pipe blocks until the recognizer
+        // reads, and if the recognizer stops reading it must not hang the transcription. Writes in
+        // chunks so it can stop; on close, the recognizer sees the end of the audio.
         val writer = writerScope.launch {
             try {
                 ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { out ->
@@ -181,11 +182,11 @@ class SpeechTranscriber(private val context: Context) {
                     }
                 }
             } catch (e: IOException) {
-                Log.d(TAG, "El reconocedor cerró el audio antes de terminar", e) // p. ej. al cancelar
+                Log.d(TAG, "The recognizer closed the audio before it finished", e) // e.g. when cancelling
             }
         }
-        // Lo último que el reconocedor iba entendiendo: si al final no da resultado (o se acaba el
-        // tiempo), es mejor que nada.
+        // The latest text the recognizer had understood: if it gives no final result (or time
+        // runs out), it is better than nothing.
         val partial = AtomicReference<String?>(null)
         return try {
             withContext(Dispatchers.Main) {
@@ -225,7 +226,7 @@ class SpeechTranscriber(private val context: Context) {
                 override fun onError(error: Int) {
                     finish(
                         when (error) {
-                            // Sin palabras reconocibles: es un resultado, no un fallo.
+                            // No recognizable words: that is a result, not a failure.
                             SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
                                 Outcome.Heard(partial.get().orEmpty())
                             SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED, SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
@@ -247,7 +248,7 @@ class SpeechTranscriber(private val context: Context) {
             recognizer.startListening(intent)
         }
 
-    /** Idiomas instalados / pendientes / soportados por el reconocedor del teléfono, o null. */
+    /** Languages installed / pending / supported by the phone's recognizer, or null. */
     private data class Support(val installed: List<String>, val pending: List<String>, val supported: List<String>)
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -265,7 +266,7 @@ class SpeechTranscriber(private val context: Context) {
                             }
 
                             override fun onError(error: Int) {
-                                Log.w(TAG, "checkRecognitionSupport falló: $error")
+                                Log.w(TAG, "checkRecognitionSupport failed: $error")
                                 if (cont.isActive) cont.resume(null)
                             }
                         },
@@ -273,7 +274,7 @@ class SpeechTranscriber(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "No se pudo consultar el soporte de idiomas", e)
+            Log.w(TAG, "Could not query language support", e)
             null
         } finally {
             recognizer.destroy()
@@ -288,7 +289,7 @@ class SpeechTranscriber(private val context: Context) {
         putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
         putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-        // Los parciales sirven de respaldo cuando el resultado final llega vacío.
+        // Partial results serve as a fallback when the final result comes back empty.
         putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
     }
@@ -299,19 +300,19 @@ class SpeechTranscriber(private val context: Context) {
         putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1)
         putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
         putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, SAMPLE_RATE)
-        // Sin sesión segmentada: SpeechPrep ya entrega cada frase recortada, y no todos los
-        // reconocedores la admiten.
+        // No segmented session: SpeechPrep already delivers each phrase trimmed, and not every
+        // recognizer supports it.
     }
 
     private companion object {
         const val TAG = "SpeechTranscriber"
         const val SAMPLE_RATE = 16_000
         const val SUPPORT_TIMEOUT_MS = 5_000L
-        /** 0,5 s de audio por escritura. */
+        /** 0.5 s of audio per write. */
         const val WRITE_CHUNK = 16_000
         const val BETWEEN_PHRASES_MS = 150L
         const val RETRY_DELAY_MS = 600L
-        /** Errores pasajeros del servicio: se reintenta la frase una vez (solo se usa en API 33+). */
+        /** Transient service errors: the phrase is retried once (only used on API 33+). */
         @SuppressLint("InlinedApi")
         val RETRYABLE = setOf(
             SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
@@ -319,9 +320,9 @@ class SpeechTranscriber(private val context: Context) {
             SpeechRecognizer.ERROR_CLIENT,
             SpeechRecognizer.ERROR_AUDIO,
         )
-        /** Escritores del audio al reconocedor; viven fuera de la corrutina que transcribe. */
+        /** Writers feeding audio to the recognizer; they live outside the transcribing coroutine. */
         val writerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        /** Un único reconocedor activo en todo el proceso. */
+        /** A single active recognizer in the whole process. */
         val lock = Mutex()
     }
 }

@@ -15,7 +15,7 @@ import com.nochesonora.ui.navigation.PendingAction
 import com.nochesonora.ui.theme.MurmurTheme
 
 class MainActivity : ComponentActivity() {
-    /** Lo que pidió una notificación, el widget o el botón de ajustes rápidos; la UI lo consume. */
+    /** What a notification, the widget or the quick settings tile asked for; the UI consumes it. */
     private val pendingAction = mutableStateOf<PendingAction?>(null)
 
     override fun attachBaseContext(newBase: Context) {
@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
-        // Al recrear (p. ej. cambio de idioma) no se repite la acción del intent original.
+        // On recreation (e.g. a language change) the original intent's action is not repeated.
         if (savedInstanceState == null) pendingAction.value = actionFrom(intent)
         setContent {
             MurmurTheme {
@@ -54,9 +54,9 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
-        /** Comenzar la noche (botón de ajustes rápidos y widget). */
+        /** Start the night (quick settings tile and widget). */
         const val ACTION_START_NIGHT = "com.nochesonora.action.START_NIGHT"
-        /** Abrir el detalle de una noche (resumen al despertar y widget). */
+        /** Open a night's detail (wake-up summary and widget). */
         const val EXTRA_OPEN_SESSION = "com.nochesonora.extra.OPEN_SESSION"
     }
 }

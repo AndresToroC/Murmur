@@ -42,33 +42,33 @@ import java.io.Closeable
 import java.io.File
 import java.util.concurrent.Executors
 
-/** Trabajo para el hilo de clasificación. */
+/** Work for the classification thread. */
 private sealed interface ClassifyJob {
     class Event(val event: ClosedEvent) : ClassifyJob
-    /** Audio sin evento: se clasifica solo para mostrar qué fondo hay. */
+    /** Audio with no event: classified only to show what the background is. */
     class BackgroundProbe(val pcm: ShortArray) : ClassifyJob
 }
 
 /**
- * Orquesta captura → detector → clasificador → repositorio durante una sesión (§4).
+ * Orchestrates capture → detector → classifier → repository during a session (§4).
  *
- * Hilos:
- * - captura: un hilo dedicado que nunca espera a nadie (cola de clasificación con `trySend`);
- * - clasificación: otro hilo dedicado con la única instancia de YAMNet;
- * - base de datos: las escrituras de pausas/base se encolan en orden en una corrutina.
+ * Threads:
+ * - capture: a dedicated thread that never waits on anyone (classification queue via `trySend`);
+ * - classification: another dedicated thread holding the single YAMNet instance;
+ * - database: pause/baseline writes are queued in order on a coroutine.
  */
 class SessionEngine(
     private val context: Context,
     private val repository: NightRepository,
     private val liveState: LiveState,
     private val onStatusChanged: (events: Int, pauseReason: String?) -> Unit,
-    /** Inyectables para probar la sesión completa en la JVM con audio grabado. */
+    /** Injectable so the full session can be tested on the JVM with recorded audio. */
     private val openAudio: () -> AudioSource = { AudioCapture(context) },
     private val loadClassifier: () -> WindowClassifier = { YamnetClassifier.create(context) },
 ) {
     @Volatile private var stopRequested = false
 
-    /** Pausa pedida por la persona (notificación o Inicio). Mientras dura, el micrófono queda libre. */
+    /** Pause requested by the user (notification or Home). While it lasts, the microphone is released. */
     @Volatile private var userPaused = false
 
     fun requestStop() {
@@ -80,14 +80,14 @@ class SessionEngine(
     }
 
     /**
-     * Ruidos ambientales ya guardados en esta sesión (viento, ventilador…), para no repetirlos.
-     * Solo lo usa el hilo de clasificación. Si el clip guardado se borró, `addRepeat` da false y
-     * se guarda uno nuevo, que pasa a ser el de referencia.
+     * Ambient noises already saved in this session (wind, fan…), so they are not repeated.
+     * Used only by the classification thread. If the saved clip was deleted, `addRepeat` returns
+     * false and a new one is saved, which becomes the reference clip.
      */
     private val repeats = RepeatFilter()
     private var groupRepeats = true
 
-    /** Sonidos que la persona pidió ignorar. Cambia en plena noche si los marca desde un clip. */
+    /** Sounds the user asked to ignore. Changes mid-night if they mark one from a clip. */
     @Volatile private var ignoredSounds: Set<SoundType> = emptySet()
 
     fun setIgnoredSounds(types: Set<SoundType>) {
@@ -96,16 +96,16 @@ class SessionEngine(
 
     suspend fun run(session: SessionEntity, sensitivity: Sensitivity, groupRepeats: Boolean = true) {
         this.groupRepeats = groupRepeats
-        val captureDispatcher = singleThread("Murmur-captura")
-        val classifyDispatcher = singleThread("Murmur-clasificacion")
+        val captureDispatcher = singleThread("Murmur-capture")
+        val classifyDispatcher = singleThread("Murmur-classify")
         val capture = openAudio()
         val monitor = InterruptionMonitor(context) { capture.audioSessionId }
         val classifier = runCatching { withContext(classifyDispatcher) { loadClassifier() } }
-            .onFailure { Log.e(TAG, "No se pudo cargar YAMNet; los eventos se guardarán sin clasificar", it) }
+            .onFailure { Log.e(TAG, "Could not load YAMNet; events will be saved unclassified", it) }
             .getOrNull()
         val aac = session.fullRecordingPath?.let { path ->
             runCatching { AacFullRecorder.open(File(path)) }
-                .onFailure { Log.e(TAG, "No se pudo iniciar la grabación completa", it) }
+                .onFailure { Log.e(TAG, "Could not start the full recording", it) }
                 .getOrNull()
         }
         liveState.update { it.copy(classifierAvailable = classifier != null) }
@@ -123,7 +123,7 @@ class SessionEngine(
                     }
                 }
                 val dbWorker = launch {
-                    for (op in dbOps) runCatching { op() }.onFailure { Log.e(TAG, "Escritura fallida", it) }
+                    for (op in dbOps) runCatching { op() }.onFailure { Log.e(TAG, "Write failed", it) }
                 }
                 val heartbeat = launch {
                     while (isActive) {
@@ -137,11 +137,11 @@ class SessionEngine(
                     captureLoop(session.id, sensitivity, capture, monitor, aac, queue, dbOps)
                 }
 
-                // Detener: vaciar la cola de clasificación (máximo 10 s) y las escrituras pendientes.
+                // Stop: drain the classification queue (10 s max) and the pending writes.
                 queue.close()
                 if (withTimeoutOrNull(DRAIN_TIMEOUT_MS) { worker.join() } == null) {
-                    Log.w(TAG, "La clasificación no terminó a tiempo; se descartan los eventos pendientes")
-                    worker.cancelAndJoin() // espera a que termine la inferencia en curso antes de cerrar YAMNet
+                    Log.w(TAG, "Classification did not finish in time; dropping pending events")
+                    worker.cancelAndJoin() // waits for the in-flight inference to finish before closing YAMNet
                 }
                 heartbeat.cancel()
                 monitor.stop()
@@ -170,20 +170,20 @@ class SessionEngine(
         runCatching { Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO) }
         val detector = EventDetector(DetectorConfig(sensitivityDb = sensitivity.marginDb.toFloat()))
         val buffer = ShortArray(AudioCapture.BLOCK_SAMPLES)
-        // Ancla de tiempo de cada tramo continuo: hora = ancla + muestras / 16 (§4.1).
+        // Time anchor of each continuous stretch: time = anchor + samples / 16 (§4.1).
         var anchorMs = System.currentTimeMillis()
         var samplesSinceAnchor = 0L
         var pausedReason: String? = null
         var backoffMs = INITIAL_BACKOFF_MS
         var baselineSaved = false
         var zeroBlocks = 0
-        // Identificar el fondo al terminar el calentamiento y otra vez al terminar la calibración.
+        // Identify the background when warm-up ends and again when calibration ends.
         var probesDone = 0
 
         fun enqueue(event: ClosedEvent?) {
             if (event == null) return
             if (!queue.trySend(ClassifyJob.Event(event)).isSuccess) {
-                Log.w(TAG, "Cola de clasificación llena: evento descartado")
+                Log.w(TAG, "Classification queue full: event dropped")
                 liveState.update { it.copy(droppedEvents = it.droppedEvents + 1) }
             }
         }
@@ -191,10 +191,10 @@ class SessionEngine(
         fun beginPause(reason: String) {
             val at = System.currentTimeMillis()
             enqueue(detector.interrupt())
-            // startPause cierra la pausa anterior si el motivo cambia.
+            // startPause closes the previous pause if the reason changes.
             dbOps.trySend { repository.startPause(sessionId, at, reason) }
             pausedReason = reason
-            liveState.update { it.copy(phase = LivePhase.PAUSA, pauseReason = reason, levelDb = Pcm.FLOOR_DB) }
+            liveState.update { it.copy(phase = LivePhase.PAUSED, pauseReason = reason, levelDb = Pcm.FLOOR_DB) }
             onStatusChanged(liveState.snapshot.value.totalEvents, reason)
         }
 
@@ -205,8 +205,8 @@ class SessionEngine(
             anchorMs = at
             samplesSinceAnchor = 0
             zeroBlocks = 0
-            // No se recalibra: se mantiene la base (§6.5).
-            val phase = if (detector.baseline.isCalibrated) LivePhase.ESCUCHANDO else LivePhase.CALIBRANDO
+            // No recalibration: the baseline is kept (§6.5).
+            val phase = if (detector.baseline.isCalibrated) LivePhase.LISTENING else LivePhase.CALIBRATING
             liveState.update { it.copy(phase = phase, pauseReason = null) }
             onStatusChanged(liveState.snapshot.value.totalEvents, null)
         }
@@ -214,33 +214,33 @@ class SessionEngine(
         if (capture.open()) {
             liveState.update { it.copy(audioSource = capture.sourceName) }
         } else {
-            beginPause(PauseReason.ERROR_AUDIO)
+            beginPause(PauseReason.AUDIO_ERROR)
         }
 
         while (!stopRequested) {
             currentCoroutineContext().ensureActive()
 
-            // Pausa manual: se cierra el evento abierto y se suelta el micrófono (el indicador verde
-            // de Android se apaga). Al continuar se reabre y se sigue con la misma base (§6.5).
+            // Manual pause: the open event is closed and the microphone is released (Android's green
+            // indicator turns off). On resume it is reopened and the same baseline is kept (§6.5).
             if (userPaused) {
-                if (pausedReason != PauseReason.USUARIO) beginPause(PauseReason.USUARIO)
+                if (pausedReason != PauseReason.USER) beginPause(PauseReason.USER)
                 if (capture.isOpen) capture.release()
                 delay(STOP_POLL_MS)
                 continue
             }
-            if (pausedReason == PauseReason.USUARIO) {
+            if (pausedReason == PauseReason.USER) {
                 if (capture.open()) {
                     backoffMs = INITIAL_BACKOFF_MS
                     liveState.update { it.copy(audioSource = capture.sourceName) }
                     endPause()
                 } else {
-                    beginPause(PauseReason.ERROR_AUDIO)
+                    beginPause(PauseReason.AUDIO_ERROR)
                 }
                 continue
             }
 
             if (!capture.isOpen) {
-                // Reintento con espera exponencial: 1, 2, 4… hasta 30 s.
+                // Retry with exponential backoff: 1, 2, 4… up to 30 s.
                 var waited = 0L
                 while (waited < backoffMs && !stopRequested) {
                     delay(STOP_POLL_MS)
@@ -250,7 +250,7 @@ class SessionEngine(
                 if (capture.open()) {
                     backoffMs = INITIAL_BACKOFF_MS
                     liveState.update { it.copy(audioSource = capture.sourceName) }
-                    if (pausedReason == PauseReason.ERROR_AUDIO) endPause()
+                    if (pausedReason == PauseReason.AUDIO_ERROR) endPause()
                 } else {
                     backoffMs = minOf(backoffMs * 2, MAX_BACKOFF_MS)
                 }
@@ -259,24 +259,24 @@ class SessionEngine(
 
             val n = capture.readBlock(buffer)
             if (n < 0) {
-                Log.w(TAG, "Error de lectura del micrófono: $n")
+                Log.w(TAG, "Microphone read error: $n")
                 capture.release()
-                if (pausedReason != PauseReason.ERROR_AUDIO) beginPause(PauseReason.ERROR_AUDIO)
+                if (pausedReason != PauseReason.AUDIO_ERROR) beginPause(PauseReason.AUDIO_ERROR)
                 continue
             }
 
-            // Ceros digitales sostenidos = otra app tiene el micrófono aunque el sistema no lo avise.
+            // Sustained digital zeros = another app has the microphone even if the system does not say so.
             val level = Pcm.rmsDb(buffer, 0, n)
             zeroBlocks = if (level <= Pcm.FLOOR_DB) zeroBlocks + 1 else 0
             val reason = monitor.currentReason
-                ?: if (zeroBlocks >= ZERO_BLOCKS_FOR_PAUSE) PauseReason.MICROFONO_OCUPADO else null
+                ?: if (zeroBlocks >= ZERO_BLOCKS_FOR_PAUSE) PauseReason.MIC_BUSY else null
             if (reason != null) {
                 if (pausedReason != reason) beginPause(reason)
-                continue // se sigue leyendo para mantener vivo el AudioRecord, pero se descarta
+                continue // keep reading to keep the AudioRecord alive, but discard the audio
             }
             if (pausedReason != null) {
                 endPause()
-                continue // este bloque pertenece al tramo anterior; el nuevo tramo empieza ahora
+                continue // this block belongs to the previous stretch; the new stretch starts now
             }
 
             val timestamp = anchorMs + samplesSinceAnchor * 1000 / Pcm.SAMPLE_RATE
@@ -291,16 +291,16 @@ class SessionEngine(
                 val baseline = out.baselineDb
                 dbOps.trySend { repository.setBaseline(sessionId, baseline) }
             }
-            // Sonda de fondo: solo con el detector en reposo, para no clasificar un evento como fondo.
+            // Background probe: only while the detector is idle, so an event is not classified as background.
             val probeDue = (probesDone == 0 && out.thresholdDb != null) || (probesDone == 1 && calibrated)
-            if (probeDue && out.state == DetectorState.ESCUCHANDO && out.closedEvent == null) {
+            if (probeDue && out.state == DetectorState.LISTENING && out.closedEvent == null) {
                 queue.trySend(ClassifyJob.BackgroundProbe(detector.recentAudio(PROBE_MS)))
                 probesDone++
             }
             val phase = when {
-                out.state == DetectorState.EVENTO -> LivePhase.EVENTO
-                !calibrated -> LivePhase.CALIBRANDO
-                else -> LivePhase.ESCUCHANDO
+                out.state == DetectorState.EVENT -> LivePhase.EVENT
+                !calibrated -> LivePhase.CALIBRATING
+                else -> LivePhase.LISTENING
             }
             liveState.update {
                 it.copy(
@@ -313,7 +313,7 @@ class SessionEngine(
             }
         }
 
-        // Fin de sesión: el evento abierto se clasifica y guarda.
+        // End of session: the open event is classified and saved.
         detector.interrupt()?.let { queue.send(ClassifyJob.Event(it)) }
         if (pausedReason != null) {
             val at = System.currentTimeMillis()
@@ -325,15 +325,15 @@ class SessionEngine(
         try {
             val result = analyzer?.analyze(event.pcm) ?: unclassified(event)
             val discarded = result.category == Category.FONDO
-            // Un sonido de la lista de ignorados (el perro, el aire…): ni WAV ni fila.
+            // A sound on the ignore list (the dog, the AC…): no WAV and no row.
             val ignoredType = if (discarded) null else IgnoreFilter.ignoredType(result, ignoredSounds)
             val skipped = discarded || ignoredType != null
-            // Ruido ambiental ya guardado esta noche (el ventilador, el viento…): se suma como
-            // repetición al primero, sin otro clip.
+            // Ambient noise already saved tonight (the fan, the wind…): counted as a repeat of
+            // the first one, with no new clip.
             val ambient = if (groupRepeats && !skipped) RepeatFilter.ambientType(result) else null
             val foldInto = repeats.foldInto(ambient, event.startedAtMs)
             val repeated = foldInto != null && repository.addRepeat(sessionId, foldInto, event.startedAtMs)
-            // FONDO se descarta: ni WAV ni fila. Si guardar falla, se muestra en Inicio (nunca en silencio).
+            // FONDO is discarded: no WAV and no row. If saving fails, it shows on Home (never silently).
             val saved = when {
                 skipped || repeated -> true
                 else -> repository.saveEvent(sessionId, event, result)
@@ -366,7 +366,7 @@ class SessionEngine(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "No se pudo procesar un evento", e)
+            Log.e(TAG, "Could not process an event", e)
             liveState.update {
                 it.copy(saveErrors = it.saveErrors + 1, lastError = "Error al procesar un sonido: ${e.javaClass.simpleName} ${e.message ?: ""}".trim())
             }
@@ -377,7 +377,7 @@ class SessionEngine(
         if (analyzer == null || pcm.isEmpty()) return
         runCatching { analyzer.analyze(pcm) }
             .onSuccess { r -> liveState.update { it.copy(backgroundLabel = r.meanScores.firstOrNull()?.label) } }
-            .onFailure { Log.w(TAG, "No se pudo identificar el fondo", it) }
+            .onFailure { Log.w(TAG, "Could not identify the background", it) }
     }
 
     private fun unclassified(event: ClosedEvent) = ClassificationResult(
@@ -395,8 +395,8 @@ class SessionEngine(
 
     private companion object {
         const val TAG = "SessionEngine"
-        // Cada evento ocupa como mucho ~2 MB (65 s): 16 en cola ≈ 32 MB en el peor caso. Con 4 se perdían
-        // eventos en ráfagas (plan §12, B7).
+        // Each event takes at most ~2 MB (65 s): 16 queued ≈ 32 MB in the worst case. With 4, events
+        // were lost in bursts (plan §12, B7).
         const val QUEUE_CAPACITY = 16
         const val HEARTBEAT_MS = 30_000L
         const val DRAIN_TIMEOUT_MS = 10_000L

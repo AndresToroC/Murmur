@@ -5,10 +5,10 @@ import android.content.res.Configuration
 import java.util.Locale
 
 /**
- * Idioma de la app, elegido en Ajustes (español por defecto).
+ * The app's language, chosen in Settings (Spanish by default).
  *
- * Se guarda en SharedPreferences y no en DataStore porque hay que leerlo de forma síncrona en
- * `attachBaseContext`, antes de que exista la actividad o el servicio. Cambiarlo recrea la actividad.
+ * Stored in SharedPreferences rather than DataStore because it must be read synchronously in
+ * `attachBaseContext`, before the activity or service exists. Changing it recreates the activity.
  */
 enum class Language(val tag: String) { ES("es"), EN("en") }
 
@@ -25,7 +25,7 @@ object AppLanguage {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY, language.tag).commit()
     }
 
-    /** Contexto con el idioma elegido; también fija el `Locale` por defecto (fechas y números). */
+    /** Context with the chosen language; also sets the default `Locale` (dates and numbers). */
     fun wrap(context: Context): Context {
         val locale = Locale.forLanguageTag(get(context).tag)
         Locale.setDefault(locale)

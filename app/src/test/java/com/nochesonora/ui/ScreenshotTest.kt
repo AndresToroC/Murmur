@@ -77,8 +77,8 @@ import kotlin.math.PI
 import kotlin.math.sin
 
 /**
- * Capturas de las pantallas con los datos de la noche del 3 de noviembre, para revisar el diseño
- * sin teléfono. Solo corre con la variable NS_SCREENSHOTS; deja los PNG en build/screenshots.
+ * Screenshots of the screens with the data from the night of November 3, to review the design
+ * without a phone. Only runs with the NS_SCREENSHOTS variable; writes the PNGs to build/screenshots.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], application = Application::class, qualifiers = "es-w390dp-h844dp-xhdpi")
@@ -99,7 +99,7 @@ class ScreenshotTest {
     private fun shoot(name: String, steps: Int = 10, onStep: (Int) -> Unit = {}, content: @Composable () -> Unit) {
         assumeTrue(System.getenv("NS_SCREENSHOTS") != null)
         val controller = Robolectric.buildActivity(ComponentActivity::class.java).setup()
-        // Lo mismo que hace AppLanguage.wrap: fechas y números en el idioma de los recursos.
+        // Same as AppLanguage.wrap: dates and numbers in the resources' language.
         java.util.Locale.setDefault(controller.get().resources.configuration.locales[0])
         val activity = controller.get()
         activity.setContent {
@@ -108,7 +108,7 @@ class ScreenshotTest {
         repeat(steps) {
             onStep(it)
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(150))
-            Thread.sleep(170) // delay() y Dispatchers.IO corren en tiempo real
+            Thread.sleep(170) // delay() and Dispatchers.IO run in real time
         }
         val view = activity.window.decorView
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
@@ -118,13 +118,13 @@ class ScreenshotTest {
     }
 
     @Test
-    fun inicioEnVivo() {
+    fun homeLive() {
         val levels = listOf(-60, -58, -59, -57, -54, -56, -58, -59, -57, -55, -44, -36, -39, -48, -54, -57, -58, -59, -58, -56,
             -57, -58, -59, -60, -58, -57, -54, -46, -34, -38, -49, -56, -58, -59, -57, -58, -56, -57, -58, -49)
         var live by mutableStateOf(
             LiveSnapshot(
                 serviceRunning = true, sessionId = 1, startedAt = System.currentTimeMillis() - (72 * 60 + 40) * 1000L,
-                phase = LivePhase.ESCUCHANDO, levelDb = -49f, baselineDb = -52f, thresholdDb = -42f, calibrationProgress = 1f,
+                phase = LivePhase.LISTENING, levelDb = -49f, baselineDb = -52f, thresholdDb = -42f, calibrationProgress = 1f,
                 counts = mapOf(Category.HABLA to 8, Category.OTRO to 9),
                 recent = listOf(
                     HeardItem(at(0, 41, 12), Category.HABLA, "Speech", discarded = false),
@@ -136,29 +136,29 @@ class ScreenshotTest {
                 backgroundLabel = "Mechanical fan",
             ),
         )
-        shoot("1_inicio_en_vivo", steps = levels.size, onStep = { live = live.copy(levelDb = levels[it].toFloat()) }) {
+        shoot("1_home_live", steps = levels.size, onStep = { live = live.copy(levelDb = levels[it].toFloat()) }) {
             HomeContent(live = live, last = null, stopping = false, onStart = {}, onStop = {}, onOpenSession = {})
         }
     }
 
     @Test
-    fun inicioEnReposo() {
+    fun homeIdle() {
         val last = SessionSummaryRow(night, snoreEvents = 0, speechEvents = 8, coughEvents = 0, otherEvents = 9, snoreMs = 0)
-        shoot("2_inicio_reposo") {
+        shoot("2_home_idle") {
             HomeContent(live = LiveSnapshot(), last = last, stopping = false, onStart = {}, onStop = {}, onOpenSession = {})
         }
     }
 
     @Test
-    fun detalleDeLaNoche() = detailShot("3_detalle_noche", filter = null, openIndex = 1)
+    fun nightDetail() = detailShot("3_night_detail", filter = null, openIndex = 1)
 
-    /** Filtro en "Otro" con el viento del ventilador guardado una vez y sus repeticiones. */
+    /** Filter on "Other" with the fan's wind noise saved once plus its repeats. */
     @Test
-    fun detalleFiltradoRuidoRepetido() = detailShot("14_detalle_filtro", filter = Category.OTRO, openIndex = 2)
+    fun detailFilteredRepeatedNoise() = detailShot("14_detail_filter", filter = Category.OTRO, openIndex = 2)
 
     private fun detailShot(name: String, filter: Category?, openIndex: Int) {
         val wav = File(out, "clip.wav")
-        // 8 s: silencio, una frase de ~2 s y silencio, para que la onda tenga forma.
+        // 8 s: silence, a ~2 s phrase and silence, so the waveform has some shape.
         val samples = ShortArray(16_000 * 8) { i ->
             val t = i / 16_000.0
             val env = if (t in 3.0..5.2) sin(PI * (t - 3.0) / 2.2) * (0.6 + 0.4 * sin(t * 23)) else 0.02
@@ -226,10 +226,10 @@ class ScreenshotTest {
         }
     }
 
-    /** Ajustes → Sonidos ignorados, con el perro y el aire acondicionado marcados desde un clip. */
+    /** Settings → Ignored sounds, with the dog and the air conditioner marked from a clip. */
     @Test
-    fun sonidosIgnorados() {
-        shoot("15_sonidos_ignorados") {
+    fun ignoredSounds() {
+        shoot("15_ignored_sounds") {
             Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 ScreenHeader("Ajustes")
                 IgnoredSounds(setOf(SoundType.DOG, SoundType.FAN, SoundType.DOOR), onRemove = {})
@@ -238,7 +238,7 @@ class ScreenshotTest {
         }
     }
 
-    /** Noches del calendario: 3 de noviembre (la del día 3), 2, 1, más dos de semanas anteriores. */
+    /** Calendar nights: November 3 (the night of the 3rd), 2, 1, plus two from earlier weeks. */
     private fun historyRows(): List<SessionSummaryRow> {
         val day = 86_400_000L
         return listOf(
@@ -267,18 +267,18 @@ class ScreenshotTest {
     }
 
     @Test
-    fun historialCalendario() {
-        shoot("4_historial") { History(historyRows()) }
+    fun historyCalendar() {
+        shoot("4_history") { History(historyRows()) }
     }
 
     @Test
-    fun inicioCalibrando() {
-        shoot("6_inicio_calibrando") { HomeContent(live = calibrating(), last = null, stopping = false, onStart = {}, onStop = {}, onOpenSession = {}) }
+    fun homeCalibrating() {
+        shoot("6_home_calibrating") { HomeContent(live = calibrating(), last = null, stopping = false, onStart = {}, onStop = {}, onOpenSession = {}) }
     }
 
     private fun calibrating() = LiveSnapshot(
         serviceRunning = true, sessionId = 1, startedAt = System.currentTimeMillis() - 23_000L,
-        phase = LivePhase.CALIBRANDO, levelDb = -55f, baselineDb = -53f, thresholdDb = -43f, calibrationProgress = 23f / 60f,
+        phase = LivePhase.CALIBRATING, levelDb = -55f, baselineDb = -53f, thresholdDb = -43f, calibrationProgress = 23f / 60f,
         counts = emptyMap(), backgroundLabel = "Mechanical fan",
     )
 
@@ -286,29 +286,29 @@ class ScreenshotTest {
     @Config(qualifiers = "en-w390dp-h844dp-xhdpi")
     fun englishHome() {
         val last = SessionSummaryRow(night, snoreEvents = 0, speechEvents = 8, coughEvents = 0, otherEvents = 9, snoreMs = 0)
-        shoot("7_en_inicio") { HomeContent(live = LiveSnapshot(), last = last, stopping = false, onStart = {}, onStop = {}, onOpenSession = {}) }
+        shoot("7_en_home") { HomeContent(live = LiveSnapshot(), last = last, stopping = false, onStart = {}, onStop = {}, onOpenSession = {}) }
     }
 
     @Test
     @Config(qualifiers = "en-w390dp-h844dp-xhdpi")
     fun englishCalibrating() {
-        shoot("8_en_calibrando") { HomeContent(live = calibrating(), last = null, stopping = false, onStart = {}, onStop = {}, onOpenSession = {}) }
+        shoot("8_en_calibrating") { HomeContent(live = calibrating(), last = null, stopping = false, onStart = {}, onStop = {}, onOpenSession = {}) }
     }
 
     @Test
     @Config(qualifiers = "en-w390dp-h844dp-xhdpi")
     fun englishHistory() {
-        shoot("9_en_historial") { History(historyRows()) }
+        shoot("9_en_history") { History(historyRows()) }
     }
 
-    /** El medidor y la onda con datos fijos (en las capturas de pantalla completa aún no se han cargado). */
+    /** The meter and the waveform with fixed data (in the full-screen captures they have not loaded yet). */
     @Test
-    fun componentes() {
+    fun components() {
         val levels = listOf(-60, -58, -59, -57, -54, -56, -58, -59, -57, -55, -44, -36, -39, -48, -54, -57, -58, -59, -58, -56,
             -57, -58, -59, -60, -58, -57, -54, -46, -34, -38, -49, -56, -58, -59, -57, -58, -56, -57, -58, -49).map { it.toFloat() }
         val peaks = listOf(6, 10, 14, 22, 18, 26, 30, 24, 16, 12, 20, 28, 24, 14, 10, 8, 12, 18, 22, 16, 10, 8, 6, 10, 14, 12, 8, 6, 8, 10, 6, 4, 6, 8, 6, 4)
             .map { it / 32f }
-        shoot("5_componentes", steps = 2) {
+        shoot("5_components",steps = 2) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 com.nochesonora.ui.common.MurmurCard(Modifier.fillMaxWidth()) {
                     com.nochesonora.ui.common.LevelBars(levels, baselineDb = -52f, thresholdDb = -42f)
@@ -326,8 +326,8 @@ class ScreenshotTest {
     }
 
     @Test
-    fun tendencias() {
-        shoot("10_tendencias") {
+    fun trends() {
+        shoot("10_trends") {
             com.nochesonora.ui.history.HistoryContent(
                 sessions = historyRows(),
                 today = java.time.LocalDate.of(2026, 11, 4),
@@ -338,21 +338,21 @@ class ScreenshotTest {
     }
 
     @Test
-    fun inicioEnPausa() {
+    fun homePaused() {
         val live = LiveSnapshot(
             serviceRunning = true, sessionId = 1, startedAt = System.currentTimeMillis() - (95 * 60 + 12) * 1000L,
-            phase = LivePhase.PAUSA, pauseReason = com.nochesonora.data.db.PauseReason.USUARIO,
+            phase = LivePhase.PAUSED, pauseReason = com.nochesonora.data.db.PauseReason.USER,
             levelDb = -100f, baselineDb = -52f, thresholdDb = -42f, calibrationProgress = 1f,
             counts = mapOf(Category.HABLA to 3, Category.RONQUIDO to 2), backgroundLabel = "Mechanical fan",
         )
-        shoot("11_inicio_en_pausa") { HomeContent(live = live, last = null, stopping = false, onStart = {}, onStop = {}, onOpenSession = {}) }
+        shoot("11_home_paused") { HomeContent(live = live, last = null, stopping = false, onStart = {}, onStop = {}, onOpenSession = {}) }
     }
 
-    /** El widget tal como lo dibuja el lanzador (RemoteViews), grabando y en reposo. */
+    /** The widget as the launcher draws it (RemoteViews), recording and idle. */
     @Test
     fun widget() {
         val last = SessionSummaryRow(night, snoreEvents = 4, speechEvents = 8, coughEvents = 0, otherEvents = 9, snoreMs = 12 * 60_000L)
-        val recording = LiveSnapshot(serviceRunning = true, sessionId = 1, startedAt = System.currentTimeMillis() - (72 * 60 + 40) * 1000L, phase = LivePhase.ESCUCHANDO)
+        val recording = LiveSnapshot(serviceRunning = true, sessionId = 1, startedAt = System.currentTimeMillis() - (72 * 60 + 40) * 1000L, phase = LivePhase.LISTENING)
         shoot("12_widget", steps = 3) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 for (live in listOf(LiveSnapshot(), recording)) {
@@ -367,7 +367,7 @@ class ScreenshotTest {
         }
     }
 
-    /** El logo "Luna de barras" como ícono (círculo y squircle), monocromo, glifo de estado y encabezado. */
+    /** The "Luna de barras" (bar moon) logo as an icon (circle and squircle), monochrome, status glyph and header. */
     @Test
     fun logo() {
         @Composable
@@ -386,7 +386,7 @@ class ScreenshotTest {
                         if (mono) com.nochesonora.R.drawable.ic_launcher_monochrome else com.nochesonora.R.drawable.ic_launcher_foreground,
                     ),
                     null,
-                    // El ícono adaptativo muestra el centro (72 de 108 dp): se amplía igual que el sistema.
+                    // The adaptive icon shows the center (72 of 108 dp): scale it up the same way the system does.
                     Modifier.fillMaxSize().graphicsLayer { scaleX = 1.5f; scaleY = 1.5f },
                     colorFilter = if (mono) androidx.compose.ui.graphics.ColorFilter.tint(androidx.compose.ui.graphics.Color(0xFF1A3157)) else null,
                 )

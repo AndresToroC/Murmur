@@ -1,7 +1,7 @@
 package com.nochesonora.core.classification
 
-/** FONDO nunca se persiste: los eventos de fondo se descartan. */
+/** FONDO (background) is never persisted: background events are discarded. */
 enum class Category { RONQUIDO, HABLA, TOS, OTRO, FONDO }
 
-/** Una etiqueta de YAMNet con su score (por ventana o media del clip). */
+/** A YAMNet label with its score (per window or averaged over the clip). */
 data class LabelScore(val label: String, val score: Float)

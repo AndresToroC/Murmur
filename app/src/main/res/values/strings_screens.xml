@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Textos de Detalle, Diagnóstico, componentes comunes, navegación y notificación (español, base). -->
+<!-- Texts for Detail, Diagnostics, common components, navigation and notification (Spanish, default). -->
 <resources>
-    <!-- Comunes -->
+    <!-- Common -->
     <string name="common_back">Volver</string>
     <string name="common_cancel">Cancelar</string>
     <string name="common_delete">Borrar</string>
@@ -15,16 +15,16 @@
     <string name="common_tile_other">Otros</string>
     <string name="common_tile_events">Eventos</string>
 
-    <!-- Reproductor -->
+    <!-- Player -->
     <string name="player_play">Reproducir</string>
     <string name="player_pause">Pausar</string>
 
-    <!-- Navegación -->
+    <!-- Navigation -->
     <string name="nav_home">Inicio</string>
     <string name="nav_history">Historial</string>
     <string name="nav_settings">Ajustes</string>
 
-    <!-- Detalle de la noche -->
+    <!-- Night detail -->
     <string name="detail_title_fallback">Noche</string>
     <string name="detail_timeline">Línea de tiempo</string>
     <plurals name="detail_clips">
@@ -48,7 +48,7 @@
     <string name="detail_change_category">Cambiar categoría</string>
     <string name="detail_go_to_recording">Ir a la grabación</string>
 
-    <!-- Diagnóstico -->
+    <!-- Diagnostics -->
     <string name="diag_title">Diagnóstico</string>
     <string name="diag_live">En vivo</string>
     <string name="diag_no_session">Sin sesión activa</string>
@@ -84,7 +84,7 @@
     <string name="diag_mic_failed">No se pudo abrir el micrófono (¿lo usa otra app?)</string>
     <string name="diag_error">Error: %1$s</string>
 
-    <!-- Notificación -->
+    <!-- Notification -->
     <string name="notif_channel_name">Sesión nocturna</string>
     <string name="notif_channel_desc">Aviso permanente mientras la app escucha la noche</string>
     <string name="notif_title">Escuchando la noche</string>

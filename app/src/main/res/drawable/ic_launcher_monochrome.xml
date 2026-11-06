@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Capa monocroma (íconos temáticos de Android 13+): la misma luna en una sola tinta;
-     el sistema la colorea. -->
+<!-- Monochrome layer (Android 13+ themed icons): the same moon in a single ink;
+     the system tints it. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"

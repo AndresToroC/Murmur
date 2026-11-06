@@ -62,10 +62,10 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as DateTextStyle
 import kotlin.math.roundToInt
 
-/** Pestañas del Historial. */
+/** History tabs. */
 enum class HistoryTab { CALENDAR, TRENDS }
 
-/** Selector "Calendario | Tendencias" bajo el encabezado del Historial. */
+/** "Calendar | Trends" selector below the History header. */
 @Composable
 internal fun HistoryTabs(selected: HistoryTab, onSelect: (HistoryTab) -> Unit, modifier: Modifier = Modifier) {
     val tabs = listOf(
@@ -84,8 +84,8 @@ internal fun HistoryTabs(selected: HistoryTab, onSelect: (HistoryTab) -> Unit, m
 }
 
 /**
- * Tendencias de los últimos 7 o 30 días: casillas con medias y comparación con el periodo
- * anterior, una gráfica de barras por categoría y lo más destacado. Se desplaza sola.
+ * Trends for the last 7 or 30 days: tiles with averages and comparison with the previous
+ * period, a bar chart per category and the highlights. Scrolls on its own.
  */
 @Composable
 internal fun TrendsContent(rows: List<SessionSummaryRow>, today: LocalDate, onOpenSession: (Long) -> Unit) {
@@ -218,8 +218,8 @@ private fun SummaryTiles(trends: Trends) {
 }
 
 /**
- * Casilla con la cifra del periodo y, debajo, el cambio respecto al anterior.
- * [goodWhenDown]: true = bajar es bueno (verde-azul), subir es malo (rojo); null = neutro.
+ * Tile with the figure for the period and, below it, the change from the previous one.
+ * [goodWhenDown]: true = going down is good (teal), going up is bad (red); null = neutral.
  */
 @Composable
 private fun TrendTile(value: String, label: String, change: Change?, goodWhenDown: Boolean?, dot: Color, modifier: Modifier = Modifier) {
@@ -248,8 +248,8 @@ private fun TrendTile(value: String, label: String, change: Change?, goodWhenDow
 }
 
 /**
- * Barras por día. Un día sin noches lleva una marca tenue; uno con noches pero sin ese sonido,
- * un trazo corto del color. Tocar la barra de un día con noches abre la más reciente de ese día.
+ * Bars per day. A day without nights gets a faint mark; one with nights but none of that sound,
+ * a short stroke in the color. Tapping the bar of a day with nights opens that day's most recent one.
  */
 @Composable
 private fun BarChartCard(

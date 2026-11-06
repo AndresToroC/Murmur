@@ -4,11 +4,11 @@ import com.nochesonora.core.audio.Pcm
 import com.nochesonora.core.audio.RingBuffer
 
 /**
- * Capa 2: máquina de estados que abre y cierra eventos sobre la línea base (plan §4.4).
+ * Layer 2: state machine that opens and closes events above the baseline (plan §4.4).
  *
- * Contiene la [BaselineTracker] y el anillo de pre-roll, así que el llamador solo entrega
- * bloques. Toda la memoria se reserva al construirlo: un búfer de evento de ~63 s y un
- * anillo de 5 s. Cada evento cerrado se entrega como copia recortada.
+ * Owns the [BaselineTracker] and the pre-roll ring, so the caller only hands in
+ * blocks. All memory is allocated at construction: a ~63 s event buffer and a
+ * 5 s ring. Each closed event is delivered as a trimmed copy.
  */
 class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
     val baseline = BaselineTracker(config)
@@ -19,7 +19,7 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
     private val pcm = ShortArray(config.samples(config.preRollMs + config.maxEventMs) + 2 * config.blockSamples)
     private var pcmSize = 0
 
-    var state: DetectorState = DetectorState.CALIBRANDO
+    var state: DetectorState = DetectorState.CALIBRATING
         private set
 
     // Onset
@@ -28,7 +28,7 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
     private var onsetSamplesInRing = 0
     private var onsetPeakDb = Pcm.FLOOR_DB
 
-    // Evento abierto
+    // Open event
     private var eventStartMs = 0L
     private var clipStartMs = 0L
     private var lastActiveEndMs = 0L
@@ -36,7 +36,7 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
     private var belowCount = 0
     private var peakDb = Pcm.FLOOR_DB
     private var activeBlocks = 0
-    /** El evento abierto sigue a un corte por duración máxima: hay un nivel sostenido. */
+    /** The open event follows a max-duration cut: there is a sustained level. */
     private var isContinuation = false
 
     fun onBlock(
@@ -48,12 +48,12 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
     ): DetectorOutput {
         val blockEndMs = timestampMs + length * 1000L / config.sampleRate
 
-        // Calentamiento (primeros 5 s): aún no hay base. Después se detecta aunque siga calibrando.
+        // Warm-up (first 5 s): no baseline yet. After that, detection runs even while still calibrating.
         val threshold = baseline.thresholdDb
         if (threshold == null) {
             baseline.onBlock(levelDb, track = true)
             ring.write(samples, offset, length)
-            state = DetectorState.CALIBRANDO
+            state = DetectorState.CALIBRATING
             return output(levelDb, null)
         }
 
@@ -61,7 +61,7 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
         var closed: ClosedEvent? = null
 
         when (state) {
-            DetectorState.CALIBRANDO, DetectorState.ESCUCHANDO -> if (above) {
+            DetectorState.CALIBRATING, DetectorState.LISTENING -> if (above) {
                 onsetStartMs = timestampMs
                 onsetCount = 1
                 onsetSamplesInRing = 0
@@ -72,7 +72,7 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
                     state = DetectorState.ONSET
                 }
             } else {
-                state = DetectorState.ESCUCHANDO
+                state = DetectorState.LISTENING
             }
 
             DetectorState.ONSET -> if (above) {
@@ -82,10 +82,10 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
                     startEvent(timestampMs, blockEndMs, samples, offset, length, levelDb)
                 }
             } else {
-                state = DetectorState.ESCUCHANDO
+                state = DetectorState.LISTENING
             }
 
-            DetectorState.EVENTO -> {
+            DetectorState.EVENT -> {
                 append(samples, offset, length)
                 peakDb = maxOf(peakDb, levelDb)
                 if (above) {
@@ -98,21 +98,21 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
                 }
                 if (belowCount >= config.hangoverBlocks) {
                     closed = close(trimToPostRoll = true)
-                    state = DetectorState.ESCUCHANDO
+                    state = DetectorState.LISTENING
                 } else if (blockEndMs - eventStartMs >= config.maxEventMs) {
                     if (belowCount == 0) {
-                        // Corte a los 60 s: sin post-roll, y el siguiente empieza aquí sin pre-roll (A7).
+                        // Cut at 60 s: no post-roll, and the next one starts here with no pre-roll (A7).
                         closed = close(trimToPostRoll = false)
                         startContinuation(blockEndMs)
                     } else {
                         closed = close(trimToPostRoll = true)
-                        state = DetectorState.ESCUCHANDO
+                        state = DetectorState.LISTENING
                     }
                 }
             }
         }
 
-        val track = state == DetectorState.ESCUCHANDO || (state == DetectorState.EVENTO && isContinuation)
+        val track = state == DetectorState.LISTENING || (state == DetectorState.EVENT && isContinuation)
         baseline.onBlock(levelDb, track)
         ring.write(samples, offset, length)
         if (state == DetectorState.ONSET) onsetSamplesInRing += length
@@ -120,15 +120,15 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
     }
 
     /**
-     * Pausa (micrófono perdido) o fin de sesión: cierra el evento abierto con lo que haya y
-     * vacía el anillo, porque el audio siguiente ya no es contiguo.
+     * Pause (microphone lost) or end of session: closes the open event with whatever it has and
+     * empties the ring, because the following audio is no longer contiguous.
      */
-    /** Últimos [ms] de audio (como mucho los 5 s del anillo), p. ej. para identificar el fondo. */
+    /** Last [ms] of audio (at most the ring's 5 s), e.g. to identify the background. */
     fun recentAudio(ms: Long): ShortArray = ring.readLast(config.samples(ms))
 
     fun interrupt(): ClosedEvent? {
-        val closed = if (state == DetectorState.EVENTO) close(trimToPostRoll = true) else null
-        state = if (baseline.thresholdDb != null) DetectorState.ESCUCHANDO else DetectorState.CALIBRANDO
+        val closed = if (state == DetectorState.EVENT) close(trimToPostRoll = true) else null
+        state = if (baseline.thresholdDb != null) DetectorState.LISTENING else DetectorState.CALIBRATING
         ring.clear()
         pcmSize = 0
         return closed
@@ -142,7 +142,7 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
         length: Int,
         levelDb: Float,
     ) {
-        // Pre-roll: 3 s anteriores al primer bloque del onset, más los bloques del onset ya escritos.
+        // Pre-roll: the 3 s before the first onset block, plus the onset blocks already written.
         val pre = ring.readLast(preRollSamples + onsetSamplesInRing)
         System.arraycopy(pre, 0, pcm, 0, pre.size)
         pcmSize = pre.size
@@ -155,7 +155,7 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
         peakDb = maxOf(onsetPeakDb, levelDb)
         activeBlocks = onsetCount
         isContinuation = false
-        state = DetectorState.EVENTO
+        state = DetectorState.EVENT
     }
 
     private fun startContinuation(atMs: Long) {
@@ -168,7 +168,7 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
         peakDb = Pcm.FLOOR_DB
         activeBlocks = 0
         isContinuation = true
-        state = DetectorState.EVENTO
+        state = DetectorState.EVENT
     }
 
     private fun append(samples: ShortArray, offset: Int, length: Int) {
@@ -180,7 +180,7 @@ class EventDetector(private val config: DetectorConfig = DetectorConfig()) {
     private fun close(trimToPostRoll: Boolean): ClosedEvent? {
         val wasCut = !trimToPostRoll
         val result = if (activeBlocks == 0) {
-            null // continuación que no volvió a superar el umbral: no hay nada que guardar
+            null // continuation that never rose above the threshold again: nothing to save
         } else {
             val end = if (trimToPostRoll) minOf(pcmSize, lastActiveEndIdx + postRollSamples) else pcmSize
             ClosedEvent(

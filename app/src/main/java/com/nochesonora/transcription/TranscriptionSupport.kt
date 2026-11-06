@@ -4,14 +4,14 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.Locale
 
-/** Lógica pura de la transcripción (sin android.*), probada en la JVM. */
+/** Pure transcription logic (no android.*), tested on the JVM. */
 object TranscriptionSupport {
-    /** Idioma por defecto del reconocedor para cada idioma de la app. */
+    /** Default recognizer language for each app language. */
     private val defaultTag = mapOf("es" to "es-ES", "en" to "en-US")
 
     /**
-     * Idiomas a intentar, en orden: idioma de la app con el país del teléfono si el teléfono está
-     * en ese idioma (es-CO), luego la variante por defecto (es-ES / en-US), luego es-US / en-GB.
+     * Languages to try, in order: the app language with the phone's country if the phone is set
+     * to that language (es-CO), then the default variant (es-ES / en-US), then es-US / en-GB.
      */
     fun candidateTags(appLanguage: String, deviceLocale: Locale): List<String> = buildList {
         if (deviceLocale.language == appLanguage && deviceLocale.country.isNotEmpty()) add("$appLanguage-${deviceLocale.country}")
@@ -25,22 +25,22 @@ object TranscriptionSupport {
 
     sealed interface LanguageChoice {
         val tag: String
-        /** El modelo de ese idioma ya está en el teléfono. */
+        /** The model for that language is already on the phone. */
         data class Installed(override val tag: String) : LanguageChoice
-        /** Se puede descargar (lo descarga el sistema, no la app). */
+        /** Can be downloaded (the system downloads it, not the app). */
         data class Downloadable(override val tag: String) : LanguageChoice
-        /** No hay datos de soporte (p. ej. el servicio no los da): se intenta igual. */
+        /** No support data (e.g. the service does not provide it): try anyway. */
         data class Unknown(override val tag: String) : LanguageChoice
-        /** El reconocedor del teléfono no tiene este idioma. */
+        /** The phone's recognizer does not have this language. */
         data object Unsupported : LanguageChoice {
             override val tag: String = ""
         }
     }
 
     /**
-     * Elige el idioma con lo que informa `checkRecognitionSupport`. Prioridad: un candidato
-     * instalado; otra variante instalada del mismo idioma; un candidato descargable; otra variante
-     * descargable. Las etiquetas se comparan sin distinguir `_`/`-` ni mayúsculas.
+     * Picks the language from what `checkRecognitionSupport` reports. Priority: an installed
+     * candidate; another installed variant of the same language; a downloadable candidate; another
+     * downloadable variant. Tags are compared ignoring `_`/`-` and case.
      */
     fun chooseLanguage(
         candidates: List<String>,
@@ -56,15 +56,15 @@ object TranscriptionSupport {
             return pool.firstOrNull { norm(it).substringBefore('-') == language }
         }
         pick(installed)?.let { return LanguageChoice.Installed(it) }
-        // Una descarga pendiente sigue siendo "descargable": el sistema la termina solo.
+        // A pending download still counts as "downloadable": the system finishes it on its own.
         pick(pending + supported)?.let { return LanguageChoice.Downloadable(it) }
         if (installed.isEmpty() && pending.isEmpty() && supported.isEmpty()) return LanguageChoice.Unknown(candidates.first())
         return LanguageChoice.Unsupported
     }
 
     /**
-     * El PCM16 de un WAV: busca el bloque `data` (no asume 44 bytes, aunque los clips de Murmur
-     * siempre los tienen). Devuelve null si no es un WAV PCM16 mono.
+     * The PCM16 of a WAV: looks for the `data` chunk (does not assume 44 bytes, although Murmur's
+     * clips always have them). Returns null if it is not a mono PCM16 WAV.
      */
     fun pcmFromWav(bytes: ByteArray): ByteArray? {
         if (bytes.size < 12) return null
@@ -87,7 +87,7 @@ object TranscriptionSupport {
                 "data" -> {
                     if (!pcm16Mono) return null
                     val end = minOf(bytes.size.toLong(), body + size).toInt()
-                    // Un número impar de bytes dejaría media muestra: se recorta.
+                    // An odd number of bytes would leave half a sample: trim it.
                     val len = (end - body) and 1.inv()
                     return bytes.copyOfRange(body, body + len)
                 }
@@ -98,15 +98,15 @@ object TranscriptionSupport {
     }
 
     /**
-     * Texto final de una o varias partes reconocidas (una por segmento). Quita espacios, une con
-     * un espacio y pone mayúscula inicial. "" si no se entendió nada.
+     * Final text from one or more recognized parts (one per segment). Trims spaces, joins with a
+     * single space and capitalizes the first letter. "" if nothing was understood.
      */
     fun joinSegments(segments: List<String?>, locale: Locale): String =
         segments.mapNotNull { it?.trim()?.takeIf(String::isNotEmpty) }
             .joinToString(" ")
             .replaceFirstChar { it.titlecase(locale) }
 
-    /** Tiempo máximo para transcribir un clip: su duración más un margen. */
+    /** Maximum time to transcribe a clip: its duration plus a margin. */
     fun timeoutMs(pcmBytes: Int, sampleRate: Int = 16_000): Long =
         pcmBytes / 2L * 1000 / sampleRate + 20_000
 }

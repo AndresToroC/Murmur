@@ -1,15 +1,15 @@
 package com.nochesonora.audio
 
-/** Fuente de bloques PCM16 a 16 kHz. En el teléfono es [AudioCapture]; en los tests, un audio grabado. */
+/** Source of 16 kHz PCM16 blocks. On the phone it is [AudioCapture]; in tests, recorded audio. */
 interface AudioSource {
     val isOpen: Boolean
     val sourceName: String
     val audioSessionId: Int
 
-    /** Abre la fuente. Devuelve false si no está disponible. */
+    /** Opens the source. Returns false if it is unavailable. */
     fun open(): Boolean
 
-    /** Lee exactamente `buffer.size` muestras o devuelve un código de error negativo. */
+    /** Reads exactly `buffer.size` samples or returns a negative error code. */
     fun readBlock(buffer: ShortArray): Int
 
     fun release()

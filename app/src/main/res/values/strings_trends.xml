@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Historial → Tendencias (español). Inglés en values-en/strings_trends.xml. -->
+<!-- History → Trends (Spanish). English in values-en/strings_trends.xml. -->
 <resources>
     <string name="trends_tab_calendar">Calendario</string>
     <string name="trends_tab_trends">Tendencias</string>

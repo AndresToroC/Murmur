@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 data class PlayerState(
-    /** Qué se está reproduciendo ("event:12", "full"). */
+    /** What is playing ("event:12", "full"). */
     val key: String? = null,
     val isPlaying: Boolean = false,
     val positionMs: Long = 0,
@@ -61,12 +61,12 @@ data class PlayerState(
 )
 
 /**
- * Un único ExoPlayer por pantalla (vive en el ViewModel y se libera en `onCleared`).
- * Reproducir otro clip detiene el anterior. Usar solo desde el hilo principal.
+ * A single ExoPlayer per screen (lives in the ViewModel and is released in `onCleared`).
+ * Playing another clip stops the previous one. Use from the main thread only.
  */
 @OptIn(UnstableApi::class)
 class ClipPlayer(context: Context, private val scope: CoroutineScope) {
-    // CBR seeking: permite saltar dentro de full.aac (ADTS no tiene índice).
+    // CBR seeking: allows seeking inside full.aac (ADTS has no index).
     private val player: ExoPlayer = ExoPlayer.Builder(
         context,
         DefaultMediaSourceFactory(context, DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true)),
@@ -144,8 +144,8 @@ class ClipPlayer(context: Context, private val scope: CoroutineScope) {
 }
 
 /**
- * Picos de un WAV PCM16 mono en [buckets] tramos (0–1), para dibujar la onda del clip.
- * Lee el archivo una vez; un clip de 60 s pesa ~2 MB. Devuelve null si no se puede leer.
+ * Peaks of a mono PCM16 WAV in [buckets] slices (0–1), to draw the clip's waveform.
+ * Reads the file once; a 60 s clip is ~2 MB. Returns null if it cannot be read.
  */
 fun wavPeaks(path: String, buckets: Int = 40): List<Float>? = runCatching {
     val bytes = File(path).readBytes()
@@ -168,14 +168,14 @@ fun wavPeaks(path: String, buckets: Int = 40): List<Float>? = runCatching {
         }
         peaks[b] = max / 32768f
     }
-    // Escala relativa al pico del clip, con raíz para que los sonidos suaves se vean.
+    // Scaled relative to the clip's peak, with a square root so soft sounds stay visible.
     val top = peaks.maxOrNull()?.takeIf { it > 0f } ?: return@runCatching peaks.map { 0.1f }
     peaks.map { kotlin.math.sqrt(it / top).coerceIn(0.1f, 1f) }
 }.getOrNull()
 
 /**
- * Botón play/pausa redondo + onda (o barra) de progreso; tocar la onda salta a ese punto.
- * [peaks] null dibuja una barra fina (p. ej. la grabación completa, que no es WAV).
+ * Round play/pause button + progress waveform (or bar); tapping the waveform seeks to that point.
+ * Null [peaks] draws a thin bar (e.g. the full recording, which is not a WAV).
  */
 @Composable
 fun ClipPlayerControls(

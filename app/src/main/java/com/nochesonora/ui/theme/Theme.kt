@@ -31,11 +31,11 @@ private val NightColors = darkColorScheme(
     error = CoughRed,
 )
 
-/** Tema oscuro siempre (no sigue al sistema: de noche no debe deslumbrar). */
+/** Always dark (does not follow the system: at night it must not dazzle). */
 @Composable
 fun MurmurTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = NightColors, typography = AppTypography) {
-        // Color de texto por defecto claro también fuera de un Scaffold/Surface.
+        // Light default text color, also outside a Scaffold/Surface.
         CompositionLocalProvider(LocalContentColor provides OnSurface, content = content)
     }
 }

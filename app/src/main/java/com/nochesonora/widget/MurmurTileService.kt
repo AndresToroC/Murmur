@@ -17,9 +17,9 @@ import com.nochesonora.data.settings.AppLanguage
 import com.nochesonora.service.NightSessionService
 
 /**
- * Botón de ajustes rápidos. Sin sesión, abre la app y empieza la noche (así pasa por los mismos
- * permisos y avisos que el botón de Inicio, y Android permite arrancar el micrófono porque la app
- * está en primer plano). Con sesión, la detiene.
+ * Quick settings tile. With no session, it opens the app and starts the night (so it goes through
+ * the same permissions and warnings as the Home button, and Android allows starting the microphone
+ * because the app is in the foreground). With a session, it stops it.
  */
 class MurmurTileService : TileService() {
     override fun attachBaseContext(newBase: Context) {
@@ -43,7 +43,7 @@ class MurmurTileService : TileService() {
         }
     }
 
-    // En Android 13 y anteriores no existe la versión con PendingIntent.
+    // On Android 13 and earlier the PendingIntent overload does not exist.
     @SuppressLint("StartActivityAndCollapseDeprecated")
     private fun openAppAndStart() {
         val intent = Intent(this, MainActivity::class.java)
@@ -69,7 +69,7 @@ class MurmurTileService : TileService() {
             tile.subtitle = getString(
                 when {
                     !live.serviceRunning -> R.string.tile_idle
-                    live.pauseReason == PauseReason.USUARIO -> R.string.tile_paused
+                    live.pauseReason == PauseReason.USER -> R.string.tile_paused
                     else -> R.string.tile_recording
                 },
             )
@@ -80,7 +80,7 @@ class MurmurTileService : TileService() {
     companion object {
         private const val REQUEST_START = 20
 
-        /** Pide a Android que vuelva a dibujar el botón (llama a onStartListening si está visible). */
+        /** Asks Android to redraw the tile (calls onStartListening if it is visible). */
         fun requestUpdate(context: Context) {
             runCatching { requestListeningState(context, ComponentName(context, MurmurTileService::class.java)) }
         }

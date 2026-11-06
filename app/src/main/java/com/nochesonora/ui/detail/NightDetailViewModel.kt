@@ -29,22 +29,22 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 
-/** Estado de la transcripción de esta noche, para la UI. */
+/** Transcription state for this night, for the UI. */
 data class TranscriptionUi(
-    /** null mientras se consulta si el teléfono puede transcribir. */
+    /** null while checking whether the phone can transcribe. */
     val availability: TranscriberAvailability? = null,
-    /** Se pidió la descarga del idioma en esta pantalla. */
+    /** The language download was requested on this screen. */
     val downloadRequested: Boolean = false,
-    /** Eventos que se están transcribiendo ahora (o en cola). */
+    /** Events being transcribed right now (or queued). */
     val inProgress: Set<Long> = emptySet(),
-    /** Eventos en los que el reconocedor del teléfono falló en esta pantalla. */
+    /** Events where the phone's recognizer failed on this screen. */
     val failed: Set<Long> = emptySet(),
 ) {
     val canTranscribe: Boolean get() = availability is TranscriberAvailability.Ready
 }
 
 class NightDetailViewModel(private val container: AppContainer, private val sessionId: Long) : ViewModel() {
-    /** null mientras carga o si se borró. */
+    /** null while loading or if it was deleted. */
     val detail: StateFlow<SessionDetail?> = container.repository.observeSessionDetail(sessionId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -56,15 +56,15 @@ class NightDetailViewModel(private val container: AppContainer, private val sess
     private val _expanded = MutableStateFlow<Set<Long>>(emptySet())
     val expanded: StateFlow<Set<Long>> = _expanded.asStateFlow()
 
-    // ---- Transcripción de los clips de habla ----
+    // ---- Transcription of speech clips ----
 
     private val transcriber = SpeechTranscriber(container.appContext)
     private val _transcription = MutableStateFlow(TranscriptionUi())
     val transcription: StateFlow<TranscriptionUi> = _transcription.asStateFlow()
 
-    /** Cola de eventos por transcribir; uno a la vez. */
+    /** Queue of events to transcribe; one at a time. */
     private val queue = Channel<EventEntity>(Channel.UNLIMITED)
-    /** Ya intentados en esta pantalla (para no reintentar en bucle los que fallan). */
+    /** Already attempted on this screen (so failing ones are not retried in a loop). */
     private val attempted = mutableSetOf<Long>()
 
     init {
@@ -72,7 +72,7 @@ class NightDetailViewModel(private val container: AppContainer, private val sess
             _transcription.update { it.copy(availability = transcriber.availability()) }
         }
         viewModelScope.launch { for (event in queue) runTranscription(event) }
-        // Automático: al abrir la noche, los clips de habla aún sin transcribir.
+        // Automatic: when the night is opened, the speech clips not yet transcribed.
         viewModelScope.launch {
             combine(
                 detail.filterNotNull(),
@@ -96,7 +96,7 @@ class NightDetailViewModel(private val container: AppContainer, private val sess
         queue.trySend(event)
     }
 
-    /** "Transcribir" / "Transcribir de nuevo" en un clip. */
+    /** "Transcribe" / "Transcribe again" on a clip. */
     fun transcribe(event: EventEntity) {
         if (_transcription.value.canTranscribe) enqueue(event)
     }
@@ -114,24 +114,24 @@ class NightDetailViewModel(private val container: AppContainer, private val sess
             when (val result = transcriber.transcribe(event.filePath, ready.languageTag)) {
                 is TranscriptResult.Text -> container.repository.setTranscript(event.id, result.text)
                 TranscriptResult.LanguageUnavailable ->
-                    // El modelo desapareció o no estaba: volver a consultar qué ofrece el teléfono.
+                    // The model vanished or was never there: ask again what the phone offers.
                     _transcription.update { it.copy(availability = transcriber.availability()) }
                 is TranscriptResult.Failed -> {
-                    Log.w(TAG, "No se pudo transcribir el evento ${event.id}: error ${result.error}")
+                    Log.w(TAG, "Could not transcribe event ${event.id}: error ${result.error}")
                     _transcription.update { it.copy(failed = it.failed + event.id) }
                 }
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "Fallo al transcribir el evento ${event.id}", e)
+            Log.w(TAG, "Failed to transcribe event ${event.id}", e)
             _transcription.update { it.copy(failed = it.failed + event.id) }
         } finally {
             _transcription.update { it.copy(inProgress = it.inProgress - event.id) }
         }
     }
 
-    // ---- Episodios y reproducción ----
+    // ---- Episodes and playback ----
 
     fun toggleEpisode(id: Long) {
         _expanded.value = _expanded.value.let { if (id in it) it - id else it + id }
@@ -155,7 +155,7 @@ class NightDetailViewModel(private val container: AppContainer, private val sess
         player.toggle(FULL_KEY, path)
     }
 
-    /** Salta a la hora del evento en la grabación completa (3 s antes, para tener contexto). */
+    /** Jumps to the event's time in the full recording (3 s earlier, for context). */
     fun playFullAt(event: EventEntity) {
         val d = detail.value ?: return
         val path = d.session.fullRecordingPath ?: return
@@ -173,14 +173,14 @@ class NightDetailViewModel(private val container: AppContainer, private val sess
         viewModelScope.launch { container.repository.deleteEvent(event.id) }
     }
 
-    /** Sonidos de la lista de ignorados (para no ofrecer "Ignorar" dos veces). */
+    /** Sounds on the ignore list (so "Ignore" is not offered twice). */
     val ignoredSounds: StateFlow<Set<SoundType>> = container.settings.settings.map { it.ignoredSounds }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
-    /** Cuántos clips de [type] hay guardados en todas las noches. */
+    /** How many clips of [type] are saved across all nights. */
     suspend fun savedClipsOf(type: SoundType): Int = container.repository.clipsOfType(type).size
 
-    /** "Ignorar este sonido": desde ahora no se guarda; si [deleteSaved], se borran los que ya hay. */
+    /** "Ignore this sound": from now on it is not saved; if [deleteSaved], existing clips are deleted. */
     fun ignoreSound(type: SoundType, deleteSaved: Boolean) {
         if (deleteSaved) player.stop()
         viewModelScope.launch {

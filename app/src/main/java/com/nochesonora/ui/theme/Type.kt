@@ -11,12 +11,12 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.nochesonora.R
 
-// Fuentes incluidas en el APK (res/font, licencia OFL): la app no usa red.
+// Fonts bundled in the APK (res/font, OFL license): the app does not use the network.
 @OptIn(ExperimentalTextApi::class)
 private fun variable(res: Int, weight: Int) =
     Font(res, FontWeight(weight), variationSettings = FontVariation.Settings(FontVariation.weight(weight)))
 
-/** Inter Tight: textos. */
+/** Inter Tight: text. */
 val SansFamily = FontFamily(
     variable(R.font.intertight, 400),
     variable(R.font.intertight, 500),
@@ -24,7 +24,7 @@ val SansFamily = FontFamily(
     variable(R.font.intertight, 700),
 )
 
-/** JetBrains Mono: horas, niveles en dB, contadores. */
+/** JetBrains Mono: times, dB levels, counters. */
 val MonoFamily = FontFamily(
     variable(R.font.jetbrainsmono, 400),
     variable(R.font.jetbrainsmono, 500),
@@ -46,15 +46,15 @@ val AppTypography = Typography(
     labelSmall = sans(11, FontWeight.Medium),
 )
 
-/** Estilos propios del diseño. */
+/** The design's own styles. */
 object Murmur {
-    /** Reloj grande de la sesión. */
+    /** Large session clock. */
     val clock = TextStyle(fontFamily = MonoFamily, fontSize = 56.sp, fontWeight = FontWeight.Medium, letterSpacing = (-0.02).em, lineHeight = 56.sp)
-    /** Cifras de las casillas (contadores, duración). */
+    /** Tile figures (counters, duration). */
     val stat = TextStyle(fontFamily = MonoFamily, fontSize = 22.sp, fontWeight = FontWeight.Medium)
     val monoBody = TextStyle(fontFamily = MonoFamily, fontSize = 13.sp)
     val monoSmall = TextStyle(fontFamily = MonoFamily, fontSize = 12.sp)
     val monoTiny = TextStyle(fontFamily = MonoFamily, fontSize = 11.sp)
-    /** Títulos de sección en mayúsculas ("LO ÚLTIMO QUE SE ESCUCHÓ"). */
+    /** Section titles in capitals ("RECENTLY HEARD"). */
     val section = TextStyle(fontFamily = SansFamily, fontSize = 13.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.08.em)
 }

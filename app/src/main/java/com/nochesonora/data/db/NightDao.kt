@@ -9,7 +9,7 @@ import com.nochesonora.core.classification.Category
 import com.nochesonora.core.episodes.EpisodeLite
 import kotlinx.coroutines.flow.Flow
 
-/** Sesión con los conteos por categoría efectiva y los minutos de ronquido (suma de episodios). */
+/** Session with counts per effective category and the snoring minutes (sum of episodes). */
 data class SessionSummaryRow(
     @Embedded val session: SessionEntity,
     val snoreEvents: Int,
@@ -21,7 +21,7 @@ data class SessionSummaryRow(
 
 @Dao
 abstract class NightDao {
-    // ---- Sesiones ----
+    // ---- Sessions ----
     @Insert abstract suspend fun insertSession(session: SessionEntity): Long
 
     @Query("SELECT * FROM sessions WHERE id = :id")
@@ -71,7 +71,7 @@ abstract class NightDao {
     )
     abstract fun observeSummaries(): Flow<List<SessionSummaryRow>>
 
-    // ---- Eventos ----
+    // ---- Events ----
     @Insert abstract suspend fun insertEvent(event: EventEntity): Long
 
     @Query("SELECT * FROM events WHERE id = :id")
@@ -80,11 +80,11 @@ abstract class NightDao {
     @Query("UPDATE events SET filePath = :path WHERE id = :id")
     abstract suspend fun setEventPath(id: Long, path: String)
 
-    /** Vuelve a dejar todas las transcripciones "sin intentar" (para rehacerlas). */
+    /** Resets every transcript to "not attempted" (so they get redone). */
     @Query("UPDATE events SET transcript = NULL WHERE transcript IS NOT NULL")
     abstract suspend fun clearTranscripts()
 
-    /** Suma una repetición del mismo ruido ambiental. Devuelve las filas cambiadas (0 si se borró). */
+    /** Adds one repeat of the same ambient noise. Returns the rows changed (0 if it was deleted). */
     @Query("UPDATE events SET repeats = repeats + 1, lastRepeatAt = :at WHERE id = :id")
     abstract suspend fun addRepeat(id: Long, at: Long): Int
 
@@ -100,7 +100,7 @@ abstract class NightDao {
     @Query("DELETE FROM events WHERE id IN (:ids)")
     abstract suspend fun deleteEvents(ids: List<Long>)
 
-    /** Eventos de todas las noches que son (o se corrigieron a) [category]. */
+    /** Events from every night that are (or were corrected to) [category]. */
     @Query("SELECT * FROM events WHERE category = :category OR userCategory = :category ORDER BY startedAt")
     abstract suspend fun getEventsInCategory(category: Category): List<EventEntity>
 
@@ -113,7 +113,7 @@ abstract class NightDao {
     @Query("UPDATE events SET episodeId = :episodeId WHERE id IN (:eventIds)")
     abstract suspend fun setEpisode(episodeId: Long, eventIds: List<Long>)
 
-    // ---- Episodios ----
+    // ---- Episodes ----
     @Insert abstract suspend fun insertEpisode(episode: EpisodeEntity): Long
 
     @Query("DELETE FROM episodes WHERE sessionId = :sessionId")
@@ -122,7 +122,7 @@ abstract class NightDao {
     @Query("SELECT * FROM episodes WHERE sessionId = :sessionId ORDER BY startedAt")
     abstract fun observeEpisodes(sessionId: Long): Flow<List<EpisodeEntity>>
 
-    /** Reemplaza los episodios de la sesión y reasigna `episodeId` a sus eventos. */
+    /** Replaces the session's episodes and reassigns `episodeId` on its events. */
     @Transaction
     open suspend fun replaceEpisodes(sessionId: Long, episodes: List<EpisodeLite>) {
         deleteEpisodes(sessionId)
@@ -136,12 +136,12 @@ abstract class NightDao {
                     eventCount = ep.eventIds.size,
                 ),
             )
-            // SQLite limita los parámetros por consulta: en trozos.
+            // SQLite limits the parameters per query: do it in chunks.
             ep.eventIds.chunked(500).forEach { setEpisode(id, it) }
         }
     }
 
-    // ---- Pausas ----
+    // ---- Pauses ----
     @Insert abstract suspend fun insertPause(pause: PauseEntity): Long
 
     @Query("UPDATE pauses SET endedAt = :endedAt WHERE sessionId = :sessionId AND endedAt IS NULL")

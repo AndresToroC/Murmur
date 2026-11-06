@@ -1,9 +1,9 @@
 package com.nochesonora.core.classification
 
 /**
- * Tipo de sonido "amigable" para mostrar (perro, puerta, lluvia…). Es solo presentación: la
- * categoría de cada evento (RONQUIDO / HABLA / TOS / OTRO / FONDO) la siguen decidiendo
- * [LabelMapper] y [VotingClassifier]; esto agrupa las 521 etiquetas de YAMNet para nombrarlas.
+ * "Friendly" sound type for display (dog, door, rain…). Presentation only: each event's
+ * category (RONQUIDO / HABLA / TOS / OTRO / FONDO) is still decided by
+ * [LabelMapper] and [VotingClassifier]; this groups YAMNet's 521 labels so they can be named.
  */
 enum class SoundType {
     DOG, CAT, ANIMAL, BABY, MOAN, LAUGHTER, VOICES,
@@ -13,7 +13,7 @@ enum class SoundType {
     RAIN, WIND, WATER, MUSIC_TV, HOUSEHOLD, FAN, ROOM,
 }
 
-/** Etiqueta YAMNet (nombre exacto de `yamnet_label_list.txt`) → [SoundType]. */
+/** YAMNet label (exact name from `yamnet_label_list.txt`) → [SoundType]. */
 object SoundTypes {
     private val table: Map<String, SoundType> = buildMap {
         fun put(type: SoundType, vararg labels: String) = labels.forEach { put(it, type) }
@@ -124,10 +124,10 @@ object SoundTypes {
         )
     }
 
-    /** Toda la música (géneros e instrumentos), la TV y la radio. */
+    /** All music (genres and instruments), TV and radio. */
     private val musicTv: Set<String> = setOf("Television", "Radio", "Song", "Background music", "Theme music")
 
-    /** Palabras que delatan una etiqueta musical de YAMNet (hay ~150: géneros, instrumentos…). */
+    /** Words that give away a YAMNet music label (there are ~150: genres, instruments…). */
     private val musicHints = listOf(
         "music", "Music", "guitar", "Guitar", "piano", "Piano", "organ", "Organ", "drum", "Drum", "instrument",
         "Choir", "Yodeling", "Chant", "Mantra", "Rapping", "Synthesizer", "Sampler", "Harpsichord", "Percussion",
@@ -143,10 +143,10 @@ object SoundTypes {
         "Bowed string", "Brass instrument", "Electronic tuner", "Effects unit", "Chorus effect",
     )
 
-    /** Etiquetas que no dicen nada del sonido (sin clasificar o desconocido). */
+    /** Labels that say nothing about the sound (unclassified or unknown). */
     private val meaningless = setOf(LabelMapper.UNKNOWN_LABEL, "Sin clasificar", "Silence", "Sound effect", "Cacophony")
 
-    /** Para el test: todas las etiquetas de la tabla deben existir en YAMNet (sin erratas). */
+    /** For the test: every label in the table must exist in YAMNet (no typos). */
     internal val mappedLabels: Set<String> get() = table.keys + musicTv
 
     fun of(label: String?): SoundType? {
@@ -157,8 +157,8 @@ object SoundTypes {
     }
 
     /**
-     * Tipo de un evento: primero su etiqueta OTRO; si no dice nada, la primera de sus etiquetas
-     * principales que tenga tipo (sin contar las del fondo del cuarto).
+     * Type of an event: first its OTRO label; if that says nothing, the first of its top
+     * labels that has a type (not counting room-background ones).
      */
     fun ofEvent(otherLabel: String?, topLabels: List<String>): SoundType? {
         if (otherLabel != null && otherLabel !in meaningless) of(otherLabel)?.let { return it }
@@ -169,7 +169,7 @@ object SoundTypes {
             ?: of(otherLabel)
     }
 
-    /** Cuántos eventos hubo de cada tipo, de más a menos (empates en el orden del enum). */
+    /** How many events there were of each type, most first (ties in enum order). */
     fun count(types: List<SoundType?>): List<Pair<SoundType, Int>> =
         types.filterNotNull().groupingBy { it }.eachCount().toList()
             .sortedWith(compareByDescending<Pair<SoundType, Int>> { it.second }.thenBy { it.first.ordinal })

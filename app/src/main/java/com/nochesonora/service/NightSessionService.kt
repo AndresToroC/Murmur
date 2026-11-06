@@ -25,23 +25,23 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Foreground Service de tipo `microphone` que mantiene viva la sesión toda la noche (§6).
- * Siempre se inicia desde la UI en primer plano: Android 14+ no permite arrancar un FGS de
- * micrófono desde segundo plano, por eso no se usa START_STICKY (A10).
+ * `microphone`-type foreground service that keeps the session alive all night (§6).
+ * It is always started from the foreground UI: Android 14+ does not allow starting a microphone
+ * FGS from the background, which is why START_STICKY is not used (A10).
  */
 class NightSessionService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var sessionJob: Job? = null
     @Volatile private var engine: SessionEngine? = null
     @Volatile private var stopPending = false
-    /** Pausa pedida antes de que el motor exista (p. ej. un toque muy rápido en la notificación). */
+    /** Pause requested before the engine exists (e.g. a very quick tap on the notification). */
     @Volatile private var pausePending = false
     private var lastNotifiedPause: String? = null
     private var wakeLock: PowerManager.WakeLock? = null
 
     private val container get() = (application as MurmurApp).container
 
-    // Notificación en el idioma elegido en Ajustes, no en el del sistema.
+    // Notification in the language chosen in Settings, not the system one.
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(com.nochesonora.data.settings.AppLanguage.wrap(newBase))
     }
@@ -55,7 +55,7 @@ class NightSessionService : Service() {
                 engine?.requestStop()
                 if (sessionJob == null) stopSelf()
             }
-            // Sin sesión (una notificación vieja): no hay nada que pausar.
+            // No session (a stale notification): nothing to pause.
             ACTION_PAUSE, ACTION_RESUME -> if (sessionJob == null) stopSelf() else setUserPaused(intent.action == ACTION_PAUSE)
             else -> if (sessionJob == null) startSession()
         }
@@ -64,7 +64,7 @@ class NightSessionService : Service() {
 
     private fun startSession() {
         val startedAt = System.currentTimeMillis()
-        // startForeground antes de cualquier otra cosa (§6.2).
+        // startForeground before anything else (§6.2).
         try {
             val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0
             ServiceCompat.startForeground(
@@ -74,7 +74,7 @@ class NightSessionService : Service() {
                 type,
             )
         } catch (e: Exception) {
-            Log.e(TAG, "No se pudo pasar a primer plano", e)
+            Log.e(TAG, "Could not move to the foreground", e)
             stopSelf()
             return
         }
@@ -97,14 +97,14 @@ class NightSessionService : Service() {
             c.repository.markOrphansInterrupted(c.processStartedAt, activeSessionId = null)
             val session = c.repository.createSession(startedAt, settings.sensitivity.marginDb, settings.saveFullRecording)
             sessionId = session.id
-            c.liveState.update { it.copy(sessionId = session.id, startedAt = startedAt, phase = LivePhase.CALIBRANDO) }
+            c.liveState.update { it.copy(sessionId = session.id, startedAt = startedAt, phase = LivePhase.CALIBRATING) }
             val engine = SessionEngine(
                 context = applicationContext,
                 repository = c.repository,
                 liveState = c.liveState,
                 onStatusChanged = { events, pauseReason ->
                     SessionNotification.update(this, startedAt, events, pauseReason)
-                    // El botón de ajustes rápidos y el widget muestran si está en pausa.
+                    // The quick settings tile and the widget show whether it is paused.
                     if (pauseReason != lastNotifiedPause) {
                         lastNotifiedPause = pauseReason
                         SessionSurfaces.refresh(this)
@@ -113,7 +113,7 @@ class NightSessionService : Service() {
             )
             this.engine = engine
             engine.setIgnoredSounds(settings.ignoredSounds)
-            // Si se marca un sonido como ignorado en plena noche, cuenta desde ese momento.
+            // If a sound is marked as ignored mid-night, it applies from that moment on.
             ignoredWatch = scope.launch {
                 c.settings.settings.map { it.ignoredSounds }.distinctUntilChanged().collect { engine.setIgnoredSounds(it) }
             }
@@ -124,7 +124,7 @@ class NightSessionService : Service() {
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "La sesión terminó con un error", e)
+            Log.e(TAG, "The session ended with an error", e)
         } finally {
             ignoredWatch?.cancel()
             withContext(NonCancellable) {
@@ -145,16 +145,16 @@ class NightSessionService : Service() {
         }
     }
 
-    /** Resumen al despertar (si está activado en Ajustes). Nunca debe impedir cerrar la sesión. */
+    /** Wake-up summary (if enabled in Settings). Must never prevent the session from closing. */
     private suspend fun postSummary(sessionId: Long) {
         runCatching {
             if (!container.settings.current().morningSummary) return
             val row = container.repository.observeSummaries().first().firstOrNull { it.session.id == sessionId } ?: return
             NightSummaryNotification.post(this, row)
-        }.onFailure { Log.w(TAG, "No se pudo publicar el resumen", it) }
+        }.onFailure { Log.w(TAG, "Could not post the summary", it) }
     }
 
-    @SuppressLint("WakelockTimeout") // la sesión dura toda la noche; se libera en finally
+    @SuppressLint("WakelockTimeout") // the session lasts all night; released in finally
     private fun acquireWakeLock() {
         val pm = getSystemService(PowerManager::class.java) ?: return
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
@@ -169,7 +169,7 @@ class NightSessionService : Service() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        // Deslizar la app en "recientes" no debe detener la sesión.
+        // Swiping the app away in "recents" must not stop the session.
     }
 
     override fun onDestroy() {

@@ -30,7 +30,7 @@ data class SessionDetail(
     val pauses: List<PauseEntity>,
 )
 
-/** El repositorio único: base de datos + archivos de audio. */
+/** The single repository: database + audio files. */
 class NightRepository(
     private val dao: NightDao,
     private val files: SessionFileStore,
@@ -46,7 +46,7 @@ class NightRepository(
         session?.let { SessionDetail(it, events, episodes, pauses) }
     }
 
-    // ---- Ciclo de vida de la sesión ----
+    // ---- Session lifecycle ----
 
     suspend fun createSession(startedAt: Long, sensitivityDb: Int, saveFullRecording: Boolean): SessionEntity {
         val id = dao.insertSession(
@@ -78,11 +78,11 @@ class NightRepository(
     }
 
     /**
-     * Toda sesión EN_CURSO que no sea la del servicio vivo pasa a INTERRUMPIDA con la hora del
-     * último latido (§6.6). Los clips ya escritos se conservan.
+     * Every EN_CURSO session other than the live service's becomes INTERRUMPIDA, ending at its
+     * last heartbeat (§6.6). Clips already written are kept.
      *
-     * Solo cuentan las creadas antes de que arrancara este proceso: una sesión creada por este
-     * mismo proceso la cierra siempre su servicio, así que no hay carrera con una que empieza.
+     * Only sessions created before this process started count: a session created by this same
+     * process is always closed by its own service, so there is no race with one that is starting.
      */
     suspend fun markOrphansInterrupted(processStartedAt: Long, activeSessionId: Long?): Int {
         val orphans = dao.getSessionsByStatus(SessionStatus.EN_CURSO)
@@ -94,14 +94,14 @@ class NightRepository(
         return orphans.size
     }
 
-    // ---- Eventos ----
+    // ---- Events ----
 
     /**
-     * Inserta la fila (para tener el id), escribe el WAV de forma atómica, guarda la ruta y
-     * reagrupa los episodios. Si el WAV falla, la fila se borra.
+     * Inserts the row (to get the id), writes the WAV atomically, stores the path and regroups
+     * the episodes. If the WAV fails, the row is deleted.
      */
     suspend fun saveEvent(sessionId: Long, event: ClosedEvent, result: ClassificationResult): Long? {
-        require(result.category != Category.FONDO) { "FONDO no se persiste" }
+        require(result.category != Category.FONDO) { "FONDO is not persisted" }
         val id = dao.insertEvent(
             EventEntity(
                 sessionId = sessionId,
@@ -121,7 +121,7 @@ class NightRepository(
         try {
             withContext(Dispatchers.IO) { files.writeWav(file, event.pcm) }
         } catch (e: Exception) {
-            Log.e(TAG, "No se pudo escribir el clip $id", e)
+            Log.e(TAG, "Could not write clip $id", e)
             dao.deleteEvent(id)
             return null
         }
@@ -131,12 +131,12 @@ class NightRepository(
         return id
     }
 
-    /** "" = se intentó y no se entendió nada; null = volver a "sin intentar". */
+    /** "" = attempted but nothing was understood; null = back to "not attempted". */
     suspend fun setTranscript(eventId: Long, text: String?) = dao.setTranscript(eventId, text)
 
     suspend fun clearTranscripts() = dao.clearTranscripts()
 
-    /** false si el evento ya no existe (se borró): entonces hay que guardar un clip nuevo. */
+    /** false if the event no longer exists (it was deleted): a new clip must be saved then. */
     suspend fun addRepeat(sessionId: Long, eventId: Long, at: Long): Boolean {
         val changed = dao.addRepeat(eventId, at) > 0
         if (changed) dao.heartbeat(sessionId, System.currentTimeMillis())
@@ -156,11 +156,11 @@ class NightRepository(
         regroup(event.sessionId)
     }
 
-    /** Clips guardados de todas las noches cuyo sonido es [type] (lo que se borra al ignorarlo). */
+    /** Saved clips from every night whose sound is [type] (what gets deleted when it is ignored). */
     suspend fun clipsOfType(type: SoundType): List<EventEntity> =
         dao.getEventsInCategory(Category.OTRO).filter { it.effectiveCategory == Category.OTRO && it.soundType() == type }
 
-    /** Borra varios clips (filas y WAV) y rehace los episodios de cada noche afectada una sola vez. */
+    /** Deletes several clips (rows and WAVs) and rebuilds the episodes of each affected night once. */
     suspend fun deleteEvents(events: List<EventEntity>) {
         if (events.isEmpty()) return
         events.chunked(500).forEach { chunk -> dao.deleteEvents(chunk.map { it.id }) }
@@ -173,7 +173,7 @@ class NightRepository(
         dao.replaceEpisodes(sessionId, EpisodeGrouper.group(lite))
     }
 
-    // ---- Pausas ----
+    // ---- Pauses ----
 
     suspend fun startPause(sessionId: Long, at: Long, reason: String) {
         dao.endOpenPauses(sessionId, at)
@@ -182,12 +182,12 @@ class NightRepository(
 
     suspend fun endPause(sessionId: Long, at: Long) = dao.endOpenPauses(sessionId, at)
 
-    // ---- Sesiones: favoritas, borrado, retención ----
+    // ---- Sessions: favorites, deletion, retention ----
 
     suspend fun setFavorite(sessionId: Long, favorite: Boolean) = dao.setFavorite(sessionId, favorite)
 
     suspend fun deleteSession(sessionId: Long) {
-        dao.deleteSession(sessionId) // cascada: eventos, episodios, pausas
+        dao.deleteSession(sessionId) // cascades: events, episodes, pauses
         withContext(Dispatchers.IO) { files.deleteSession(sessionId) }
     }
 

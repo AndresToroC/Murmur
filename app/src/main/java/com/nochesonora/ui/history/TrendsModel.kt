@@ -6,7 +6,7 @@ import java.time.ZoneId
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-/** Lo que interesa de una noche para las tendencias (independiente de Room y de Android). */
+/** What trends need from a night (independent of Room and Android). */
 data class NightStats(
     val sessionId: Long,
     val startedAtMs: Long,
@@ -19,7 +19,7 @@ data class NightStats(
     val totalEvents: Int get() = snoreEvents + speech + cough + other
 }
 
-/** Un día del rango: las noches que empezaron ese día, sumadas. */
+/** One day of the range: the nights that started that day, summed. */
 data class DayPoint(
     val date: LocalDate,
     val nights: Int,
@@ -27,13 +27,13 @@ data class DayPoint(
     val speech: Int,
     val cough: Int,
     val totalEvents: Int,
-    /** La noche que empezó más tarde ese día (la que se abre al tocar la barra). */
+    /** The night that started latest that day (the one opened when the bar is tapped). */
     val latestSessionId: Long?,
 ) {
     val hasNights: Boolean get() = nights > 0
 }
 
-/** Totales y medias por noche de un periodo. */
+/** Totals and per-night averages for a period. */
 data class PeriodStats(
     val nights: Int,
     val totalSnoreMs: Long,
@@ -48,18 +48,18 @@ data class PeriodStats(
 enum class Direction { UP, DOWN, SAME }
 
 /**
- * Cambio respecto al periodo anterior. [percent] es null cuando el anterior era 0 y el actual
- * no (no hay porcentaje con sentido: se muestra solo la flecha).
+ * Change from the previous period. [percent] is null when the previous value was 0 and the
+ * current one is not (no meaningful percentage: only the arrow is shown).
  */
 data class Change(val direction: Direction, val percent: Int?)
 
 data class Insights(
-    /** Día con más ronquido (solo si alguno tuvo ronquido). */
+    /** Day with the most snoring (only if any day had snoring). */
     val mostSnore: DayPoint?,
-    /** Noches sin hablar / noches del rango (solo con 2 o más noches y al menos una sin hablar). */
+    /** Nights without talking / nights in range (only with 2 or more nights and at least one without talking). */
     val nightsWithoutTalking: Int?,
     val nightsInRange: Int,
-    /** Día con menos sonidos (solo con 2 o más días con noches). */
+    /** Day with the fewest sounds (only with 2 or more days that have nights). */
     val quietest: DayPoint?,
 )
 
@@ -68,7 +68,7 @@ data class Trends(
     val series: List<DayPoint>,
     val current: PeriodStats,
     val previous: PeriodStats,
-    /** null si el periodo anterior no tiene noches (no hay con qué comparar). */
+    /** null if the previous period has no nights (nothing to compare against). */
     val nightsChange: Change?,
     val snoreChange: Change?,
     val speechChange: Change?,
@@ -78,10 +78,10 @@ data class Trends(
 
 object TrendsModel {
     /**
-     * Tendencias de los últimos [days] días terminando en [today] (incluido), comparadas con los
-     * [days] días anteriores. Cada noche cuenta en el día en que empezó; varias el mismo día se suman.
-     * Las comparaciones de ronquido, habla y tos usan la media por noche (no los totales), para
-     * que grabar más noches no parezca "más ronquido".
+     * Trends for the last [days] days ending on [today] (inclusive), compared with the previous
+     * [days] days. Each night counts on the day it started; several on the same day are summed.
+     * Snoring, speech and cough comparisons use the per-night average (not totals), so that
+     * recording more nights does not look like "more snoring".
      */
     fun compute(nights: List<NightStats>, today: LocalDate, days: Int, zone: ZoneId = ZoneId.systemDefault()): Trends {
         require(days > 0)
@@ -140,7 +140,7 @@ object TrendsModel {
         totalCough = nights.sumOf { it.cough },
     )
 
-    /** Cambio porcentual redondeado; menos de 1 % cuenta como igual. */
+    /** Rounded percentage change; less than 1 % counts as the same. */
     fun change(current: Double, previous: Double): Change {
         if (previous == 0.0) return if (current == 0.0) Change(Direction.SAME, 0) else Change(Direction.UP, null)
         val pct = ((current - previous) / previous * 100).roundToInt()
@@ -152,8 +152,8 @@ object TrendsModel {
     }
 
     /**
-     * Índices de la serie que llevan etiqueta en el eje X. Con 7 días o menos, todos; si no, el
-     * primero, cada 7 y el último, quitando el anterior al último si quedaría a menos de 4 días.
+     * Series indices that get a label on the X axis. With 7 days or fewer, all of them; otherwise
+     * the first, every 7th and the last, dropping the one before the last if it would be less than 4 days away.
      */
     fun labelIndices(days: Int): List<Int> {
         if (days <= 7) return (0 until days).toList()

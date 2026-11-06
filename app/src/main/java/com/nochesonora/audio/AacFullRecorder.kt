@@ -13,9 +13,9 @@ import java.io.FileOutputStream
 import java.nio.ByteOrder
 
 /**
- * Grabación completa de la noche: AAC-LC 16 kHz mono 32 kbps en un flujo ADTS (A11).
- * Se alimenta con los mismos bloques de la captura. Si algo falla, se desactiva sola y la
- * sesión sigue: nunca debe tumbar la captura.
+ * Full-night recording: AAC-LC 16 kHz mono 32 kbps in an ADTS stream (A11).
+ * It is fed the same blocks as the capture. If anything fails, it disables itself and the
+ * session carries on: it must never bring down the capture.
  */
 class AacFullRecorder private constructor(
     private val codec: MediaCodec,
@@ -29,7 +29,7 @@ class AacFullRecorder private constructor(
     private var closed = false
     private var writeBuf = ByteArray(4096)
 
-    /** Muestras de audio ya codificadas: sirve para saber la duración del archivo. */
+    /** Audio samples already encoded: tells us the file's duration. */
     val encodedMs: Long get() = Pcm.samplesToMs(samplesQueued)
 
     fun feed(samples: ShortArray, length: Int = samples.size) {
@@ -42,7 +42,7 @@ class AacFullRecorder private constructor(
                 if (idx < 0) {
                     drain(endOfStream = false)
                     if (++attempts > MAX_INPUT_ATTEMPTS) {
-                        Log.w(TAG, "Codificador saturado: se descarta un bloque")
+                        Log.w(TAG, "Encoder saturated: dropping a block")
                         return
                     }
                     continue
@@ -63,7 +63,7 @@ class AacFullRecorder private constructor(
                 samplesSinceFlush = 0
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Fallo en la grabación completa; se desactiva", e)
+            Log.e(TAG, "Full recording failed; disabling it", e)
             failed = true
         }
     }
@@ -90,7 +90,7 @@ class AacFullRecorder private constructor(
                 idx == MediaCodec.INFO_TRY_AGAIN_LATER -> {
                     if (!endOfStream || ++idle > 50) return
                 }
-                else -> Unit // INFO_OUTPUT_FORMAT_CHANGED: ADTS no lo necesita
+                else -> Unit // INFO_OUTPUT_FORMAT_CHANGED: ADTS does not need it
             }
         }
     }
@@ -108,7 +108,7 @@ class AacFullRecorder private constructor(
                 drain(endOfStream = true)
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Cierre incompleto del AAC", e)
+            Log.w(TAG, "Incomplete AAC close", e)
         } finally {
             runCatching { codec.stop() }
             runCatching { codec.release() }
@@ -118,7 +118,7 @@ class AacFullRecorder private constructor(
     }
 
     companion object {
-        /** Abre el codificador y el archivo. Lanza excepción si el equipo no puede codificar AAC. */
+        /** Opens the encoder and the file. Throws if the device cannot encode AAC. */
         fun open(file: File): AacFullRecorder {
             val format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, Pcm.SAMPLE_RATE, 1).apply {
                 setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)

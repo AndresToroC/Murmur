@@ -3,17 +3,17 @@ package com.nochesonora.core.classification
 data class ClassificationResult(
     val category: Category,
     val confidence: Float,
-    /** Etiqueta YAMNet original cuando la categoría es OTRO. */
+    /** Original YAMNet label when the category is OTRO. */
     val otherLabel: String?,
-    /** Las 3 etiquetas con mayor score medio entre ventanas. */
+    /** The 3 labels with the highest mean score across windows. */
     val topLabels: List<LabelScore>,
-    /** Todas las etiquetas con su score medio, de mayor a menor (para Diagnóstico). */
+    /** All labels with their mean score, highest first (for the Diagnostics screen). */
     val meanScores: List<LabelScore>,
     val snore: SnoreResult,
     val windowCount: Int,
 )
 
-/** Votación ponderada de las ventanas de un clip (plan §4.5). */
+/** Weighted vote over a clip's windows (plan §4.5). */
 object VotingClassifier {
     const val MIN_SCORE = 0.30f
     const val ENGINE_SUSTAINED_FRACTION = 0.70f
@@ -55,7 +55,7 @@ object VotingClassifier {
             if (windowHasEngine) engineWindows++
         }
 
-        // Motor sostenido = fondo; motor puntual = otro (A3).
+        // Sustained engine = background; brief engine = other (A3).
         if (engineScore > 0f) {
             if (engineWindows >= ENGINE_SUSTAINED_FRACTION * n) {
                 scores[Category.FONDO.ordinal] += engineScore
@@ -69,8 +69,8 @@ object VotingClassifier {
             scores[Category.RONQUIDO.ordinal] = scores[Category.RONQUIDO.ordinal] * SNORE_BOOST_FACTOR + SNORE_BOOST_PER_WINDOW * n
         }
 
-        // El fondo nunca le gana a un sonido real. Una tos ocupa 1–2 ventanas y el resto del clip
-        // (pre/post-roll) es "Silence" o ventilador: sumando ventanas, FONDO ganaría y la tos se borraría.
+        // Background never beats a real sound. A cough fills 1–2 windows and the rest of the clip
+        // (pre/post-roll) is "Silence" or a fan: summing windows, FONDO would win and the cough would be lost.
         if (REAL_SOUNDS.any { scores[it.ordinal] > 0f }) scores[Category.FONDO.ordinal] = 0f
 
         val meanScores = meanScores(windows, n)
@@ -79,7 +79,7 @@ object VotingClassifier {
         var best = -1
         for (i in scores.indices) if (scores[i] > 0f && (best < 0 || scores[i] > scores[best])) best = i
         if (best < 0) {
-            // Sin votos: el evento superó la energía, así que se guarda como OTRO (A5).
+            // No votes: the event passed the energy threshold, so it is saved as OTRO (A5).
             return ClassificationResult(Category.OTRO, 0f, LabelMapper.UNKNOWN_LABEL, top3, meanScores, snore, windows.size)
         }
         val category = Category.entries[best]
@@ -106,7 +106,7 @@ object VotingClassifier {
             .sortedWith(compareByDescending<LabelScore> { it.score }.thenBy { it.label })
     }
 
-    /** `[{"label":"Snoring","score":0.62},…]` sin depender de una librería JSON. */
+    /** `[{"label":"Snoring","score":0.62},…]` without depending on a JSON library. */
     fun toJson(labels: List<LabelScore>): String = labels.joinToString(",", "[", "]") { (label, score) ->
         val escaped = label.replace("\\", "\\\\").replace("\"", "\\\"")
         "{\"label\":\"$escaped\",\"score\":${"%.3f".format(java.util.Locale.ROOT, score)}}"

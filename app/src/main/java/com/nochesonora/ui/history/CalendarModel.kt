@@ -7,8 +7,8 @@ import java.time.YearMonth
 import java.time.ZoneId
 
 /**
- * Celdas del mes en filas de 7, empezando por [firstDayOfWeek]. `null` = hueco antes del día 1
- * o después del último. Siempre son filas completas (4 a 6).
+ * Month cells in rows of 7, starting on [firstDayOfWeek]. `null` = blank before day 1
+ * or after the last day. Rows are always complete (4 to 6).
  */
 fun monthGrid(month: YearMonth, firstDayOfWeek: DayOfWeek): List<LocalDate?> {
     val first = month.atDay(1)
@@ -20,13 +20,13 @@ fun monthGrid(month: YearMonth, firstDayOfWeek: DayOfWeek): List<LocalDate?> {
     return cells
 }
 
-/** Día (local) al que pertenece una sesión: el día en que empezó. */
+/** Local day a session belongs to: the day it started. */
 fun sessionDay(startedAtMs: Long, zone: ZoneId = ZoneId.systemDefault()): LocalDate =
     Instant.ofEpochMilli(startedAtMs).atZone(zone).toLocalDate()
 
-/** Agrupa por día de inicio, conservando el orden de entrada dentro de cada día. */
+/** Groups by start day, keeping the input order within each day. */
 fun <T> groupByDay(items: List<T>, zone: ZoneId = ZoneId.systemDefault(), startedAt: (T) -> Long): Map<LocalDate, List<T>> =
     items.groupBy { sessionDay(startedAt(it), zone) }
 
-/** Primer día de la semana: lunes en español, domingo en inglés (EE. UU.). */
+/** First day of the week: Monday in Spanish, Sunday in English (US). */
 fun firstDayOfWeekFor(language: String): DayOfWeek = if (language == "en") DayOfWeek.SUNDAY else DayOfWeek.MONDAY

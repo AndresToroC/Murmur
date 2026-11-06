@@ -21,7 +21,7 @@ class RepeatFilterTest {
         assertEquals(SoundType.WIND, RepeatFilter.ambientType(result(Category.OTRO, "Wind")))
         assertEquals(SoundType.RAIN, RepeatFilter.ambientType(result(Category.OTRO, "Rain on surface")))
         assertEquals(SoundType.ROOM, RepeatFilter.ambientType(result(Category.OTRO, "Inside, small room")))
-        // Sonidos que importan, o que no son ambientales, nunca se pliegan.
+        // Sounds that matter, or that are not ambient, are never folded.
         assertNull(RepeatFilter.ambientType(result(Category.OTRO, "Dog")))
         assertNull(RepeatFilter.ambientType(result(Category.OTRO, "Door")))
         assertNull(RepeatFilter.ambientType(result(Category.HABLA, null, "Speech" to 0.5f)))
@@ -31,13 +31,13 @@ class RepeatFilterTest {
 
     @Test
     fun windWithSpeechInsideIsNotFolded() {
-        // Ganó el viento, pero en una ventana se oyó habla: se guarda el clip.
+        // Wind won, but speech was heard in one window: the clip is saved.
         assertNull(
             RepeatFilter.ambientType(result(Category.OTRO, "Wind", "Wind" to 0.5f, "Speech" to 0.08f)),
         )
         assertNull(RepeatFilter.ambientType(result(Category.OTRO, "Wind", "Snoring" to 0.05f)))
         assertNull(RepeatFilter.ambientType(result(Category.OTRO, "Wind", "Cough" to 0.04f)))
-        // Una traza mínima no cuenta.
+        // A tiny trace does not count.
         assertEquals(SoundType.WIND, RepeatFilter.ambientType(result(Category.OTRO, "Wind", "Speech" to 0.02f)))
     }
 
@@ -47,12 +47,12 @@ class RepeatFilterTest {
         assertNull(f.foldInto(SoundType.WIND, 0))
         f.saved(SoundType.WIND, eventId = 7, atMs = 0)
         assertEquals(7L, f.foldInto(SoundType.WIND, 50_000))
-        // La ventana cuenta desde la última vez que se oyó, no desde el primero.
+        // The window counts from the last time it was heard, not from the first one.
         assertEquals(7L, f.foldInto(SoundType.WIND, 100_000))
-        // Otro tipo va por su cuenta.
+        // A different type is tracked on its own.
         assertNull(f.foldInto(SoundType.RAIN, 100_000))
         assertNull(f.foldInto(null, 100_000))
-        // Más de un minuto sin viento: se guarda de nuevo.
+        // More than a minute without wind: it is saved again.
         assertNull(f.foldInto(SoundType.WIND, 170_001))
         f.saved(SoundType.WIND, eventId = 9, atMs = 170_001)
         assertEquals(9L, f.foldInto(SoundType.WIND, 180_000))

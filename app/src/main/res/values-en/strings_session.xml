@@ -51,7 +51,7 @@
     <string name="widget_paused">Paused</string>
     <string name="widget_ready">Ready to listen</string>
 
-    <!-- Ruidos repetidos y filtro del detalle -->
+    <!-- Repeated noises and detail filter -->
     <string name="detail_filter_all">All</string>
     <string name="settings_group_repeats">Save repeated noises only once</string>
     <string name="settings_group_repeats_note">Wind, fan, rain or room noise: the first one is saved and after that only the times are counted. If talking, snoring or coughing is heard at the same time, the clip is saved anyway.</string>
@@ -62,7 +62,7 @@
         <item quantity="other">Heard %1$d more times, until %2$s. Only this clip was saved.</item>
     </plurals>
 
-    <!-- Sonidos ignorados -->
+    <!-- Ignored sounds -->
     <string name="detail_ignore_sound">Ignore this sound</string>
     <string name="ignore_dialog_title">Ignore “%1$s”?</string>
     <string name="ignore_dialog_text">From now on Murmur will not save this kind of sound. If talking, snoring or coughing is heard at the same time, the clip is saved anyway. You can undo it in Settings → Ignored sounds.</string>

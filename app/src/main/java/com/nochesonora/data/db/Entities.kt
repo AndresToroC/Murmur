@@ -12,24 +12,25 @@ import com.nochesonora.core.classification.VotingClassifier
 
 enum class SessionStatus { EN_CURSO, COMPLETADA, INTERRUMPIDA }
 
+/** Why a session paused. The values are stored in the database, so they stay as they are. */
 object PauseReason {
-    const val MICROFONO_OCUPADO = "MICROFONO_OCUPADO"
-    const val LLAMADA = "LLAMADA"
-    const val ERROR_AUDIO = "ERROR_AUDIO"
-    /** El usuario pausó desde la notificación o Inicio. */
-    const val USUARIO = "USUARIO"
+    const val MIC_BUSY = "MICROFONO_OCUPADO"
+    const val CALL = "LLAMADA"
+    const val AUDIO_ERROR = "ERROR_AUDIO"
+    /** The user paused from the notification or Home. */
+    const val USER = "USUARIO"
 }
 
 @Entity(tableName = "sessions")
 data class SessionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val startedAt: Long,
-    /** null mientras está EN_CURSO. */
+    /** null while EN_CURSO. */
     val endedAt: Long?,
     val status: SessionStatus,
-    /** Se llena al terminar la calibración. */
+    /** Filled in when calibration finishes. */
     val baselineDbAtStart: Float?,
-    /** Latido cada 30 s: si el proceso muere, es la hora de fin de la sesión INTERRUMPIDA. */
+    /** Heartbeat every 30 s: if the process dies, it becomes the end time of the INTERRUMPIDA session. */
     val lastHeartbeatAt: Long,
     val sensitivityDb: Int,
     val fullRecordingPath: String?,
@@ -49,7 +50,7 @@ data class EventEntity(
     val sessionId: Long,
     val episodeId: Long?,
     val category: Category,
-    /** Etiqueta YAMNet original cuando la categoría es OTRO. */
+    /** Original YAMNet label when the category is OTRO. */
     val otherLabel: String?,
     val startedAt: Long,
     val endedAt: Long,
@@ -59,22 +60,22 @@ data class EventEntity(
     val filePath: String,
     val userCategory: Category?,
     /**
-     * Lo que se entendió de un clip de HABLA (transcripción en el teléfono). null = aún no se
-     * intentó; "" = se intentó y no se entendió nada. Columna añadida en la versión 2 de la BD.
+     * What was understood from a HABLA clip (on-device transcription). null = not attempted
+     * yet; "" = attempted but nothing was understood. Column added in DB version 2.
      */
     val transcript: String? = null,
     /**
-     * Veces que este mismo ruido ambiental (viento, ventilador…) se volvió a oír sin guardar otro
-     * clip ([com.nochesonora.core.classification.RepeatFilter]). Columna de la versión 3 de la BD.
+     * Times this same ambient noise (wind, fan…) was heard again without saving another clip
+     * ([com.nochesonora.core.classification.RepeatFilter]). Column from DB version 3.
      */
     @ColumnInfo(defaultValue = "0") val repeats: Int = 0,
-    /** Hora de la última repetición (null si no hubo). */
+    /** Time of the last repeat (null if there was none). */
     val lastRepeatAt: Long? = null,
 )
 
 val EventEntity.effectiveCategory: Category get() = userCategory ?: category
 
-/** Tipo de sonido del clip ("Perro", "Viento"…), el mismo que se muestra en el detalle. */
+/** The clip's sound type ("Dog", "Wind"…), the same one shown in the detail screen. */
 fun EventEntity.soundType(): SoundType? =
     SoundTypes.ofEvent(otherLabel, VotingClassifier.fromJson(topLabelsJson).map { it.label })
 

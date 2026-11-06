@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pausa manual, resumen al despertar, botón de ajustes rápidos y widget. Inglés en values-en. -->
+<!-- Manual pause, morning summary, Quick Settings tile and widget. English in values-en. -->
 <resources>
-    <!-- Pausa manual -->
+    <!-- Manual pause -->
     <string name="pause_user">En pausa</string>
     <string name="notif_pause">Pausar</string>
     <string name="notif_resume">Continuar</string>
@@ -11,7 +11,7 @@
     <string name="home_resume">Continuar</string>
     <string name="home_paused_note">En pausa: no se escucha nada hasta que toques Continuar.</string>
 
-    <!-- Resumen al despertar -->
+    <!-- Morning summary -->
     <string name="summary_channel_name">Resumen de la noche</string>
     <string name="summary_channel_desc">Lo que pasó en la noche, al detener la sesión</string>
     <string name="summary_title">Tu noche · %1$s</string>
@@ -38,13 +38,13 @@
         <item quantity="other">%d sonidos más</item>
     </plurals>
 
-    <!-- Ajustes -->
+    <!-- Settings -->
     <string name="settings_morning_summary">Resumen al despertar</string>
     <string name="settings_morning_summary_note">Al detener la sesión, una notificación con lo que pasó en la noche.</string>
     <string name="settings_transcribe">Transcribir lo que se dice dormido</string>
     <string name="settings_transcribe_note">Convierte en texto los clips de habla, dentro del teléfono (Android 13 o superior).</string>
 
-    <!-- Ajustes rápidos y widget -->
+    <!-- Quick Settings and widget -->
     <string name="tile_label">Murmur</string>
     <string name="tile_idle">Comenzar noche</string>
     <string name="tile_recording">Grabando</string>
@@ -56,7 +56,7 @@
     <string name="widget_paused">En pausa</string>
     <string name="widget_ready">Listo para escuchar</string>
 
-    <!-- Ruidos repetidos y filtro del detalle -->
+    <!-- Repeated noises and detail filter -->
     <string name="detail_filter_all">Todas</string>
     <string name="settings_group_repeats">Guardar una sola vez los ruidos repetidos</string>
     <string name="settings_group_repeats_note">Viento, ventilador, lluvia o ruido del cuarto: se guarda el primero y después solo se cuentan las veces. Si a la vez se oye habla, ronquido o tos, el clip se guarda igual.</string>
@@ -68,7 +68,7 @@
         <item quantity="other">Se repitió %1$d veces más, hasta las %2$s. Solo se guardó este clip.</item>
     </plurals>
 
-    <!-- Sonidos ignorados -->
+    <!-- Ignored sounds -->
     <string name="detail_ignore_sound">Ignorar este sonido</string>
     <string name="ignore_dialog_title">¿Ignorar «%1$s»?</string>
     <string name="ignore_dialog_text">Desde ahora Murmur no guardará este tipo de sonido. Si a la vez se oye habla, ronquido o tos, el clip se guarda igual. Puedes deshacerlo en Ajustes → Sonidos ignorados.</string>

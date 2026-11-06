@@ -10,7 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
-/** DI manual: una sola instancia de cada dependencia para todo el proceso. */
+/** Manual DI: a single instance of each dependency for the whole process. */
 class AppContainer(context: Context) {
     val appContext: Context = context.applicationContext
     val processStartedAt: Long = System.currentTimeMillis()

@@ -3,7 +3,7 @@ package com.nochesonora.core.audio
 import kotlin.math.log10
 import kotlin.math.sqrt
 
-/** Utilidades de PCM16 mono a 16 kHz. */
+/** Helpers for 16 kHz mono PCM16. */
 object Pcm {
     const val SAMPLE_RATE = 16_000
     const val FLOOR_DB = -100f
@@ -13,7 +13,7 @@ object Pcm {
 
     fun samplesToMs(samples: Long): Long = samples * 1000 / SAMPLE_RATE
 
-    /** Nivel RMS en dBFS, con piso de [FLOOR_DB] para bloques de ceros. */
+    /** RMS level in dBFS, floored at [FLOOR_DB] for all-zero blocks. */
     fun rmsDb(samples: ShortArray, offset: Int = 0, length: Int = samples.size - offset): Float {
         if (length <= 0) return FLOOR_DB
         var sum = 0.0
@@ -27,7 +27,7 @@ object Pcm {
         return if (db < FLOOR_DB) FLOOR_DB else db.toFloat()
     }
 
-    /** Copia PCM16 a float en [-1, 1). Las posiciones de [out] más allá de [length] se rellenan con ceros. */
+    /** Copies PCM16 to float in [-1, 1). Positions of [out] beyond [length] are zero-filled. */
     fun toFloat(samples: ShortArray, offset: Int, length: Int, out: FloatArray) {
         val n = minOf(length, out.size)
         for (i in 0 until n) out[i] = samples[offset + i] / FULL_SCALE.toFloat()

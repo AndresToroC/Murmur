@@ -102,16 +102,16 @@ import com.nochesonora.ui.theme.color
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/** Duración de la calibración inicial (DetectorConfig.calibrationMs). */
+/** Length of the initial calibration (DetectorConfig.calibrationMs). */
 private const val CALIBRATION_MS = 60_000L
 
-/** Cuánto se muestra el aviso "Entorno medido" al terminar la calibración. */
+/** How long the "Environment measured" notice stays up after calibration ends. */
 private const val CALIBRATED_BANNER_MS = 12_000L
 
 @Composable
 fun HomeScreen(
     onOpenSession: (Long) -> Unit,
-    /** true cuando el widget o el botón de ajustes rápidos pidieron comenzar la noche. */
+    /** true when the widget or the Quick Settings tile asked to start the night. */
     startRequested: Boolean = false,
     onStartHandled: () -> Unit = {},
 ) {
@@ -133,7 +133,7 @@ fun HomeScreen(
         scope.launch { snackbar.showSnackbar(text) }
     }
 
-    // Paso 3: espacio libre (A13). Paso 4: arrancar el servicio.
+    // Step 3: free space (A13). Step 4: start the service.
     fun checkSpaceAndStart() {
         if (vm.freeBytes() < HomeViewModel.MIN_FREE_BYTES) showSpaceDialog = true else vm.start(context)
     }
@@ -156,13 +156,13 @@ fun HomeScreen(
         }
     }
 
-    // Paso 2: exclusión de batería, una sola vez (A16).
+    // Step 2: battery optimization exemption, asked only once (A16).
     fun afterPermissions() {
         val askBattery = settings?.batteryPromptShown == false && !isIgnoringBatteryOptimizations(context)
         if (askBattery) showBatteryDialog = true else checkSpaceAndStart()
     }
 
-    // Paso 1: permisos. Los textos se resuelven aquí (no dentro del callback) para que sigan al idioma.
+    // Step 1: permissions. Strings are resolved here (not inside the callback) so they follow the app language.
     val noMicPermission = stringResource(R.string.home_no_mic_permission)
     val noNotificationPermission = stringResource(R.string.home_no_notification_permission)
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -187,7 +187,7 @@ fun HomeScreen(
         if (needed.isEmpty()) afterPermissions() else permissionLauncher.launch(needed.toTypedArray())
     }
 
-    // Pedido desde fuera de la app: mismo camino que el botón (permisos, batería, espacio).
+    // Request from outside the app: same path as the button (permissions, battery, space).
     LaunchedEffect(startRequested) {
         if (startRequested) {
             onStartHandled()
@@ -253,11 +253,11 @@ fun HomeScreen(
     }
 }
 
-/** true mientras dura el primer minuto, en el que se mide el ruido de fondo del cuarto. */
+/** true during the first minute, while the room's background noise is being measured. */
 internal val LiveSnapshot.isCalibrating: Boolean
     get() = serviceRunning && calibrationProgress < 1f
 
-/** Contenido de Inicio, sin permisos ni diálogos (también lo usa la captura de pantallas). */
+/** Home content, without permissions or dialogs (also used by the screenshot capture). */
 @Composable
 internal fun HomeContent(
     live: LiveSnapshot,
@@ -273,7 +273,7 @@ internal fun HomeContent(
         ScreenHeader("Murmur") {
             when {
                 !live.serviceRunning -> StatusPill("v${BuildConfig.VERSION_NAME}")
-                live.phase == LivePhase.PAUSA -> StatusPill(stringResource(R.string.home_pill_paused), SnoreAmber)
+                live.phase == LivePhase.PAUSED -> StatusPill(stringResource(R.string.home_pill_paused), SnoreAmber)
                 live.isCalibrating -> StatusPill(stringResource(R.string.home_pill_calibrating), Primary)
                 else -> StatusPill(stringResource(R.string.home_pill_recording))
             }
@@ -299,7 +299,7 @@ internal fun HomeContent(
                     Text(stringResource(R.string.home_saving), color = OnSurfaceSoft)
                 }
             } else {
-                val userPaused = live.phase == LivePhase.PAUSA && live.pauseReason == PauseReason.USUARIO
+                val userPaused = live.phase == LivePhase.PAUSED && live.pauseReason == PauseReason.USER
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (userPaused) {
                         PrimaryButton(stringResource(R.string.home_resume), onClick = onResume, modifier = Modifier.weight(1f))
@@ -310,7 +310,7 @@ internal fun HomeContent(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            val pausedNote = live.phase == LivePhase.PAUSA && live.pauseReason == PauseReason.USUARIO
+            val pausedNote = live.phase == LivePhase.PAUSED && live.pauseReason == PauseReason.USER
             MutedText(
                 stringResource(if (pausedNote) R.string.home_paused_note else R.string.home_keep_charging),
                 Modifier.fillMaxWidth(),
@@ -357,7 +357,7 @@ private fun IdlePanel(last: SessionSummaryRow?, onOpenSession: (Long) -> Unit) {
         }
     }
 
-    // La sesión terminada más reciente (completada o interrumpida); la que está en curso no cuenta.
+    // The most recent finished session (completed or interrupted); one still in progress does not count.
     if (last != null) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SectionLabel(stringResource(R.string.home_last_night))
@@ -401,7 +401,7 @@ private fun LivePanel(live: LiveSnapshot) {
             delay(1_000)
         }
     }
-    // Historial corto del nivel para el medidor de barras (una barra cada 150 ms ≈ 6 s en pantalla).
+    // Short level history for the bar meter (one bar every 150 ms ≈ 6 s on screen).
     val currentLevel by rememberUpdatedState(live.levelDb)
     val levels = remember { mutableStateListOf<Float>() }
     LaunchedEffect(Unit) {
@@ -412,7 +412,7 @@ private fun LivePanel(live: LiveSnapshot) {
         }
     }
 
-    // Aviso breve "Entorno medido" justo al terminar la calibración (solo si se vio calibrar).
+    // Brief "Environment measured" notice right after calibration ends (only if calibration was seen).
     var sawCalibration by remember { mutableStateOf(live.isCalibrating) }
     var showCalibrated by remember { mutableStateOf(false) }
     LaunchedEffect(live.isCalibrating) {
@@ -428,9 +428,9 @@ private fun LivePanel(live: LiveSnapshot) {
     val elapsed = if (live.startedAt > 0) now - live.startedAt else 0L
     val status = when {
         live.sessionId == null -> stringResource(R.string.home_status_preparing)
-        live.phase == LivePhase.PAUSA -> pauseLabel(live.pauseReason)
+        live.phase == LivePhase.PAUSED -> pauseLabel(live.pauseReason)
         live.isCalibrating -> stringResource(R.string.home_status_calibrating)
-        live.phase == LivePhase.EVENTO -> stringResource(R.string.home_status_event)
+        live.phase == LivePhase.EVENT -> stringResource(R.string.home_status_event)
         else -> stringResource(R.string.home_status_recording)
     }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
@@ -439,7 +439,7 @@ private fun LivePanel(live: LiveSnapshot) {
         Text(
             if (live.startedAt > 0) stringResource(R.string.home_status_since, status, formatTime(live.startedAt)) else status,
             style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
-            color = if (live.phase == LivePhase.EVENTO) Primary else OnSurfaceSoft,
+            color = if (live.phase == LivePhase.EVENT) Primary else OnSurfaceSoft,
         )
     }
 
@@ -461,8 +461,8 @@ private fun LivePanel(live: LiveSnapshot) {
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.home_baseline, formatDbShort(live.baselineDb)), style = Murmur.monoSmall, color = OnSurfaceMuted)
             Text(stringResource(R.string.home_threshold, formatDbShort(live.thresholdDb)), style = Murmur.monoSmall, color = OnSurfaceMuted)
-            val fondo = live.backgroundLabel?.let { yamnetLabel(it).lowercase() } ?: "—"
-            Text(stringResource(R.string.home_background, fondo), style = Murmur.monoSmall, color = OnSurfaceMuted, maxLines = 1)
+            val backgroundName = live.backgroundLabel?.let { yamnetLabel(it).lowercase() } ?: "—"
+            Text(stringResource(R.string.home_background, backgroundName), style = Murmur.monoSmall, color = OnSurfaceMuted, maxLines = 1)
         }
     }
 
@@ -489,8 +489,8 @@ private fun LivePanel(live: LiveSnapshot) {
 }
 
 /**
- * Primer minuto: Murmur mide el ruido de fondo del cuarto. Se muestra el progreso y qué viene
- * después. Lo que suene en este minuto se detecta igual (desde los 5 s hay umbral provisional).
+ * First minute: Murmur measures the room's background noise. Shows the progress and what comes
+ * next. Sounds during this minute are still detected (a provisional threshold applies from 5 s).
  */
 @Composable
 internal fun CalibrationCard(live: LiveSnapshot) {
@@ -538,7 +538,7 @@ internal fun CalibrationCard(live: LiveSnapshot) {
     }
 }
 
-/** Aviso breve al terminar el minuto de calibración. */
+/** Brief notice when the calibration minute ends. */
 @Composable
 internal fun CalibratedBanner(live: LiveSnapshot) {
     MurmurCard(Modifier.fillMaxWidth(), borderColor = Primary.copy(alpha = 0.45f)) {
@@ -551,10 +551,10 @@ internal fun CalibratedBanner(live: LiveSnapshot) {
             )
         }
         Spacer(Modifier.height(6.dp))
-        val fondo = live.backgroundLabel?.let { yamnetLabel(it).lowercase() }
+        val backgroundName = live.backgroundLabel?.let { yamnetLabel(it).lowercase() }
         Text(
-            if (fondo != null) {
-                stringResource(R.string.home_calibrated_text_bg, fondo, formatDbShort(live.baselineDb))
+            if (backgroundName != null) {
+                stringResource(R.string.home_calibrated_text_bg, backgroundName, formatDbShort(live.baselineDb))
             } else {
                 stringResource(R.string.home_calibrated_text, formatDbShort(live.baselineDb))
             },
@@ -600,7 +600,7 @@ private fun ProgressLine(progress: Float) {
     }
 }
 
-/** "Lo último que se escuchó": cada clip clasificado, también los ignorados como fondo. */
+/** "Recently heard": every classified clip, including those ignored as background. */
 @Composable
 private fun RecentHeard(live: LiveSnapshot) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

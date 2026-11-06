@@ -111,8 +111,8 @@ fun HistoryScreen(onOpenSession: (Long) -> Unit) {
 }
 
 /**
- * Historial como calendario: los días con grabaciones llevan puntos del color de lo que se oyó;
- * al tocar un día se listan sus noches debajo. Sin permisos ni diálogos (lo usa la captura).
+ * History as a calendar: days with recordings get dots in the colors of what was heard;
+ * tapping a day lists its nights below. No permissions or dialogs (used by the screenshot capture).
  */
 @Composable
 internal fun HistoryContent(
@@ -131,7 +131,7 @@ internal fun HistoryContent(
     val earliestMonth = sessions?.lastOrNull()?.let { YearMonth.from(sessionDay(it.session.startedAt, zone)) }
     val currentMonth = YearMonth.from(today)
 
-    // Al abrir: el mes y el día de la noche más reciente (o hoy si no hay ninguna).
+    // On open: the month and day of the most recent night (or today if there are none).
     var shownMonthKey by rememberSaveable(latestDay == null) { mutableStateOf(YearMonth.from(latestDay ?: today).toString()) }
     var selectedKey by rememberSaveable(latestDay == null) { mutableStateOf((latestDay ?: today).toString()) }
     val shownMonth = YearMonth.parse(shownMonthKey)
@@ -322,7 +322,7 @@ private fun DayCell(
     }
 }
 
-/** Hasta 3 puntos con lo que se oyó ese día; una noche sin eventos lleva un punto del color de acento. */
+/** Up to 3 dots for what was heard that day; a night with no events gets one accent-colored dot. */
 private fun dayDots(rows: List<SessionSummaryRow>): List<Color> {
     if (rows.isEmpty()) return emptyList()
     val dots = buildList {

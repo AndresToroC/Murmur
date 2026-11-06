@@ -18,7 +18,7 @@ class BaselineTrackerTest {
     @Test
     fun calibratesToP20() {
         val t = BaselineTracker(config)
-        // 600 niveles de −80 a −20 dB, desordenados.
+        // 600 levels from −80 to −20 dB, shuffled.
         val levels = List(600) { -80f + it * 60f / 599 }.shuffled(kotlin.random.Random(3))
         levels.forEachIndexed { i, l ->
             assertFalse(t.isCalibrated)
@@ -34,7 +34,7 @@ class BaselineTrackerTest {
     fun provisionalBaselineAfterWarmup() {
         val t = BaselineTracker(config)
         repeat(config.warmupBlocks - 1) { t.onBlock(-50f, true) }
-        assertNull("sin base durante el calentamiento", t.baselineDb)
+        assertNull("no baseline during warm-up", t.baselineDb)
         t.onBlock(-50f, true)
         assertEquals(-50f, t.baselineDb!!, 0.001f)
         assertFalse(t.isCalibrated)
@@ -46,7 +46,7 @@ class BaselineTrackerTest {
     fun eventBlocksDuringCalibrationDoNotRaiseBaseline() {
         val t = BaselineTracker(config)
         repeat(config.warmupBlocks) { t.onBlock(-60f, true) }
-        // El resto de la calibración casi todo es habla (bloques de evento): no debe subir la base.
+        // The rest of calibration is almost all speech (event blocks): the baseline must not rise.
         repeat(550) { t.onBlock(-25f, track = false) }
         repeat(600 - config.warmupBlocks - 550) { t.onBlock(-60f, true) }
         assertTrue(t.isCalibrated)
@@ -65,10 +65,10 @@ class BaselineTrackerTest {
     @Test
     fun sustainedStepOf15DbIsAbsorbedInAboutFourMinutes() {
         val t = calibrated()
-        repeat(600) { t.onBlock(-45f, track = true) } // 1 min: todavía lejos
-        assertTrue("a 1 min aún no debe absorberse: ${t.baselineDb}", t.baselineDb!! < -50f)
-        repeat(1800) { t.onBlock(-45f, track = true) } // 4 min en total
-        assertTrue("a 4 min debe estar a < 3 dB: ${t.baselineDb}", t.baselineDb!! > -48f)
+        repeat(600) { t.onBlock(-45f, track = true) } // 1 min: still far off
+        assertTrue("at 1 min it must not be absorbed yet: ${t.baselineDb}", t.baselineDb!! < -50f)
+        repeat(1800) { t.onBlock(-45f, track = true) } // 4 min in total
+        assertTrue("at 4 min it must be within 3 dB: ${t.baselineDb}", t.baselineDb!! > -48f)
     }
 
     @Test
@@ -84,21 +84,21 @@ class EventDetectorTest {
     private val quiet = -60f
     private val loud = -40f
 
-    /** Alimenta bloques de 100 ms; cada muestra lleva el número de bloque para comprobar recortes. */
+    /** Feeds 100 ms blocks; each sample carries its block number so trimming can be checked. */
     private class Driver(config: DetectorConfig = DetectorConfig()) {
         val detector = EventDetector(config)
         val events = ArrayList<ClosedEvent>()
         val t0 = 1_000_000L
         var block = 0
         val now: Long get() = t0 + block * 100L
-        var sawEvento = false
+        var sawEvent = false
         var lastOutput: DetectorOutput? = null
 
         fun feed(level: Float, blocks: Int = 1) = repeat(blocks) {
             val samples = ShortArray(1600) { block.toShort() }
             val out = detector.onBlock(now, samples, level)
             out.closedEvent?.let(events::add)
-            if (out.state == DetectorState.EVENTO) sawEvento = true
+            if (out.state == DetectorState.EVENT) sawEvent = true
             lastOutput = out
             block++
         }
@@ -110,20 +110,20 @@ class EventDetectorTest {
     fun warmupNeverOpensEvents() {
         val d = Driver()
         d.feed(-10f, DetectorConfig().warmupBlocks)
-        assertFalse(d.sawEvento)
-        assertEquals(DetectorState.CALIBRANDO, d.detector.state)
+        assertFalse(d.sawEvent)
+        assertEquals(DetectorState.CALIBRATING, d.detector.state)
     }
 
-    /** Regresión: en una prueba de 1 min nada se detectaba porque calibrar bloqueaba la detección. */
+    /** Regression: in a 1-minute test nothing was detected because calibration blocked detection. */
     @Test
     fun detectsEventsWhileStillCalibrating() {
         val d = Driver()
-        d.feed(quiet, 100) // 10 s de silencio
-        d.feed(loud, 10) // 1 s de voz
+        d.feed(quiet, 100) // 10 s of silence
+        d.feed(loud, 10) // 1 s of voice
         d.feed(quiet, 100)
-        d.feed(loud, 5) // tos
+        d.feed(loud, 5) // cough
         d.feed(quiet, 100)
-        assertFalse("sigue calibrando (31,5 s)", d.detector.baseline.isCalibrated)
+        assertFalse("still calibrating (31.5 s)", d.detector.baseline.isCalibrated)
         assertEquals(2, d.events.size)
         assertEquals(quiet, d.detector.baseline.baselineDb!!, 0.001f)
     }
@@ -133,7 +133,7 @@ class EventDetectorTest {
         val d = Driver().apply { calibrate() }
         d.feed(loud, 2)
         d.feed(quiet, 40)
-        assertFalse(d.sawEvento)
+        assertFalse(d.sawEvent)
         assertTrue(d.events.isEmpty())
     }
 
@@ -142,12 +142,12 @@ class EventDetectorTest {
         val d = Driver().apply { calibrate() }
         val start = d.now
         d.feed(loud, 3)
-        assertEquals(DetectorState.EVENTO, d.detector.state)
+        assertEquals(DetectorState.EVENT, d.detector.state)
         d.feed(quiet, 25)
         assertEquals(1, d.events.size)
         assertEquals(start, d.events[0].startedAtMs)
         assertEquals(start + 300, d.events[0].endedAtMs)
-        assertEquals(DetectorState.ESCUCHANDO, d.detector.state)
+        assertEquals(DetectorState.LISTENING, d.detector.state)
     }
 
     @Test
@@ -183,8 +183,8 @@ class EventDetectorTest {
         assertEquals(start + 1_000, e.endedAtMs)
         assertEquals(start - 3_000, e.clipStartedAtMs)
         assertEquals((30 + 10 + 20) * 1600, e.pcm.size)
-        assertEquals((onsetBlock - 30).toShort(), e.pcm.first()) // 3 s antes del onset
-        assertEquals((onsetBlock + 10 + 19).toShort(), e.pcm.last()) // 2 s después del último activo
+        assertEquals((onsetBlock - 30).toShort(), e.pcm.first()) // 3 s before the onset
+        assertEquals((onsetBlock + 10 + 19).toShort(), e.pcm.last()) // 2 s after the last active block
         assertFalse(e.wasCut)
     }
 
@@ -192,22 +192,22 @@ class EventDetectorTest {
     fun cutAtSixtySecondsWithoutRolls() {
         val d = Driver().apply { calibrate() }
         val start = d.now
-        d.feed(loud, 650) // 65 s seguidos
+        d.feed(loud, 650) // 65 s straight
         assertEquals(1, d.events.size)
         val first = d.events[0]
         assertTrue(first.wasCut)
         assertEquals(start, first.startedAtMs)
         assertEquals(start + 60_000, first.endedAtMs)
-        assertEquals(Pcm.msToSamples(63_000), first.pcm.size) // 3 s de pre-roll + 60 s, sin post-roll
+        assertEquals(Pcm.msToSamples(63_000), first.pcm.size) // 3 s of pre-roll + 60 s, no post-roll
 
         d.feed(quiet, 25)
         assertEquals(2, d.events.size)
         val second = d.events[1]
         assertEquals(first.endedAtMs, second.startedAtMs)
-        assertEquals(second.startedAtMs, second.clipStartedAtMs) // sin pre-roll
+        assertEquals(second.startedAtMs, second.clipStartedAtMs) // no pre-roll
         assertEquals(start + 65_000, second.endedAtMs)
-        assertEquals(Pcm.msToSamples(7_000), second.pcm.size) // 5 s + 2 s de post-roll
-        assertEquals((600 + 600).toShort(), second.pcm.first()) // contiguo, sin duplicar
+        assertEquals(Pcm.msToSamples(7_000), second.pcm.size) // 5 s + 2 s of post-roll
+        assertEquals((600 + 600).toShort(), second.pcm.first()) // contiguous, no duplication
     }
 
     @Test
@@ -217,7 +217,7 @@ class EventDetectorTest {
         assertEquals(1, d.events.size)
         d.feed(quiet, 30)
         assertEquals(1, d.events.size)
-        assertEquals(DetectorState.ESCUCHANDO, d.detector.state)
+        assertEquals(DetectorState.LISTENING, d.detector.state)
     }
 
     @Test
@@ -228,8 +228,8 @@ class EventDetectorTest {
         val e = d.detector.interrupt()
         assertNotNull(e)
         assertEquals((30 + 10) * 1600, e!!.pcm.size)
-        assertEquals(DetectorState.ESCUCHANDO, d.detector.state)
-        // Tras la pausa no hay pre-roll del audio anterior.
+        assertEquals(DetectorState.LISTENING, d.detector.state)
+        // After the pause there is no pre-roll from the earlier audio.
         d.feed(loud, 3)
         d.feed(quiet, 25)
         assertEquals(Pcm.msToSamples(2_300), d.events.last().pcm.size)
@@ -245,11 +245,11 @@ class EventDetectorTest {
     @Test
     fun fanTurningOnIsAbsorbedWithoutAvalanche() {
         val d = Driver().apply { calibrate() }
-        d.feed(-45f, 3_000) // ventilador +15 dB durante 5 min
-        assertTrue("eventos: ${d.events.size}", d.events.size <= 4)
-        assertEquals(DetectorState.ESCUCHANDO, d.detector.state)
+        d.feed(-45f, 3_000) // fan +15 dB for 5 min
+        assertTrue("events: ${d.events.size}", d.events.size <= 4)
+        assertEquals(DetectorState.LISTENING, d.detector.state)
         assertTrue(d.detector.baseline.baselineDb!! > -55f)
-        // Y la noche sigue: un ruido real sobre el ventilador se detecta.
+        // And the night goes on: a real noise on top of the fan is detected.
         val before = d.events.size
         d.feed(-25f, 5)
         d.feed(-45f, 25)

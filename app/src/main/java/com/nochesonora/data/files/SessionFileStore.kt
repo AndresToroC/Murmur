@@ -6,7 +6,7 @@ import com.nochesonora.core.audio.WavWriter
 import java.io.File
 import java.io.IOException
 
-/** Archivos de audio: `filesDir/sessions/{sessionId}/{eventId}.wav` y `full.aac`. */
+/** Audio files: `filesDir/sessions/{sessionId}/{eventId}.wav` and `full.aac`. */
 class SessionFileStore(context: Context) {
     private val filesDir: File = context.filesDir
     private val sessionsDir = File(filesDir, "sessions")
@@ -17,7 +17,7 @@ class SessionFileStore(context: Context) {
 
     fun fullRecordingFile(sessionId: Long): File = File(sessionDir(sessionId), "full.aac")
 
-    /** Escritura atómica: se escribe a `.tmp` y se renombra. */
+    /** Atomic write: writes to `.tmp` and then renames. */
     @Throws(IOException::class)
     fun writeWav(target: File, pcm: ShortArray) = WavWriter.writeFileAtomic(target, pcm)
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Transcripción de los clips de habla. Inglés en values-en/strings_transcription.xml. -->
+<!-- Transcription of talking clips. English in values-en/strings_transcription.xml. -->
 <resources>
     <string name="transcript_quote">“%1$s”</string>
     <string name="transcript_running">Transcribiendo…</string>

@@ -18,7 +18,7 @@ class TranscriptionSupportTest {
             listOf("es-CO", "es-ES", "es-US", "es"),
             TranscriptionSupport.candidateTags("es", Locale.forLanguageTag("es-CO")),
         )
-        // Teléfono en inglés, app en español: no se usa el país del teléfono.
+        // Phone in English, app in Spanish: the phone's country is not used.
         assertEquals(listOf("es-ES", "es-US", "es"), TranscriptionSupport.candidateTags("es", Locale.forLanguageTag("en-US")))
         assertEquals(listOf("en-US", "en-GB", "en"), TranscriptionSupport.candidateTags("en", Locale.forLanguageTag("en-US")))
     }
@@ -30,7 +30,7 @@ class TranscriptionSupportTest {
             LanguageChoice.Installed("es-US"),
             TranscriptionSupport.chooseLanguage(c, installed = listOf("en-US", "es-US"), pending = emptyList(), supported = listOf("es-ES")),
         )
-        // Otra variante instalada del mismo idioma gana a descargar la preferida.
+        // Another installed variant of the same language beats downloading the preferred one.
         assertEquals(
             LanguageChoice.Installed("es-MX"),
             TranscriptionSupport.chooseLanguage(c, installed = listOf("es-MX"), pending = emptyList(), supported = listOf("es-ES")),
@@ -39,7 +39,7 @@ class TranscriptionSupportTest {
             LanguageChoice.Downloadable("es-ES"),
             TranscriptionSupport.chooseLanguage(c, installed = listOf("en-US"), pending = emptyList(), supported = listOf("fr-FR", "es-ES")),
         )
-        // Mayúsculas y "_" no importan.
+        // Case and "_" do not matter.
         assertEquals(
             LanguageChoice.Installed("es_es"),
             TranscriptionSupport.chooseLanguage(c, installed = listOf("es_es"), pending = emptyList(), supported = emptyList()),
@@ -74,7 +74,7 @@ class TranscriptionSupportTest {
         fun le16(v: Int) = out.write(ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(v.toShort()).array())
         ascii("RIFF"); le32(0); ascii("WAVE")
         ascii("fmt "); le32(16); le16(1); le16(1); le32(16_000); le32(32_000); le16(2); le16(16)
-        ascii("LIST"); le32(3); out.write(byteArrayOf(1, 2, 3, 0)) // bloque impar + relleno
+        ascii("LIST"); le32(3); out.write(byteArrayOf(1, 2, 3, 0)) // odd-sized chunk + padding
         ascii("data"); le32(5); out.write(byteArrayOf(10, 11, 12, 13, 14))
         assertArrayEquals(byteArrayOf(10, 11, 12, 13), TranscriptionSupport.pcmFromWav(out.toByteArray()))
     }

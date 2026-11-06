@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
-/** Señales sintéticas para los tests (16 kHz, PCM16). */
+/** Synthetic signals for the tests (16 kHz, PCM16). */
 object SignalGen {
     const val SR = Pcm.SAMPLE_RATE
 
@@ -22,7 +22,7 @@ object SignalGen {
         return ShortArray(samples(seconds)) { ((rnd.nextDouble() * 2 - 1) * amplitude).roundToInt().toShort() }
     }
 
-    /** Suma [src] en [dst] a partir de [atSecond], con saturación. */
+    /** Adds [src] into [dst] starting at [atSecond], with saturation. */
     fun mixInto(dst: ShortArray, src: ShortArray, atSecond: Double) {
         val start = samples(atSecond)
         for (i in src.indices) {
@@ -32,7 +32,7 @@ object SignalGen {
         }
     }
 
-    /** Ráfaga de graves (tonos de 120/150/180 Hz) con envolvente de Hann: imita un ronquido. */
+    /** Low-frequency burst (120/150/180 Hz tones) with a Hann envelope: mimics a snore. */
     fun lowBurst(seconds: Double, amplitude: Double): ShortArray {
         val n = samples(seconds)
         return ShortArray(n) { i ->
@@ -43,7 +43,7 @@ object SignalGen {
         }
     }
 
-    /** Ráfaga de "voz": tonos entre 400 y 2.500 Hz. */
+    /** "Voice" burst: tones between 400 and 2,500 Hz. */
     fun voiceBurst(seconds: Double, amplitude: Double): ShortArray {
         val n = samples(seconds)
         return ShortArray(n) { i ->

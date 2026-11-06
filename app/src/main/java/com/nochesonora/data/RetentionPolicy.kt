@@ -16,7 +16,7 @@ data class RetentionCandidate(
     val inProgress: Boolean,
 )
 
-/** Lógica pura de qué sesiones borrar. Nunca borra favoritas ni la sesión en curso. */
+/** Pure logic for which sessions to delete. Never deletes favorites or the session in progress. */
 object RetentionPolicy {
     fun idsToDelete(now: Long, retention: Retention, sessions: List<RetentionCandidate>): List<Long> {
         val days = retention.days ?: return emptyList()

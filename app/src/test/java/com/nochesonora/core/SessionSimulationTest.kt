@@ -11,11 +11,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Sesión de 1 minuto de punta a punta (capas 1–3), como la prueba manual que daba "0 eventos":
- * cuarto en silencio, habla a los 12 s, tos a los 30 s, habla a los 45 s, y se detiene a los 60 s.
+ * End-to-end 1-minute session (layers 1–3), like the manual test that gave "0 events":
+ * quiet room, speech at 12 s, cough at 30 s, speech at 45 s, and it stops at 60 s.
  */
 class SessionSimulationTest {
-    /** Imita a YAMNet: "Silence" siempre y la etiqueta del sonido solo en las ventanas fuertes. */
+    /** Mimics YAMNet: always "Silence", and the sound's label only in loud windows. */
     private fun fakeYamnet(loudLabel: String) = WindowClassifier { window ->
         val rms = kotlin.math.sqrt(window.sumOf { (it * it).toDouble() } / window.size)
         val db = 20 * kotlin.math.log10(rms + 1e-12)
@@ -32,7 +32,7 @@ class SessionSimulationTest {
                 .closedEvent?.let(events::add)
             i += block
         }
-        detector.interrupt()?.let(events::add) // "Detener"
+        detector.interrupt()?.let(events::add) // "Stop"
         return events
     }
 

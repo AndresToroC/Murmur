@@ -1,11 +1,11 @@
 package com.nochesonora.core.classification
 
-/** Clasifica una ventana de 15.600 muestras float. La implementación real es YAMNet (MediaPipe). */
+/** Classifies a window of 15,600 float samples. The real implementation is YAMNet (MediaPipe). */
 fun interface WindowClassifier {
     fun classify(window: FloatArray): List<LabelScore>
 }
 
-/** Capa 3 completa sobre el PCM de un evento: ventaneo al 50 %, YAMNet, heurística y votación. */
+/** Full layer 3 over an event's PCM: 50 % windowing, YAMNet, heuristic and voting. */
 class ClipAnalyzer(private val classifier: WindowClassifier) {
     private val window = FloatArray(Windowing.WINDOW_SAMPLES)
 

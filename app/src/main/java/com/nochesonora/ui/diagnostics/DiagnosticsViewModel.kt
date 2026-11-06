@@ -26,7 +26,7 @@ sealed interface TestState {
     data class Recording(val progress: Float) : TestState
     data object Classifying : TestState
     data class Done(val meanLevelDb: Float, val result: ClassificationResult, val source: String) : TestState
-    /** [messageRes] admite un argumento opcional [detail] (%1$s). */
+    /** [messageRes] takes an optional [detail] argument (%1$s). */
     data class Failed(@StringRes val messageRes: Int, val detail: String? = null) : TestState
 }
 
@@ -38,7 +38,7 @@ class DiagnosticsViewModel(private val container: AppContainer) : ViewModel() {
 
     val isTesting: Boolean get() = _test.value is TestState.Recording || _test.value == TestState.Classifying
 
-    /** Graba 10 s en primer plano, clasifica con ventanas al 50 % y no guarda nada. */
+    /** Records 10 s in the foreground, classifies with 50 % overlapping windows and saves nothing. */
     fun runTest() {
         if (isTesting || live.value.serviceRunning) return
         _test.value = TestState.Recording(0f)
@@ -56,7 +56,7 @@ class DiagnosticsViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Prueba fallida", e)
+                Log.e(TAG, "Test failed", e)
                 _test.value = TestState.Failed(R.string.diag_error, e.message ?: e.javaClass.simpleName)
             }
         }

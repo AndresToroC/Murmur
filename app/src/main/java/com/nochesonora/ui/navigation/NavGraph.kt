@@ -43,12 +43,12 @@ import com.nochesonora.ui.home.HomeScreen
 import com.nochesonora.ui.settings.SettingsScreen
 
 private object Routes {
-    const val HOME = "inicio"
-    const val HISTORY = "historial"
-    const val SETTINGS = "ajustes"
-    const val DIAGNOSTICS = "diagnostico"
-    const val DETAIL = "noche/{id}"
-    fun detail(id: Long) = "noche/$id"
+    const val HOME = "home"
+    const val HISTORY = "history"
+    const val SETTINGS = "settings"
+    const val DIAGNOSTICS = "diagnostics"
+    const val DETAIL = "night/{id}"
+    fun detail(id: Long) = "night/$id"
 }
 
 private data class Tab(val route: String, @StringRes val label: Int, val icon: ImageVector)
@@ -59,7 +59,7 @@ private val tabs = listOf(
     Tab(Routes.SETTINGS, R.string.nav_settings, Icons.Filled.Settings),
 )
 
-/** Acciones que llegan desde fuera de la app (notificación, widget, ajustes rápidos). */
+/** Actions that arrive from outside the app (notification, widget, Quick Settings tile). */
 sealed interface PendingAction {
     data object StartNight : PendingAction
     data class OpenSession(val sessionId: Long) : PendingAction
@@ -130,7 +130,7 @@ fun NavGraph(
                 NightDetailScreen(sessionId = id, onBack = { navController.popBackStack() })
             }
         }
-        // Después del NavHost (ya tiene grafo). Abrir una noche: al detalle. Comenzar: a Inicio, que lo atiende.
+        // After the NavHost (the graph exists by now). Open a night: go to its detail. Start: go to Home, which handles it.
         LaunchedEffect(pendingAction) {
             when (pendingAction) {
                 is PendingAction.OpenSession -> {

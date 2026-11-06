@@ -15,10 +15,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Detecta cuándo perdemos el micrófono sin error explícito (§6.5):
- * - API 29+: `isClientSilenced` de nuestra grabación (otra app tomó el micrófono y recibimos ceros).
- * - Llamadas: sondeo de `AudioManager.mode` cada 2 s (no requiere `READ_PHONE_STATE`).
- * Los errores de `read()` los trata el motor directamente.
+ * Detects when we lose the microphone without an explicit error (§6.5):
+ * - API 29+: `isClientSilenced` on our recording (another app took the microphone and we get zeros).
+ * - Calls: polls `AudioManager.mode` every 2 s (does not require `READ_PHONE_STATE`).
+ * `read()` errors are handled directly by the engine.
  */
 class InterruptionMonitor(
     context: Context,
@@ -32,11 +32,11 @@ class InterruptionMonitor(
     private var pollJob: Job? = null
     private var callback: AudioManager.AudioRecordingCallback? = null
 
-    /** Motivo de pausa actual ([PauseReason]) o null si se puede grabar. */
+    /** Current pause reason ([PauseReason]), or null if recording is possible. */
     val currentReason: String?
         get() = when {
-            inCall -> PauseReason.LLAMADA
-            silenced -> PauseReason.MICROFONO_OCUPADO
+            inCall -> PauseReason.CALL
+            silenced -> PauseReason.MIC_BUSY
             else -> null
         }
 

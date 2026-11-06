@@ -16,12 +16,12 @@ data class SnoreResult(
 }
 
 /**
- * Heurística de ronquido (plan §4.5): golpes de energía periódicos cada 2–6 s y energía
- * concentrada por debajo de 500 Hz.
+ * Snore heuristic (plan §4.5): periodic bursts of energy every 2–6 s, with energy
+ * concentrated below 500 Hz.
  *
- * Los picos se toman de a uno por ráfaga (tramo continuo sobre mediana + 6 dB) y las ráfagas
- * a menos de 1,5 s de la anterior se funden con ella. Así un pulso cada 1 s queda como una
- * única ráfaga larga y no parece un ronquido cada 2 s.
+ * One peak is taken per burst (a continuous stretch above median + 6 dB), and bursts
+ * less than 1.5 s after the previous one are merged into it. That way a pulse every 1 s stays
+ * a single long burst and does not look like a snore every 2 s.
  */
 object SnoreHeuristic {
     private const val BLOCK_MS = 100
@@ -45,7 +45,7 @@ object SnoreHeuristic {
         )
     }
 
-    /** Nivel en dB por bloque de 100 ms, suavizado con una media de 3 bloques. */
+    /** Level in dB per 100 ms block, smoothed with a 3-block moving average. */
     internal fun envelope(pcm: ShortArray, sampleRate: Int): FloatArray {
         val block = sampleRate * BLOCK_MS / 1000
         val n = pcm.size / block
@@ -59,7 +59,7 @@ object SnoreHeuristic {
         }
     }
 
-    /** Índices de bloque de los picos (uno por ráfaga, ráfagas cercanas fundidas). */
+    /** Block indices of the peaks (one per burst, nearby bursts merged). */
     internal fun peaks(env: FloatArray): List<Int> {
         if (env.size < 3) return emptyList()
         val median = env.sortedArray()[env.size / 2]
@@ -102,7 +102,7 @@ object SnoreHeuristic {
         return sqrt(variance) / mean < MAX_CV
     }
 
-    /** Energía tras un paso bajo biquad de 2º orden (fc = 500 Hz, Q = 0,707) / energía total. */
+    /** Energy after a 2nd-order biquad low-pass (fc = 500 Hz, Q = 0.707) / total energy. */
     internal fun lowFrequencyRatio(pcm: ShortArray, sampleRate: Int): Float {
         val w0 = 2.0 * PI * LOW_FREQ_HZ / sampleRate
         val alpha = sin(w0) / (2.0 * 0.7071)

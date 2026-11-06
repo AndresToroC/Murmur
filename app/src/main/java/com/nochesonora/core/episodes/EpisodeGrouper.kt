@@ -19,7 +19,7 @@ data class EpisodeLite(
     val eventIds: List<Long>,
 )
 
-/** Une eventos consecutivos de la misma categoría efectiva separados por menos de 30 s (A8). */
+/** Merges consecutive events of the same effective category that are less than 30 s apart (A8). */
 object EpisodeGrouper {
     const val MAX_GAP_MS = 30_000L
 

@@ -29,9 +29,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * Widget de la pantalla de inicio: estado de la noche (con cronómetro mientras graba), la última
- * noche y un botón para comenzar o detener. No se actualiza por tiempo: lo refrescan el servicio
- * (al empezar, pausar, continuar y terminar) y la app al abrirse; el cronómetro corre solo.
+ * Home screen widget: the night's state (with a chronometer while recording), the last night
+ * and a button to start or stop. It is not updated on a timer: the service refreshes it (on start,
+ * pause, resume and stop) and so does the app when it opens; the chronometer runs on its own.
  */
 class MurmurWidget : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
@@ -47,7 +47,7 @@ class MurmurWidget : AppWidgetProvider() {
                 val views = render(AppLanguage.wrap(context.applicationContext), live, last)
                 ids.forEach { manager.updateAppWidget(it, views) }
             } catch (e: Exception) {
-                Log.w(TAG, "No se pudo actualizar el widget", e)
+                Log.w(TAG, "Could not update the widget", e)
             } finally {
                 pending.finish()
             }
@@ -58,7 +58,7 @@ class MurmurWidget : AppWidgetProvider() {
         private const val TAG = "MurmurWidget"
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-        /** Vuelve a dibujar todos los widgets puestos en la pantalla de inicio. */
+        /** Redraws every widget placed on the home screen. */
         fun refreshAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context) ?: return
             val ids = manager.getAppWidgetIds(ComponentName(context, MurmurWidget::class.java))
@@ -73,7 +73,7 @@ class MurmurWidget : AppWidgetProvider() {
         internal fun render(context: Context, live: LiveSnapshot, last: SessionSummaryRow?): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_murmur)
             val running = live.serviceRunning
-            val paused = live.pauseReason == PauseReason.USUARIO
+            val paused = live.pauseReason == PauseReason.USER
 
             views.setOnClickPendingIntent(R.id.widget_root, openApp(context))
             views.setTextViewText(
@@ -89,7 +89,7 @@ class MurmurWidget : AppWidgetProvider() {
             views.setTextColor(R.id.widget_status, if (running && !paused) ACCENT else MUTED)
 
             if (running) {
-                // Chronometer cuenta desde un instante de elapsedRealtime: se traduce la hora de inicio.
+                // Chronometer counts from an elapsedRealtime instant: convert the start time.
                 val base = SystemClock.elapsedRealtime() - (System.currentTimeMillis() - live.startedAt).coerceAtLeast(0)
                 views.setChronometer(R.id.widget_clock, base, null, !paused)
                 views.setViewVisibility(R.id.widget_clock, View.VISIBLE)
@@ -122,7 +122,7 @@ class MurmurWidget : AppWidgetProvider() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
-        /** Comenzar abre la app: pasa por permisos, batería y espacio como el botón de Inicio. */
+        /** Start opens the app: it goes through permissions, battery and storage like the Home button. */
         private fun startNight(context: Context) = PendingIntent.getActivity(
             context, 31,
             Intent(context, MainActivity::class.java)
@@ -145,7 +145,7 @@ class MurmurWidget : AppWidgetProvider() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
-        // Tokens del diseño A (RemoteViews no ve los colores de Compose).
+        // Design A tokens (RemoteViews cannot see the Compose colors).
         private const val ACCENT = 0xFF7CC4FF.toInt()
         private const val ON_ACCENT = 0xFF0A0F1C.toInt()
         private const val TEXT = 0xFFE7ECF5.toInt()

@@ -8,5 +8,5 @@ captures/
 .externalNativeBuild/
 .cxx/
 
-# APK compilado (126 MB, pasa el límite de GitHub)
+# Built APK (126 MB, over the GitHub file size limit)
 *.apk

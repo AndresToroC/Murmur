@@ -8,7 +8,7 @@ import java.io.File
 import java.util.zip.ZipFile
 
 class SoundTypesTest {
-    /** Las 521 etiquetas reales: el .tflite de MediaPipe lleva `yamnet_label_list.txt` adjunto como zip. */
+    /** The 521 real labels: MediaPipe's .tflite carries `yamnet_label_list.txt` attached as a zip. */
     private val yamnetLabels: List<String> by lazy {
         val model = listOf("src/main/assets/yamnet.tflite", "app/src/main/assets/yamnet.tflite").map(::File).first { it.exists() }
         ZipFile(model).use { zip ->
@@ -20,7 +20,7 @@ class SoundTypesTest {
     fun everyMappedLabelExistsInYamnet() {
         assertEquals(521, yamnetLabels.size)
         val unknown = SoundTypes.mappedLabels - yamnetLabels.toSet()
-        assertTrue("Etiquetas que YAMNet no tiene: $unknown", unknown.isEmpty())
+        assertTrue("Labels YAMNet does not have: $unknown", unknown.isEmpty())
     }
 
     @Test
@@ -28,7 +28,7 @@ class SoundTypesTest {
         val byType = yamnetLabels.mapNotNull(SoundTypes::of).toSet()
         assertEquals(SoundType.entries.toSet(), byType)
         val covered = yamnetLabels.count { SoundTypes.of(it) != null }
-        assertTrue("Solo $covered de 521 etiquetas tienen tipo", covered >= 480)
+        assertTrue("Only $covered of 521 labels have a type", covered >= 480)
     }
 
     @Test
@@ -46,7 +46,7 @@ class SoundTypesTest {
         assertEquals(SoundType.ROOM, SoundTypes.of("Inside, small room"))
         assertEquals(SoundType.MOVEMENT, SoundTypes.of("Rustle"))
         assertEquals(SoundType.ALARM, SoundTypes.of("Alarm clock"))
-        // "Wind" no es un instrumento de viento.
+        // "Wind" is not a wind instrument.
         assertEquals(SoundType.WIND, SoundTypes.of("Wind"))
         assertNull(SoundTypes.of("Silence"))
         assertNull(SoundTypes.of(null))
@@ -58,7 +58,7 @@ class SoundTypesTest {
         assertEquals(SoundType.DOG, SoundTypes.ofEvent("Bark", listOf("Speech")))
         assertEquals(SoundType.DOOR, SoundTypes.ofEvent("Desconocido", listOf("Inside, small room", "Silence", "Door")))
         assertEquals(SoundType.DOOR, SoundTypes.ofEvent("Sin clasificar", listOf("Slam")))
-        // Si solo hay ruido del cuarto, ese es el tipo.
+        // If there is only room noise, that is the type.
         assertEquals(SoundType.ROOM, SoundTypes.ofEvent("Inside, small room", listOf("Inside, small room", "Silence")))
         assertNull(SoundTypes.ofEvent(null, emptyList()))
     }
@@ -71,7 +71,7 @@ class SoundTypesTest {
 
     @Test
     fun soundTypesDoNotChangeCategoryDecisions() {
-        // Presentación pura: LabelMapper sigue igual (p. ej. la risa cuenta como HABLA, el estornudo como TOS).
+        // Presentation only: LabelMapper is unchanged (e.g. laughter counts as HABLA, a sneeze as TOS).
         assertEquals(LabelKind.SPEECH, LabelMapper.kind("Laughter"))
         assertEquals(LabelKind.COUGH, LabelMapper.kind("Sneeze"))
         assertEquals(LabelKind.OTHER, LabelMapper.kind("Bark"))

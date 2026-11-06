@@ -87,10 +87,10 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                         Text(stringResource(R.string.diag_level, formatDb(live.levelDb)))
                         Text(stringResource(R.string.diag_base_threshold, formatDb(live.baselineDb), formatDb(live.thresholdDb)))
                         val phase = when (live.phase) {
-                            LivePhase.CALIBRANDO -> stringResource(R.string.diag_phase_calibrating, (live.calibrationProgress * 100).roundToInt())
-                            LivePhase.ESCUCHANDO -> stringResource(R.string.diag_phase_listening)
-                            LivePhase.EVENTO -> stringResource(R.string.diag_phase_event)
-                            LivePhase.PAUSA -> stringResource(R.string.diag_phase_paused, pauseLabel(live.pauseReason))
+                            LivePhase.CALIBRATING -> stringResource(R.string.diag_phase_calibrating, (live.calibrationProgress * 100).roundToInt())
+                            LivePhase.LISTENING -> stringResource(R.string.diag_phase_listening)
+                            LivePhase.EVENT -> stringResource(R.string.diag_phase_event)
+                            LivePhase.PAUSED -> stringResource(R.string.diag_phase_paused, pauseLabel(live.pauseReason))
                         }
                         Text(stringResource(R.string.diag_detector_state, phase))
                         if (live.audioSource.isNotEmpty()) MutedText(stringResource(R.string.diag_audio_source, live.audioSource))

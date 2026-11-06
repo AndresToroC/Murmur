@@ -1,18 +1,18 @@
 package com.nochesonora.core.detection
 
-enum class DetectorState { CALIBRANDO, ESCUCHANDO, ONSET, EVENTO }
+enum class DetectorState { CALIBRATING, LISTENING, ONSET, EVENT }
 
-/** Evento cerrado por la capa 2, listo para clasificar. */
+/** Event closed by layer 2, ready to classify. */
 class ClosedEvent(
-    /** Inicio real (primer bloque del onset), en ms de reloj. */
+    /** Actual start (first onset block), in wall-clock ms. */
     val startedAtMs: Long,
-    /** Fin real (último bloque sobre el umbral), en ms de reloj. */
+    /** Actual end (last block above the threshold), in wall-clock ms. */
     val endedAtMs: Long,
-    /** Hora de la primera muestra de [pcm] (inicio − pre-roll). */
+    /** Time of the first sample of [pcm] (start − pre-roll). */
     val clipStartedAtMs: Long,
     val peakDb: Float,
     val pcm: ShortArray,
-    /** true si se cortó por llegar a la duración máxima. */
+    /** true if it was cut for reaching the maximum duration. */
     val wasCut: Boolean,
 )
 

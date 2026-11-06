@@ -23,16 +23,16 @@ class IgnoreFilterTest {
     fun ignoredSoundsAreSkipped() {
         assertEquals(SoundType.DOG, IgnoreFilter.ignoredType(result(Category.OTRO, "Bark", "Bark" to 0.6f), dogAndFan))
         assertEquals(SoundType.FAN, IgnoreFilter.ignoredType(result(Category.OTRO, "Air conditioning", "Air conditioning" to 0.5f), dogAndFan))
-        // Otros sonidos, y nada si la lista está vacía.
+        // Other sounds, and nothing if the list is empty.
         assertNull(IgnoreFilter.ignoredType(result(Category.OTRO, "Door", "Door" to 0.6f), dogAndFan))
         assertNull(IgnoreFilter.ignoredType(result(Category.OTRO, "Bark", "Bark" to 0.6f), emptySet()))
-        // Solo clips OTRO: habla, ronquido o tos nunca se ignoran.
+        // Only OTRO clips: speech, snoring or cough are never ignored.
         assertNull(IgnoreFilter.ignoredType(result(Category.HABLA, null, "Speech" to 0.6f, "Bark" to 0.3f), dogAndFan))
     }
 
     @Test
     fun aRealSoundInsideKeepsTheClip() {
-        // Ganó el perro, pero también se oyó habla: se guarda.
+        // The dog won, but speech was also heard: it is saved.
         assertNull(IgnoreFilter.ignoredType(result(Category.OTRO, "Bark", "Bark" to 0.5f, "Speech" to 0.08f), dogAndFan))
         assertNull(IgnoreFilter.ignoredType(result(Category.OTRO, "Bark", "Bark" to 0.5f, "Cough" to 0.05f), dogAndFan))
     }
@@ -41,7 +41,7 @@ class IgnoreFilterTest {
     fun voicesAndTvCanBeIgnoredDespiteSoundingLikeSpeech() {
         val tv = setOf(SoundType.MUSIC_TV)
         assertEquals(SoundType.MUSIC_TV, IgnoreFilter.ignoredType(result(Category.OTRO, "Television", "Television" to 0.5f, "Speech" to 0.2f), tv))
-        // Pero el ronquido sigue protegiendo.
+        // But snoring still protects the clip.
         assertNull(IgnoreFilter.ignoredType(result(Category.OTRO, "Television", "Television" to 0.5f, "Snoring" to 0.1f), tv))
     }
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Tipos de sonido (agrupan las etiquetas de YAMNet). Inglés en values-en/strings_sounds.xml. -->
+<!-- Sound types (they group the YAMNet labels). English in values-en/strings_sounds.xml. -->
 <resources>
     <string name="detail_sounds_title">Sonidos identificados</string>
     <string name="sound_dog">Perro</string>

@@ -13,7 +13,7 @@ import com.nochesonora.data.db.SessionSummaryRow
 import com.nochesonora.ui.common.formatDay
 import com.nochesonora.ui.common.formatDuration
 
-/** "Resumen al despertar": al detener la sesión, qué pasó en la noche; tocarla abre esa noche. */
+/** "Wake-up summary": when the session stops, what happened during the night; tapping it opens that night. */
 object NightSummaryNotification {
     private const val CHANNEL_ID = "night_summary"
     private const val NOTIFICATION_ID = 1002
@@ -27,14 +27,14 @@ object NightSummaryNotification {
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
             description = context.getString(R.string.summary_channel_desc)
-            // Quien detiene la sesión ya está despierto: no hace falta sonar.
+            // Whoever stops the session is already awake: no need for a sound.
             setSound(null, null)
             enableVibration(false)
         }
         nm.createNotificationChannel(channel)
     }
 
-    /** Texto del resumen: "3 h 33 min · habló 8 veces · 42 min de ronquido · tos 2 · otros 9". */
+    /** Summary text, e.g. "3 h 33 min · talked 8 times · 42 min of snoring · cough 2 · other 9". */
     fun summaryText(context: Context, row: SessionSummaryRow): String {
         val s = row.session
         val r = context.resources
@@ -73,7 +73,7 @@ object NightSummaryNotification {
         try {
             context.getSystemService(NotificationManager::class.java)?.notify(NOTIFICATION_ID, notification)
         } catch (e: SecurityException) {
-            Log.w(TAG, "Sin permiso de notificaciones", e)
+            Log.w(TAG, "No notification permission", e)
         }
     }
 }

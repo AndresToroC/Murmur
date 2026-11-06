@@ -1,18 +1,18 @@
 package com.nochesonora.core.audio
 
-/** Anillo de muestras de capacidad fija. Sirve para el pre-roll de los eventos. */
+/** Fixed-capacity ring of samples. Used for the pre-roll of events. */
 class RingBuffer(val capacity: Int) {
     private val data = ShortArray(capacity)
     private var writePos = 0
 
-    /** Muestras válidas (como mucho [capacity]). */
+    /** Valid samples (at most [capacity]). */
     var size = 0
         private set
 
     fun write(samples: ShortArray, offset: Int = 0, length: Int = samples.size - offset) {
         var src = offset
         var remaining = length
-        // Si llega más de lo que cabe, solo importan las últimas `capacity` muestras.
+        // If more arrives than fits, only the last `capacity` samples matter.
         if (remaining > capacity) {
             src += remaining - capacity
             remaining = capacity
@@ -27,7 +27,7 @@ class RingBuffer(val capacity: Int) {
         size = minOf(capacity, size + length)
     }
 
-    /** Copia las últimas [count] muestras (o menos si no hay tantas) en orden cronológico. */
+    /** Copies the last [count] samples (or fewer if not that many exist) in chronological order. */
     fun readLast(count: Int): ShortArray {
         val n = minOf(count, size)
         val out = ShortArray(n)

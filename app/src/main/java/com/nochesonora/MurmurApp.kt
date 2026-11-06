@@ -16,22 +16,22 @@ class MurmurApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
-        // Al abrir la app: sesiones huérfanas → INTERRUMPIDA (§6.6) y retención (A14).
+        // On app open: orphaned sessions → INTERRUMPIDA (§6.6) and retention (A14).
         container.appScope.launch {
             runCatching {
                 val repo = container.repository
                 repo.markOrphansInterrupted(container.processStartedAt, container.liveState.activeSessionId)
                 repo.applyRetention(container.settings.current().retention)
                 redoOldTranscripts(repo)
-            }.onFailure { Log.e("MurmurApp", "Mantenimiento inicial fallido", it) }
-            // El widget y el botón de ajustes rápidos muestran el estado real al abrir la app.
+            }.onFailure { Log.e("MurmurApp", "Startup maintenance failed", it) }
+            // The widget and the quick settings tile show the real state when the app opens.
             com.nochesonora.service.SessionSurfaces.refresh(this@MurmurApp)
         }
     }
 
     /**
-     * Las transcripciones hechas con una versión anterior del proceso (0.5.0–0.5.1: sin recortar
-     * silencios ni subir el volumen) se borran una vez, para que se rehagan solas al abrir la noche.
+     * Transcripts made with an older version of the pipeline (0.5.0–0.5.1: no silence trimming
+     * or volume boost) are deleted once, so they are redone automatically when the night is opened.
      */
     private suspend fun redoOldTranscripts(repo: com.nochesonora.data.NightRepository) {
         val prefs = getSharedPreferences(MAINTENANCE_PREFS, MODE_PRIVATE)
@@ -43,7 +43,7 @@ class MurmurApp : Application() {
     private companion object {
         const val MAINTENANCE_PREFS = "maintenance"
         const val KEY_TRANSCRIPT_PIPELINE = "transcript_pipeline"
-        /** Súbelo cuando cambie cómo se transcribe, para rehacer las transcripciones viejas. */
+        /** Bump it when the transcription pipeline changes, so old transcripts are redone. */
         const val TRANSCRIPT_PIPELINE = 2
     }
 }

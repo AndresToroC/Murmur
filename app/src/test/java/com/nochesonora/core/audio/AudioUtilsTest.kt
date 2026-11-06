@@ -39,7 +39,7 @@ class RingBufferTest {
     fun readsLastWithWrapAround() {
         val ring = RingBuffer(10)
         ring.write(seq(0, 7))
-        ring.write(seq(7, 7)) // vuelve a empezar
+        ring.write(seq(7, 7)) // wraps around
         assertEquals(10, ring.size)
         assertArrayEquals(seq(4, 10), ring.readLast(10))
         assertArrayEquals(seq(11, 3), ring.readLast(3))
@@ -120,7 +120,7 @@ class WavFileTest {
     @get:org.junit.Rule
     val tmp = org.junit.rules.TemporaryFolder()
 
-    /** Regresión B4: sincronizar después de cerrar lanzaba SyncFailedException y ningún clip se guardaba. */
+    /** Regression B4: syncing after close threw SyncFailedException and no clip was ever saved. */
     @Test
     fun atomicWriteSucceedsAndLeavesNoTmp() {
         val target = java.io.File(tmp.root, "sessions/7/12.wav")
@@ -141,7 +141,7 @@ class AdtsTest {
         assertEquals(7, h.size)
         assertEquals(0xFF, h[0].toInt() and 0xFF)
         assertEquals(0xF1, h[1].toInt() and 0xFF)
-        // perfil LC (1), índice de 16 kHz (8), canales = 1
+        // LC profile (1), 16 kHz index (8), channels = 1
         val b2 = h[2].toInt() and 0xFF
         assertEquals(1, b2 shr 6)
         assertEquals(8, (b2 shr 2) and 0xF)

@@ -4,7 +4,7 @@ import android.content.Context
 import com.nochesonora.widget.MurmurTileService
 import com.nochesonora.widget.MurmurWidget
 
-/** Lugares fuera de la app que muestran el estado de la noche: ajustes rápidos y widget. */
+/** Places outside the app that show the night's state: quick settings and the widget. */
 object SessionSurfaces {
     fun refresh(context: Context) {
         MurmurTileService.requestUpdate(context)

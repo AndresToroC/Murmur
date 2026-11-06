@@ -1,19 +1,19 @@
 package com.nochesonora.core.detection
 
 /**
- * Capa 1: línea base adaptativa del ruido de fondo.
+ * Layer 1: adaptive baseline of the background noise.
  *
- * Calibra con el p20 de los primeros 60 s y después sigue al p20 de una ventana
- * deslizante de 30 s con una EMA lenta (τ = 120 s). El llamador decide qué bloques
- * alimentan la base (los de un evento no lo hacen, tampoco durante la calibración).
+ * Calibrates with the p20 of the first 60 s, then follows the p20 of a 30 s sliding
+ * window through a slow EMA (τ = 120 s). The caller decides which blocks feed the
+ * baseline (event blocks do not, not even during calibration).
  *
- * Desde los 5 s de calentamiento hay una base provisional (p20 de lo calibrado hasta ese
- * momento), para que el primer minuto de la noche no quede sin detección.
+ * From the 5 s warm-up onward there is a provisional baseline (p20 of what has been
+ * calibrated so far), so the first minute of the night is not left without detection.
  */
 class BaselineTracker(private val config: DetectorConfig) {
     private val calibration = FloatArray(config.calibrationBlocks)
     private var calibrationCount = 0
-    /** Bloques transcurridos de calibración, incluidos los de eventos (no alimentan la base). */
+    /** Calibration blocks elapsed, including event blocks (which do not feed the baseline). */
     private var calibrationElapsed = 0
 
     private val window = FloatArray(config.percentileWindowBlocks)
@@ -26,19 +26,19 @@ class BaselineTracker(private val config: DetectorConfig) {
     val calibrationProgress: Float
         get() = if (calibration.isEmpty()) 1f else minOf(1f, calibrationElapsed.toFloat() / calibration.size)
 
-    /** null durante el calentamiento; provisional hasta terminar la calibración. */
+    /** null during warm-up; provisional until calibration finishes. */
     var baselineDb: Float? = null
         private set
 
-    /** p80 − p20 de la calibración (dato de diagnóstico). */
+    /** p80 − p20 of the calibration (diagnostic value). */
     var variabilityDb: Float? = null
         private set
 
     val thresholdDb: Float? get() = baselineDb?.plus(config.sensitivityDb)
 
     /**
-     * Procesa un bloque. Solo los que llegan con [track] = true alimentan la base; durante
-     * el calentamiento se usan todos, porque todavía no puede haber eventos.
+     * Processes one block. Only blocks with [track] = true feed the baseline; during
+     * warm-up all of them are used, because there cannot be any events yet.
      */
     fun onBlock(levelDb: Float, track: Boolean) {
         if (!isCalibrated) {
@@ -62,12 +62,12 @@ class BaselineTracker(private val config: DetectorConfig) {
 
     private fun finishCalibration() {
         val n = calibrationCount
-        if (n == 0) return // imposible en la práctica: el calentamiento siempre aporta bloques
+        if (n == 0) return // impossible in practice: warm-up always contributes blocks
         val p20 = percentile(calibration, n, config.percentile, scratch)
         val p80 = percentile(calibration, n, 1.0 - config.percentile, scratch)
         baselineDb = p20
         variabilityDb = p80 - p20
-        // La ventana arranca con los últimos 30 s de la calibración.
+        // The window starts with the last 30 s of calibration.
         val start = maxOf(0, n - window.size)
         for (i in start until n) push(calibration[i])
     }

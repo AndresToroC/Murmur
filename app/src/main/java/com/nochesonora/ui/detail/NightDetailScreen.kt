@@ -121,7 +121,7 @@ fun NightDetailScreen(sessionId: Long, onBack: () -> Unit) {
     var toDelete by remember { mutableStateOf<EventEntity?>(null) }
     var toIgnore by remember { mutableStateOf<SoundType?>(null) }
     val ignoredSounds by vm.ignoredSounds.collectAsStateWithLifecycle()
-    // Filtro de episodios por categoría (null = todas).
+    // Episode filter by category (null = all).
     var filter by rememberSaveable { mutableStateOf<Category?>(null) }
 
     Column(Modifier.fillMaxSize()) {
@@ -147,7 +147,7 @@ fun NightDetailScreen(sessionId: Long, onBack: () -> Unit) {
         }
 
         val d = detail ?: return@Column
-        // La noche en curso se dibuja hasta "ahora".
+        // The night in progress is drawn up to "now".
         val now by produceState(System.currentTimeMillis(), d.session.status) {
             while (d.session.status == SessionStatus.EN_CURSO) {
                 value = System.currentTimeMillis()
@@ -159,12 +159,12 @@ fun NightDetailScreen(sessionId: Long, onBack: () -> Unit) {
         val soundCounts = remember(d.events) { nightSoundCounts(d.events) }
         val hasSpeech = remember(d.events) { d.events.any { it.effectiveCategory == Category.HABLA } }
         val categoryCounts = remember(d.events) { categoryCounts(d.events) }
-        // Si la categoría filtrada ya no tiene episodios (se borraron o se corrigieron), se ven todas.
+        // If the filtered category has no episodes left (deleted or corrected), show them all.
         val activeFilter = filter?.takeIf { it in categoryCounts }
         val shownEpisodes = remember(d.episodes, activeFilter) {
             if (activeFilter == null) d.episodes else d.episodes.filter { it.category == activeFilter }
         }
-        // Elementos antes de los episodios (para saltar a uno desde la línea de tiempo).
+        // Items before the episodes (to jump to one from the timeline).
         val headerItems = 7
 
         LazyColumn(
@@ -188,7 +188,7 @@ fun NightDetailScreen(sessionId: Long, onBack: () -> Unit) {
                         pauses = d.pauses,
                         onEpisodeTap = { ep ->
                             vm.expandEpisode(ep.id)
-                            // Un episodio de otra categoría no está en la lista filtrada: se quita el filtro.
+                            // An episode of another category is not in the filtered list: clear the filter.
                             val list = if (activeFilter == null || ep.category == activeFilter) shownEpisodes else d.episodes
                             if (list === d.episodes) filter = null
                             val index = list.indexOfFirst { it.id == ep.id }
@@ -280,7 +280,7 @@ fun NightDetailScreen(sessionId: Long, onBack: () -> Unit) {
     }
 }
 
-/** "¿Ignorar «Perro»?", con la opción de borrar también los clips que ya hay de ese sonido. */
+/** "Ignore "Dog"?", with the option to also delete the existing clips of that sound. */
 @Composable
 internal fun IgnoreSoundDialog(type: SoundType, savedClips: Int?, onConfirm: (deleteSaved: Boolean) -> Unit, onDismiss: () -> Unit) {
     var deleteSaved by remember { mutableStateOf(false) }
@@ -346,21 +346,21 @@ internal fun Summary(d: SessionDetail, endMs: Long) {
     }
 }
 
-/** Tipo de sonido de cada evento OTRO de la noche, contado (para "Sonidos identificados"). */
+/** Sound type of each OTRO event of the night, counted (for "Identified sounds"). */
 internal fun nightSoundCounts(events: List<EventEntity>): List<Pair<SoundType, Int>> =
     SoundTypes.count(
         events.filter { it.effectiveCategory == Category.OTRO }
-            // Un ruido repetido (viento, ventilador) cuenta todas las veces que se oyó.
+            // A repeated noise (wind, fan) counts every time it was heard.
             .flatMap { e -> List(1 + e.repeats) { e.soundType() } },
     )
 
-/** Clips de cada categoría, en el orden de las categorías (solo las que hay). */
+/** Clips per category, in category order (only the ones present). */
 internal fun categoryCounts(events: List<EventEntity>): Map<Category, Int> {
     val counts = events.groupingBy { it.effectiveCategory }.eachCount()
     return selectableCategories.filter { it in counts }.associateWith { counts.getValue(it) }
 }
 
-/** "Todas · Ronquido · Habla · Tos · Otro", con cuántos clips tiene cada una. */
+/** "All · Snoring · Speech · Cough · Other", with the clip count of each. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun CategoryFilter(counts: Map<Category, Int>, total: Int, selected: Category?, onSelect: (Category?) -> Unit) {
@@ -400,7 +400,7 @@ private fun FilterPill(label: String, count: Int, selected: Boolean, dot: Color?
     )
 }
 
-/** El tipo más frecuente entre los eventos de un episodio OTRO (null si ninguno tiene tipo). */
+/** The most frequent type among the events of an OTRO episode (null if none has a type). */
 private fun episodeSoundType(events: List<EventEntity>): SoundType? =
     SoundTypes.count(events.map { it.soundType() }).firstOrNull()?.first
 
@@ -423,7 +423,7 @@ private fun IdentifiedSounds(counts: List<Pair<SoundType, Int>>) {
     }
 }
 
-/** Una línea sobre la transcripción cuando no está lista (y el botón de descarga del idioma). */
+/** A line about transcription when it is not ready (and the language download button). */
 @Composable
 private fun TranscriptionNote(ui: TranscriptionUi, onDownload: () -> Unit) {
     val availability = ui.availability ?: return
@@ -455,14 +455,14 @@ internal fun EpisodeCard(
     onPlayFull: (EventEntity) -> Unit,
     onCategory: (EventEntity, Category) -> Unit,
     onDelete: (EventEntity) -> Unit,
-    /** Sonidos ya ignorados (a esos no se les ofrece "Ignorar este sonido"). */
+    /** Sounds already ignored ("Ignore this sound" is not offered for them). */
     ignoredSounds: Set<SoundType> = emptySet(),
     onIgnore: (SoundType) -> Unit = {},
-    /** Eventos que se están transcribiendo. */
+    /** Events being transcribed. */
     transcribing: Set<Long> = emptySet(),
-    /** Eventos en los que falló el reconocedor. */
+    /** Events where the recognizer failed. */
     failed: Set<Long> = emptySet(),
-    /** El teléfono puede transcribir (para mostrar "Transcribir"). */
+    /** The phone can transcribe (to show "Transcribe"). */
     canTranscribe: Boolean = false,
     onTranscribe: (EventEntity) -> Unit = {},
 ) {
@@ -476,7 +476,7 @@ internal fun EpisodeCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CategoryDot(episode.category)
                 Spacer(Modifier.width(10.dp))
-                // Un episodio OTRO lleva el nombre del sonido ("Perro", "Puerta"…), no "Otro".
+                // An OTRO episode shows the sound's name ("Dog", "Door"…), not "Other".
                 val soundType = if (episode.category == Category.OTRO) remember(events) { episodeSoundType(events) } else null
                 Text(
                     soundType?.label() ?: episode.category.label(),
@@ -492,8 +492,8 @@ internal fun EpisodeCard(
                     modifier = Modifier.size(18.dp),
                 )
             }
-            // Hora, duración y clips debajo del nombre: los nombres de sonido largos ("Ruido del
-            // cuarto") ya no recortan estos datos.
+            // Time, duration and clips below the name: long sound names ("Room noise") no longer
+            // cut off this data.
             val clips = pluralStringResource(R.plurals.detail_clips, episode.eventCount, episode.eventCount)
             Text(
                 "${formatTime(episode.startedAt)} · ${formatDuration(episode.endedAt - episode.startedAt)} · $clips",
@@ -502,7 +502,7 @@ internal fun EpisodeCard(
                 maxLines = 1,
                 modifier = Modifier.padding(start = 18.dp, top = 2.dp),
             )
-            // Cerrado, un episodio de habla muestra el comienzo de lo que se entendió.
+            // When collapsed, a speech episode shows the start of what was understood.
             if (!expanded && episode.category == Category.HABLA) {
                 val snippet = events.firstNotNullOfOrNull { it.transcript?.takeIf(String::isNotBlank) }
                 if (snippet != null) {
@@ -564,7 +564,7 @@ private fun EventBlock(
     var menu by remember { mutableStateOf(false) }
     val key = NightDetailViewModel.eventKey(event.id)
     val category = event.effectiveCategory
-    // Onda y duración real del WAV (incluye los segundos de antes y después del sonido).
+    // Waveform and actual WAV duration (includes the seconds before and after the sound).
     val wave by produceState<Pair<List<Float>?, Long>>(null to 0L, event.filePath) {
         value = withContext(Dispatchers.IO) {
             val f = File(event.filePath)
@@ -656,7 +656,7 @@ private fun EventBlock(
     }
 }
 
-/** Lo que se entendió del clip, entre comillas; o el estado de la transcripción. */
+/** What was understood from the clip, in quotes; or the transcription state. */
 @Composable
 private fun Transcript(text: String?, transcribing: Boolean, failed: Boolean = false) {
     when {

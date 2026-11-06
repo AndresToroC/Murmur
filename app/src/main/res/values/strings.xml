@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Español (idioma por defecto). La traducción al inglés está en values-en/strings.xml. -->
+<!-- Spanish (default language). The English translation is in values-en/strings.xml. -->
 <resources>
     <string name="app_name" translatable="false">Murmur</string>
 
-    <!-- Comunes -->
+    <!-- Common -->
     <string name="action_continue">Continuar</string>
     <string name="action_not_now">Ahora no</string>
     <string name="action_open">Abrir</string>
     <string name="privacy_note">Todo se procesa en el teléfono. Nada sale del dispositivo.</string>
 
-    <!-- Categorías y estados -->
+    <!-- Categories and states -->
     <string name="cat_snore">Ronquido</string>
     <string name="cat_speech">Habla</string>
     <string name="cat_cough">Tos</string>
@@ -22,7 +22,7 @@
     <string name="pause_audio_error">En pausa (reintentando el micrófono)</string>
     <string name="pause_mic_busy">En pausa (micrófono ocupado)</string>
 
-    <!-- Inicio -->
+    <!-- Home -->
     <string name="home_tonight">Esta noche</string>
     <string name="home_ready">Listo para escuchar · %1$s</string>
     <string name="home_tips_title">Antes de dormir</string>
@@ -74,7 +74,7 @@
     <string name="home_stop_title">¿Detener la sesión?</string>
     <string name="home_stop_text">Se guardará lo registrado hasta ahora.</string>
 
-    <!-- Historial -->
+    <!-- History -->
     <string name="history_title">Historial</string>
     <plurals name="history_nights">
         <item quantity="one">%d noche</item>
@@ -96,7 +96,7 @@
     <string name="history_delete_title">¿Borrar esta noche?</string>
     <string name="history_delete_text">Se borrarán todos sus eventos y audios. No se puede deshacer.</string>
 
-    <!-- Ajustes -->
+    <!-- Settings -->
     <string name="settings_title">Ajustes</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_language_note">La app cambia de idioma al instante.</string>

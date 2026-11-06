@@ -1,19 +1,19 @@
 package com.nochesonora.core.classification
 
-/** Tipo de etiqueta antes de resolver las reglas que dependen del clip completo. */
+/** Label kind before resolving the rules that depend on the whole clip. */
 enum class LabelKind {
     SNORE,
-    /** `Breathing`: RONQUIDO solo si el clip es periódico (A4). */
+    /** `Breathing`: RONQUIDO only if the clip is periodic (A4). */
     BREATHING,
     SPEECH,
     COUGH,
     BACKGROUND,
-    /** Motor: FONDO solo si es sostenido (A3). */
+    /** Engine: FONDO only if sustained (A3). */
     ENGINE,
     OTHER,
 }
 
-/** Etiqueta YAMNet (nombre exacto de `categoryName()`) → tipo. */
+/** YAMNet label (exact `categoryName()` name) → kind. */
 object LabelMapper {
     const val UNKNOWN_LABEL = "Desconocido"
 
@@ -32,7 +32,7 @@ object LabelMapper {
 
     fun kind(label: String): LabelKind = kinds[label] ?: LabelKind.OTHER
 
-    /** Categoría directa de las etiquetas que no dependen del contexto. */
+    /** Direct category for labels that do not depend on context. */
     fun directCategory(kind: LabelKind): Category? = when (kind) {
         LabelKind.SNORE -> Category.RONQUIDO
         LabelKind.SPEECH -> Category.HABLA

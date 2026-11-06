@@ -1,8 +1,8 @@
 package com.nochesonora.core.audio
 
 /**
- * Posición de un instante dentro de `full.aac` (§4.7). Durante las pausas no se graba, así que
- * offset = hora − inicio de la sesión − Σ duración de las pausas ya terminadas antes de esa hora.
+ * Position of an instant inside `full.aac` (§4.7). Nothing is recorded during pauses, so
+ * offset = time − session start − Σ duration of pauses that ended before that time.
  */
 object RecordingOffset {
     data class Pause(val startedAt: Long, val endedAt: Long?)

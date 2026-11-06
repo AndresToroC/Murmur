@@ -16,7 +16,7 @@ class RetentionPolicyTest {
         s(3, 31),
         s(4, 40, fav = true),
         s(5, null, inProgress = true, startedDaysAgo = 50),
-        s(6, null, startedDaysAgo = 45), // sin fin registrado: cuenta el inicio
+        s(6, null, startedDaysAgo = 45), // no recorded end: the start counts
     )
 
     @Test

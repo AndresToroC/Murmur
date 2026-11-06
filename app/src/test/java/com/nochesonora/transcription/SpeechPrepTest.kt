@@ -13,7 +13,7 @@ import kotlin.random.Random
 class SpeechPrepTest {
     private val rate = SpeechPrep.SAMPLE_RATE
 
-    /** Clip de prueba: ruido de fondo suave y, encima, "voz" (un tono) en los tramos dados (en ms). */
+    /** Test clip: soft background noise with "voice" (a tone) on top in the given stretches (in ms). */
     private fun clip(totalMs: Int, voice: List<IntRange>, amplitude: Double = 200.0): ShortArray {
         val rnd = Random(7)
         return ShortArray(totalMs * rate / 1000) { i ->
@@ -30,16 +30,16 @@ class SpeechPrepTest {
 
     @Test
     fun quietSpeechAfterPreRollIsTrimmedAndAmplified() {
-        // 3 s de pre-roll, 1,2 s de voz baja (-44 dBFS), 2 s de silencio.
+        // 3 s of pre-roll, 1.2 s of quiet voice (-44 dBFS), 2 s of silence.
         val phrases = SpeechPrep.phrases(clip(6_200, listOf(3_000 until 4_200)))
         assertEquals(1, phrases.size)
         val p = phrases.single()
-        // Sin los 3 s de pre-roll: voz + relleno (≈0,65 s) + silencios añadidos (1,5 s).
-        assertTrue("dura ${ms(p.size)} ms", ms(p.size) in 3_000..3_600)
-        // La voz sube a nivel de conversación (≈ -20 dBFS = 3277).
+        // Without the 3 s of pre-roll: voice + padding (≈0.65 s) + added silences (1.5 s).
+        assertTrue("lasts ${ms(p.size)} ms", ms(p.size) in 3_000..3_600)
+        // The voice is raised to conversational level (≈ -20 dBFS = 3277).
         val center = 300 * rate / 1000 + 250 * rate / 1000 + 600 * rate / 1000
         val level = rms(p, center - 1_600, center + 1_600)
-        assertTrue("nivel $level", level in 2_500.0..4_000.0)
+        assertTrue("level $level", level in 2_500.0..4_000.0)
     }
 
     @Test
@@ -52,7 +52,7 @@ class SpeechPrepTest {
 
     @Test
     fun aClickAloneIsDroppedWhenThereIsRealSpeech() {
-        // Un golpe de 60 ms y, lejos, una frase.
+        // A 60 ms knock and, far away, a phrase.
         val phrases = SpeechPrep.phrases(clip(9_000, listOf(1_000 until 1_060, 5_000 until 6_500)))
         assertEquals(1, phrases.size)
     }
@@ -69,12 +69,12 @@ class SpeechPrepTest {
     @Test
     fun longSpeechIsSplitAndPhraseCountIsCapped() {
         val long = SpeechPrep.phrases(clip(50_000, listOf(0 until 50_000)))
-        assertTrue("${long.size} frases", long.size >= 3)
+        assertTrue("${long.size} phrases", long.size >= 3)
         long.forEach { assertTrue(ms(it.size) <= 20_000 + 2_200) }
 
         val many = (0 until 30).map { k -> (k * 1_500) until (k * 1_500 + 600) }
         val capped = SpeechPrep.phrases(clip(46_000, many))
-        assertTrue("${capped.size} frases", capped.size in 1..SpeechPrep.MAX_PHRASES)
+        assertTrue("${capped.size} phrases", capped.size in 1..SpeechPrep.MAX_PHRASES)
     }
 
     @Test
@@ -83,7 +83,7 @@ class SpeechPrepTest {
         assertEquals((-1_000).toShort(), SpeechPrep.limit(-1_000.0))
         assertTrue(SpeechPrep.limit(1e6) in 30_000..32_767)
         assertTrue(SpeechPrep.limit(-1e6) in -32_767..-30_000)
-        // Una voz ya fuerte no se baja ni se recorta.
+        // An already loud voice is neither lowered nor clipped.
         val loud = SpeechPrep.phrases(clip(4_000, listOf(1_000 until 3_000), amplitude = 20_000.0)).single()
         assertTrue(loud.maxOf { abs(it.toInt()) } <= 32_767)
         assertTrue(loud.maxOf { abs(it.toInt()) } > 15_000)

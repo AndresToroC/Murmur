@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class HistoryViewModel(private val container: AppContainer) : ViewModel() {
-    /** null mientras carga. */
+    /** null while loading. */
     val sessions: StateFlow<List<SessionSummaryRow>?> = container.repository.observeSummaries()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 

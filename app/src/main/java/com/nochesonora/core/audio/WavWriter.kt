@@ -6,15 +6,15 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
 
-/** Escribe PCM16 mono como WAV (cabecera RIFF de 44 bytes). */
+/** Writes mono PCM16 as WAV (44-byte RIFF header). */
 object WavWriter {
     const val HEADER_SIZE = 44
 
     /**
-     * Escritura atómica a disco: se escribe a `.tmp`, se sincroniza y se renombra.
+     * Atomic write to disk: write to `.tmp`, sync, then rename.
      *
-     * El orden importa: flush → sync → close. Sincronizar después de cerrar lanza
-     * `SyncFailedException` siempre, y eso hacía que ningún clip se guardara (plan §12, B4).
+     * The order matters: flush → sync → close. Syncing after close always throws
+     * `SyncFailedException`, which meant no clip was ever saved (plan §12, B4).
      */
     @Throws(IOException::class)
     fun writeFileAtomic(target: File, samples: ShortArray, sampleRate: Int = Pcm.SAMPLE_RATE) {
@@ -28,7 +28,7 @@ object WavWriter {
         }
         if (!tmp.renameTo(target)) {
             tmp.delete()
-            throw IOException("No se pudo renombrar ${tmp.name}")
+            throw IOException("Could not rename ${tmp.name}")
         }
     }
 

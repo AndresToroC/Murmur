@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget de Murmur: diseño A (azul noche, borde fino). RemoteViews: solo vistas compatibles. -->
+<!-- Murmur widget: design A (night blue, thin border). RemoteViews: compatible views only. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"

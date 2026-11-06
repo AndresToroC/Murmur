@@ -12,9 +12,9 @@ import com.nochesonora.core.classification.Windowing
 import java.io.Closeable
 
 /**
- * YAMNet vía MediaPipe Tasks Audio. Cada llamada recibe exactamente una ventana de 15.600
- * muestras, así que devuelve un solo resultado (el ventaneo al 50 % lo hace [Windowing]).
- * No es thread-safe: una instancia por worker.
+ * YAMNet via MediaPipe Tasks Audio. Each call receives exactly one 15,600-sample window,
+ * so it returns a single result (the 50 % overlap windowing is done by [Windowing]).
+ * Not thread-safe: one instance per worker.
  */
 class YamnetClassifier private constructor(private val classifier: AudioClassifier) : WindowClassifier, Closeable {
     private val audioData = AudioData.create(

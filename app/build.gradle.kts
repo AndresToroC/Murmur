@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.nochesonora"
-    compileSdk = 37 // las bibliotecas de 2026 (Compose 1.12, core 1.19…) exigen compilar contra API 37
+    compileSdk = 37 // the 2026 libraries (Compose 1.12, core 1.19…) require compiling against API 37
 
     defaultConfig {
         applicationId = "com.nochesonora"
@@ -19,15 +19,15 @@ android {
         versionName = "0.7.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
-            // Limita el tamaño de las librerías nativas de MediaPipe.
+            // Limits the size of MediaPipe's native libraries.
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
         }
     }
 
     signingConfigs {
-        // Clave de depuración fija dentro del proyecto: sin ella cada compilación en un contenedor
-        // nuevo firmaba con otra clave y Android rechazaba instalar la actualización (plan §12, B5).
-        // Credenciales estándar de depuración de Android; no sirve para publicar.
+        // Fixed debug key inside the project: without it, every build in a fresh container signed
+        // with a different key and Android refused to install the update (plan §12, B5).
+        // Standard Android debug credentials; not usable for publishing.
         getByName("debug") {
             storeFile = file("debug.keystore")
             storePassword = "android"
@@ -54,17 +54,17 @@ android {
     }
 
     testOptions {
-        // Robolectric: la sesión completa (servicio → detector → Room → WAV) se prueba en la JVM.
+        // Robolectric: the full session (service → detector → Room → WAV) is tested on the JVM.
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.maxHeapSize = "1g"
-            // Robolectric con API 36 en JDK 21 necesita acceso a internos de FileDescriptor.
+            // Robolectric with API 36 on JDK 21 needs access to FileDescriptor internals.
             it.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED", "--add-opens=java.base/java.io=ALL-UNNAMED")
         }
     }
 
     androidResources {
-        // El modelo se mapea en memoria desde assets: no debe ir comprimido.
+        // The model is memory-mapped from assets, so it must not be compressed.
         noCompress += "tflite"
     }
 }

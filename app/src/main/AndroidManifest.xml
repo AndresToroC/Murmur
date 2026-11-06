@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Sin INTERNET: garantía verificable de que nada sale del teléfono. -->
+    <!-- No INTERNET: a verifiable guarantee that nothing leaves the phone. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
@@ -12,7 +12,7 @@
         android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
         tools:ignore="BatteryLife" />
 
-    <!-- Ninguna dependencia debe colar INTERNET en el manifest final. -->
+    <!-- No dependency may sneak INTERNET into the merged manifest. -->
     <uses-permission
         android:name="android.permission.INTERNET"
         tools:node="remove" />
@@ -20,7 +20,7 @@
         android:name="android.permission.ACCESS_NETWORK_STATE"
         tools:node="remove" />
 
-    <!-- Para ver el reconocedor de voz del sistema (transcripción en el teléfono, Android 11+). -->
+    <!-- To see the system speech recognizer (on-device transcription, Android 11+). -->
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />
@@ -57,7 +57,7 @@
             android:exported="false"
             android:foregroundServiceType="microphone" />
 
-        <!-- Botón de ajustes rápidos: comenzar o detener la noche. -->
+        <!-- Quick Settings tile: start or stop the night. -->
         <service
             android:name=".widget.MurmurTileService"
             android:exported="true"
@@ -72,7 +72,7 @@
                 android:value="true" />
         </service>
 
-        <!-- Widget de la pantalla de inicio. -->
+        <!-- Home screen widget. -->
         <receiver
             android:name=".widget.MurmurWidget"
             android:exported="false"

@@ -13,10 +13,10 @@ import androidx.core.content.ContextCompat
 import com.nochesonora.core.audio.Pcm
 
 /**
- * `AudioRecord` a 16 kHz, mono, PCM16. Se lee en bloques de 100 ms desde un único hilo.
+ * `AudioRecord` at 16 kHz, mono, PCM16. Read in 100 ms blocks from a single thread.
  *
- * Fuente (A15): `UNPROCESSED` si el equipo lo soporta; si no, `VOICE_RECOGNITION`, que por CDD
- * no lleva control automático de ganancia. `MIC` falsearía la línea base.
+ * Source (A15): `UNPROCESSED` if the device supports it; otherwise `VOICE_RECOGNITION`, which per
+ * the CDD has no automatic gain control. `MIC` would distort the baseline.
  */
 class AudioCapture(private val context: Context) : AudioSource {
     private var record: AudioRecord? = null
@@ -31,7 +31,7 @@ class AudioCapture(private val context: Context) : AudioSource {
     fun hasPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
-    /** Crea y arranca el `AudioRecord`. Devuelve false si el micrófono no está disponible. */
+    /** Creates and starts the `AudioRecord`. Returns false if the microphone is unavailable. */
     @SuppressLint("MissingPermission")
     override fun open(): Boolean {
         release()
@@ -55,14 +55,14 @@ class AudioCapture(private val context: Context) : AudioSource {
             sourceName = if (source == MediaRecorder.AudioSource.UNPROCESSED) "UNPROCESSED" else "VOICE_RECOGNITION"
             true
         } catch (e: Exception) {
-            Log.w(TAG, "No se pudo abrir el micrófono", e)
+            Log.w(TAG, "Could not open the microphone", e)
             false
         }
     }
 
     /**
-     * Lee exactamente `buffer.size` muestras (bloqueante). Devuelve las muestras leídas o un
-     * código de error negativo de `AudioRecord` (`ERROR_DEAD_OBJECT`, `ERROR_INVALID_OPERATION`...).
+     * Reads exactly `buffer.size` samples (blocking). Returns the number of samples read or a
+     * negative `AudioRecord` error code (`ERROR_DEAD_OBJECT`, `ERROR_INVALID_OPERATION`...).
      */
     override fun readBlock(buffer: ShortArray): Int {
         val r = record ?: return AudioRecord.ERROR_INVALID_OPERATION
@@ -70,7 +70,7 @@ class AudioCapture(private val context: Context) : AudioSource {
         while (offset < buffer.size) {
             val n = r.read(buffer, offset, buffer.size - offset, AudioRecord.READ_BLOCKING)
             if (n < 0) return n
-            if (n == 0) return AudioRecord.ERROR // no debería pasar en modo bloqueante; se trata como error
+            if (n == 0) return AudioRecord.ERROR // should not happen in blocking mode; treated as an error
             offset += n
         }
         return offset

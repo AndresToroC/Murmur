@@ -3,8 +3,8 @@ package com.nochesonora.core.classification
 import com.nochesonora.core.audio.Pcm
 
 /**
- * Ventanas de YAMNet de 0,975 s (15.600 muestras) con salto del 50 % (7.800), hechas a mano
- * porque `AUDIO_CLIPS` de MediaPipe no solapa (A2). La última ventana se rellena con ceros.
+ * YAMNet windows of 0.975 s (15,600 samples) with a 50 % hop (7,800), built by hand
+ * because MediaPipe's `AUDIO_CLIPS` does not overlap (A2). The last window is zero-padded.
  */
 object Windowing {
     const val WINDOW_SAMPLES = 15_600
@@ -18,7 +18,7 @@ object Windowing {
 
     fun windowStart(index: Int): Int = index * HOP_SAMPLES
 
-    /** Llena [out] (15.600) con la ventana [index] normalizada a float. */
+    /** Fills [out] (15,600) with window [index] normalized to float. */
     fun fillWindow(pcm: ShortArray, index: Int, out: FloatArray) {
         require(out.size == WINDOW_SAMPLES)
         val start = windowStart(index)

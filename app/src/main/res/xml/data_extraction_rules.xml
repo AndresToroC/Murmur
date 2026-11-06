@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Nada sale del dispositivo: ni copia en la nube ni transferencia a otro teléfono (Android 12+). -->
+<!-- Nothing leaves the device: no cloud backup and no transfer to another phone (Android 12+). -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" />

@@ -25,14 +25,14 @@ class WindowingTest {
         val out = FloatArray(Windowing.WINDOW_SAMPLES)
         Windowing.fillWindow(pcm, 1, out)
         assertEquals(7_800 / 32768f, out[0], 1e-6f)
-        assertEquals(15_599 / 32768f, out[7_799], 1e-6f) // la mitad de la ventana 1 = segunda mitad de la 0
+        assertEquals(15_599 / 32768f, out[7_799], 1e-6f) // middle of window 1 = second half of window 0
     }
 
     @Test
     fun lastWindowIsZeroPadded() {
         val pcm = ShortArray(20_000) { 1000 }
         val out = FloatArray(Windowing.WINDOW_SAMPLES)
-        Windowing.fillWindow(pcm, 1, out) // empieza en 7.800, quedan 12.200 muestras
+        Windowing.fillWindow(pcm, 1, out) // starts at 7,800, 12,200 samples remain
         assertEquals(1000 / 32768f, out[12_199], 1e-6f)
         assertEquals(0f, out[12_200], 0f)
         assertEquals(0f, out.last(), 0f)
@@ -51,7 +51,7 @@ class LabelMapperTest {
             .forEach { assertEquals(it, LabelKind.BACKGROUND, LabelMapper.kind(it)) }
         listOf("Engine", "Idling", "Engine starting").forEach { assertEquals(LabelKind.ENGINE, LabelMapper.kind(it)) }
         assertEquals(LabelKind.OTHER, LabelMapper.kind("Dog"))
-        assertEquals(LabelKind.OTHER, LabelMapper.kind("snoring")) // coincidencia exacta
+        assertEquals(LabelKind.OTHER, LabelMapper.kind("snoring")) // exact match
     }
 }
 
@@ -79,7 +79,7 @@ class VotingClassifierTest {
         assertEquals(Category.OTRO, r.category)
         assertEquals(LabelMapper.UNKNOWN_LABEL, r.otherLabel)
         assertEquals(0f, r.confidence, 0f)
-        assertEquals("Cough", r.topLabels.first().label) // el top-3 se guarda igual
+        assertEquals("Cough", r.topLabels.first().label) // the top 3 is saved anyway
     }
 
     @Test
@@ -96,8 +96,8 @@ class VotingClassifierTest {
     }
 
     /**
-     * Regresión con lo que YAMNet devuelve de verdad sobre un clip de tos (ESC-50): "Silence" en casi
-     * todas las ventanas por el pre/post-roll y "Cough" en una o dos. Antes ganaba FONDO y se borraba.
+     * Regression using what YAMNet actually returns for a cough clip (ESC-50): "Silence" in almost
+     * every window because of the pre/post-roll, and "Cough" in one or two. FONDO used to win and the clip was discarded.
      */
     @Test
     fun shortCoughAmongSilenceIsCough() {
@@ -195,7 +195,7 @@ class SnoreHeuristicTest {
     @Test
     fun aperiodicVoiceIsNot() {
         val pcm = background(16.0)
-        // Frases sueltas a intervalos irregulares (1,9 s, 7 s, 2,6 s...).
+        // Isolated phrases at irregular intervals (1.9 s, 7 s, 2.6 s...).
         listOf(0.5 to 0.5, 2.4 to 0.7, 9.4 to 0.4, 12.0 to 0.6, 14.6 to 0.5)
             .forEach { (at, len) -> SignalGen.mixInto(pcm, SignalGen.voiceBurst(len, 8000.0), at) }
         val r = SnoreHeuristic.analyze(pcm)

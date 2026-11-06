@@ -2,26 +2,26 @@ package com.nochesonora.core.detection
 
 import com.nochesonora.core.audio.Pcm
 
-/** Margen sobre la línea base que abre un evento. */
+/** Margin above the baseline that opens an event. */
 enum class Sensitivity(val marginDb: Int) {
     BAJA(14),
     MEDIA(10),
     ALTA(7),
 }
 
-/** Todos los parámetros numéricos de las capas 1 y 2 (plan §4.3 y §4.4). */
+/** All numeric parameters of layers 1 and 2 (plan §4.3 and §4.4). */
 data class DetectorConfig(
     val sampleRate: Int = Pcm.SAMPLE_RATE,
     val blockMs: Long = 100,
-    // Capa 1: línea base
+    // Layer 1: baseline
     val calibrationMs: Long = 60_000,
-    /** Tras este tiempo ya hay base provisional y se detectan eventos aunque siga calibrando. */
+    /** After this time there is a provisional baseline and events are detected even while calibration continues. */
     val warmupMs: Long = 5_000,
     val percentileWindowMs: Long = 30_000,
     val percentile: Double = 0.20,
     val emaTauMs: Long = 120_000,
     val sensitivityDb: Float = Sensitivity.MEDIA.marginDb.toFloat(),
-    // Capa 2: eventos
+    // Layer 2: events
     val onsetMs: Long = 300,
     val hangoverMs: Long = 2_500,
     val maxEventMs: Long = 60_000,

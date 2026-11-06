@@ -11,7 +11,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-/** Locale de la app: lo fija `AppLanguage.wrap` al crear la actividad. */
+/** The app's locale: set by `AppLanguage.wrap` when the activity is created. */
 private val locale: Locale get() = Locale.getDefault()
 private val isSpanish: Boolean get() = locale.language == "es"
 
@@ -27,8 +27,8 @@ fun Category.label(): String = stringResource(
 )
 
 /**
- * Etiqueta YAMNet para mostrar: el nombre amigable de su tipo de sonido ("Perro" para "Bark"),
- * ver [soundName] en Sounds.kt.
+ * YAMNet label for display: the friendly name of its sound type ("Dog" for "Bark"),
+ * see [soundName] in Sounds.kt.
  */
 @Composable
 fun yamnetLabel(label: String): String = soundName(label)
@@ -46,9 +46,9 @@ fun SessionStatus.label(): String = stringResource(
 @Composable
 fun pauseLabel(reason: String?): String = stringResource(
     when (reason) {
-        PauseReason.LLAMADA -> R.string.pause_call
-        PauseReason.ERROR_AUDIO -> R.string.pause_audio_error
-        PauseReason.USUARIO -> R.string.pause_user
+        PauseReason.CALL -> R.string.pause_call
+        PauseReason.AUDIO_ERROR -> R.string.pause_audio_error
+        PauseReason.USER -> R.string.pause_user
         else -> R.string.pause_mic_busy
     },
 )
@@ -82,7 +82,7 @@ fun formatDuration(ms: Long): String {
     }
 }
 
-/** Versión compacta para casillas: "3h 33m", "12m", "45s". */
+/** Compact version for tiles: "3h 33m", "12m", "45s". */
 fun formatDurationShort(ms: Long): String {
     val totalSec = (ms / 1000).coerceAtLeast(0)
     val h = totalSec / 3600
@@ -94,16 +94,16 @@ fun formatDurationShort(ms: Long): String {
     }
 }
 
-/** Reloj de la sesión, siempre con horas: "01:12:40". */
+/** Session clock, always with hours: "01:12:40". */
 fun formatClockLong(ms: Long): String {
     val totalSec = (ms / 1000).coerceAtLeast(0)
     return "%02d:%02d:%02d".format(totalSec / 3600, (totalSec % 3600) / 60, totalSec % 60)
 }
 
-/** "−52" (signo menos tipográfico, sin unidad). */
+/** "−52" (typographic minus sign, no unit). */
 fun formatDbShort(db: Float?): String = db?.let { it.roundToInt().toString().replace('-', '−') } ?: "—"
 
-/** "1:05:09" o "4:09" */
+/** "1:05:09" or "4:09" */
 fun formatClock(ms: Long): String {
     val totalSec = (ms / 1000).coerceAtLeast(0)
     val h = totalSec / 3600

@@ -28,9 +28,9 @@ import java.util.Calendar
 import kotlin.math.abs
 
 /**
- * Línea de tiempo de la noche: cada episodio es una barra vertical de su color (más alta si es
- * habla o ronquido, y más ancha si dura más), las pausas en gris de fondo, y debajo la hora de
- * inicio, las horas en punto y la de fin. Tocar una barra llama a [onEpisodeTap].
+ * Timeline of the night: each episode is a vertical bar in its color (taller for speech or
+ * snoring, and wider the longer it lasts), pauses shaded gray in the background, and below it the
+ * start time, the full hours and the end time. Tapping a bar calls [onEpisodeTap].
  */
 @Composable
 fun Timeline(
@@ -102,7 +102,7 @@ fun Timeline(
 
         drawRoundRect(Border, size = Size(size.width, cardH), cornerRadius = radius, style = Stroke(1.dp.toPx()))
 
-        // Etiquetas: inicio, horas en punto y fin, sin pisarse.
+        // Labels: start, full hours and end, without overlapping.
         val labelTop = cardH + 6.dp.toPx()
         val start = measurer.measure(formatTime(startMs), labelStyle)
         val end = measurer.measure(formatTime(endMs), labelStyle)

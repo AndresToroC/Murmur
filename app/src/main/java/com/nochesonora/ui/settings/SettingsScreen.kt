@@ -76,7 +76,7 @@ fun SettingsScreen(onOpenDiagnostics: () -> Unit) {
         val s = settings ?: return@Column
         Spacer(Modifier.height(20.dp))
 
-        // Idioma: cada opción va en su propio idioma para que se reconozca aunque no se entienda el otro.
+        // Language: each option is written in its own language so it is recognizable even without knowing the other.
         Text(stringResource(R.string.settings_language), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         val current = remember { AppLanguage.get(context) }
@@ -248,7 +248,7 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
-/** "Sonidos ignorados": los que se marcaron desde un clip, con "Dejar de ignorar". */
+/** "Ignored sounds": those marked from a clip, each with "Stop ignoring". */
 @Composable
 internal fun IgnoredSounds(ignored: Set<SoundType>, onRemove: (SoundType) -> Unit) {
     Column {

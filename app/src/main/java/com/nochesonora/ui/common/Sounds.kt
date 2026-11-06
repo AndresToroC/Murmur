@@ -14,7 +14,7 @@ import com.nochesonora.ui.theme.Primary
 import com.nochesonora.ui.theme.SnoreAmber
 import com.nochesonora.ui.theme.SpeechBlue
 
-/** Tipo de sonido de una etiqueta YAMNet; null si no tiene uno amigable. */
+/** Sound type of a YAMNet label; null if it has no friendly one. */
 fun soundTypeOf(yamnetLabel: String): SoundType? = SoundTypes.of(yamnetLabel)
 
 @get:StringRes
@@ -50,7 +50,7 @@ val SoundType.nameRes: Int
         SoundType.ROOM -> R.string.sound_room
     }
 
-/** Color del punto de un tipo: los del cuerpo usan el de su categoría; el resto, gris. */
+/** Dot color for a type: body sounds use their category's color; the rest, gray. */
 fun SoundType.color(): Color = when (this) {
     SoundType.SNORING, SoundType.BREATHING -> SnoreAmber
     SoundType.VOICES, SoundType.LAUGHTER -> SpeechBlue
@@ -63,8 +63,8 @@ fun SoundType.color(): Color = when (this) {
 fun SoundType.label(): String = stringResource(nameRes)
 
 /**
- * Nombre amigable de una etiqueta YAMNet: su tipo ("Perro" para "Bark"); si no tiene tipo, la
- * traducción al español de las más comunes; si tampoco, la etiqueta original.
+ * Friendly name of a YAMNet label: its type ("Dog" for "Bark"); if it has no type, the Spanish
+ * translation of the most common ones; failing that, the original label.
  */
 @Composable
 fun soundName(yamnetLabel: String): String {
@@ -73,7 +73,7 @@ fun soundName(yamnetLabel: String): String {
     return if (spanish) yamnetEs[yamnetLabel] ?: yamnetLabel else yamnetLabel
 }
 
-/** Traducciones de etiquetas sin tipo propio (o que se prefieren tal cual). */
+/** Translations of labels with no type of their own (or that are preferred as is). */
 private val yamnetEs = mapOf(
     "Silence" to "Silencio",
     "Desconocido" to "Desconocido",
