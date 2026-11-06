@@ -12,4 +12,9 @@
     <string name="transcript_needs_download">Para transcribir lo que se dijo, el teléfono necesita descargar el idioma (lo descarga Android; Murmur sigue sin usar internet).</string>
     <string name="transcript_download">Descargar idioma para transcribir</string>
     <string name="transcript_downloading">Descargando el idioma en el teléfono. Vuelve a abrir esta noche en unos minutos.</string>
+    <string name="transcript_language">Se transcribe en %1$s (%2$s). Se cambia en Ajustes.</string>
+    <string name="transcript_unconfirmed">El teléfono no confirmó que tenga este idioma para reconocer voz sin conexión. Si las transcripciones salen en otro idioma o no tienen sentido, descárgalo.</string>
+    <string name="settings_transcription_language">Idioma de lo que se dice</string>
+    <string name="settings_transcription_language_app">El de la app</string>
+    <string name="settings_transcription_language_note">El idioma en que hablas dormido, aunque la app esté en otro. Al cambiarlo, las transcripciones se rehacen.</string>
 </resources>

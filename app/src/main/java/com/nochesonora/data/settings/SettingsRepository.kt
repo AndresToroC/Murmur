@@ -23,6 +23,8 @@ data class AppSettings(
     val morningSummary: Boolean = true,
     /** Transcribe on the phone what is said while asleep (SPEECH clips). */
     val transcribeSpeech: Boolean = true,
+    /** Language spoken in the clips, for the transcription. null = the app's language. */
+    val transcriptionLanguage: Language? = null,
     /** Save repeating ambient noises only once (wind, fan, rain). */
     val groupRepeats: Boolean = true,
     /** Sounds the person asked to ignore from a clip (the dog, the air conditioner…). */
@@ -39,6 +41,7 @@ class SettingsRepository(private val context: Context) {
         val batteryPromptShown = booleanPreferencesKey("batteryPromptShown")
         val morningSummary = booleanPreferencesKey("morningSummary")
         val transcribeSpeech = booleanPreferencesKey("transcribeSpeech")
+        val transcriptionLanguage = stringPreferencesKey("transcriptionLanguage")
         val groupRepeats = booleanPreferencesKey("groupRepeats")
         val ignoredSounds = stringSetPreferencesKey("ignoredSounds")
     }
@@ -59,6 +62,10 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setTranscribeSpeech(value: Boolean) = context.dataStore.edit { it[Keys.transcribeSpeech] = value }
 
+    suspend fun setTranscriptionLanguage(value: Language?) = context.dataStore.edit {
+        if (value == null) it.remove(Keys.transcriptionLanguage) else it[Keys.transcriptionLanguage] = value.tag
+    }
+
     suspend fun setGroupRepeats(value: Boolean) = context.dataStore.edit { it[Keys.groupRepeats] = value }
 
     suspend fun setIgnored(type: SoundType, ignored: Boolean) = context.dataStore.edit {
@@ -73,6 +80,7 @@ class SettingsRepository(private val context: Context) {
         batteryPromptShown = this[Keys.batteryPromptShown] ?: false,
         morningSummary = this[Keys.morningSummary] ?: true,
         transcribeSpeech = this[Keys.transcribeSpeech] ?: true,
+        transcriptionLanguage = this[Keys.transcriptionLanguage]?.let { tag -> Language.entries.firstOrNull { it.tag == tag } },
         groupRepeats = this[Keys.groupRepeats] ?: true,
         ignoredSounds = this[Keys.ignoredSounds].orEmpty()
             .mapNotNull { name -> runCatching { SoundType.valueOf(name) }.getOrNull() }.toSet(),

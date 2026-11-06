@@ -68,8 +68,12 @@ class NightDetailViewModel(private val container: AppContainer, private val sess
     private val attempted = mutableSetOf<Long>()
 
     init {
+        // The language can change in Settings: ask again what the phone offers for it.
         viewModelScope.launch {
-            _transcription.update { it.copy(availability = transcriber.availability()) }
+            container.settings.settings.map { it.transcriptionLanguage }.distinctUntilChanged().collect { language ->
+                _transcription.update { it.copy(availability = null, downloadRequested = false) }
+                _transcription.update { it.copy(availability = transcriber.availability(language)) }
+            }
         }
         viewModelScope.launch { for (event in queue) runTranscription(event) }
         // Automatic: when the night is opened, the speech clips not yet transcribed.
@@ -102,9 +106,13 @@ class NightDetailViewModel(private val container: AppContainer, private val sess
     }
 
     fun downloadLanguage() {
-        val needs = _transcription.value.availability as? TranscriberAvailability.NeedsDownload ?: return
+        val tag = when (val a = _transcription.value.availability) {
+            is TranscriberAvailability.NeedsDownload -> a.languageTag
+            is TranscriberAvailability.Ready -> a.languageTag.takeIf { !a.confirmed }
+            else -> null
+        } ?: return
         _transcription.update { it.copy(downloadRequested = true) }
-        viewModelScope.launch { transcriber.downloadLanguage(needs.languageTag) }
+        viewModelScope.launch { transcriber.downloadLanguage(tag) }
     }
 
     private suspend fun runTranscription(event: EventEntity) {
@@ -115,7 +123,9 @@ class NightDetailViewModel(private val container: AppContainer, private val sess
                 is TranscriptResult.Text -> container.repository.setTranscript(event.id, result.text)
                 TranscriptResult.LanguageUnavailable ->
                     // The model vanished or was never there: ask again what the phone offers.
-                    _transcription.update { it.copy(availability = transcriber.availability()) }
+                    _transcription.update {
+                        it.copy(availability = transcriber.availability(container.settings.current().transcriptionLanguage))
+                    }
                 is TranscriptResult.Failed -> {
                     Log.w(TAG, "Could not transcribe event ${event.id}: error ${result.error}")
                     _transcription.update { it.copy(failed = it.failed + event.id) }

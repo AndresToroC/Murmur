@@ -11,4 +11,9 @@
     <string name="transcript_needs_download">To transcribe what was said, the phone needs to download the language (Android downloads it; Murmur still doesn\'t use the internet).</string>
     <string name="transcript_download">Download language to transcribe</string>
     <string name="transcript_downloading">Downloading the language on the phone. Open this night again in a few minutes.</string>
+    <string name="transcript_language">Transcribed in %1$s (%2$s). You can change it in Settings.</string>
+    <string name="transcript_unconfirmed">The phone did not confirm it has this language for offline speech recognition. If transcriptions come out in another language or make no sense, download it.</string>
+    <string name="settings_transcription_language">Language you speak</string>
+    <string name="settings_transcription_language_app">App language</string>
+    <string name="settings_transcription_language_note">The language you talk in your sleep, even if the app is in another one. Changing it redoes the transcriptions.</string>
 </resources>

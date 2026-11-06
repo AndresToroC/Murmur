@@ -618,3 +618,11 @@ A prototype of 3 directions in Claude (A Murmur, B Hush, C Nocturne); **A** was 
 - Settings (DataStore): `Sensitivity` is now `LOW`/`MEDIUM`/`HIGH` and `Retention` is `FOREVER`/`DAYS_7`/`DAYS_30`. Values saved with the old Spanish names are still read (`storedSensitivity`, `storedRetention`) and are written in English the next time the setting changes.
 - Kept: the package `com.nochesonora` and the database file `nochesonora.db` (changing them would install a separate app or lose the nights), the Spanish UI translation in `res/values/`, the Spanish YAMNet display names in `Sounds.kt`, and two diagnostic messages that Home shows directly (`SessionEngine.lastError`).
 - Tests: `EnglishValuesMigrationTest` (Spanish rows from version 3 → English, including the history summary; legacy settings names).
+
+### 12.14 Transcription language (0.8.1, 2026-11-06)
+
+- **Problem on the phone:** a clip that clearly said "la última prueba que veo es del 28" was transcribed as "Hello is". The recognizer was working in English.
+- **Causes covered:** the transcription language was always the app language, so with the app in English it transcribed in English. And when the phone gave no language data (`checkRecognitionSupport` returns nothing), Murmur tried anyway without saying so, and the on-device recognizer can then silently fall back to another installed language.
+- **Settings → "Language you speak"** (App language / Español / English): the language of the clips, independent of the UI language. Changing it clears the transcripts so they are redone in the new language.
+- **Night detail** always says which language is used ("Transcribed in Spanish (es-CO)"). If the phone did not confirm the language (`Ready.confirmed = false`), it warns and offers "Download language to transcribe" (`triggerModelDownload`).
+- Every existing transcript is redone once (`TRANSCRIPT_PIPELINE = 3`), since some came out in the wrong language.

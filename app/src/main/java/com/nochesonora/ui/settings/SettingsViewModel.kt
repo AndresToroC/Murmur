@@ -7,6 +7,7 @@ import com.nochesonora.core.classification.SoundType
 import com.nochesonora.core.detection.Sensitivity
 import com.nochesonora.data.Retention
 import com.nochesonora.data.settings.AppSettings
+import com.nochesonora.data.settings.Language
 import com.nochesonora.service.LiveSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,6 +55,15 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
 
     fun setTranscribeSpeech(value: Boolean) {
         viewModelScope.launch { container.settings.setTranscribeSpeech(value) }
+    }
+
+    /** Changing the language redoes the transcriptions (in the new language) when each night is opened. */
+    fun setTranscriptionLanguage(value: Language?) {
+        viewModelScope.launch {
+            if (container.settings.current().transcriptionLanguage == value) return@launch
+            container.settings.setTranscriptionLanguage(value)
+            container.repository.clearTranscripts()
+        }
     }
 
     fun setGroupRepeats(value: Boolean) {

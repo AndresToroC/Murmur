@@ -16,6 +16,7 @@ import android.speech.SpeechRecognizer
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.nochesonora.data.settings.AppLanguage
+import com.nochesonora.data.settings.Language
 import com.nochesonora.transcription.TranscriptionSupport.LanguageChoice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,7 +42,11 @@ sealed interface TranscriberAvailability {
     data object LanguageMissing : TranscriberAvailability
     /** The language can be downloaded (the system downloads it). */
     data class NeedsDownload(val languageTag: String) : TranscriberAvailability
-    data class Ready(val languageTag: String) : TranscriberAvailability
+    /**
+     * [confirmed] = the phone reported the language as installed. If false, the phone gave no
+     * language data: Murmur tries anyway, but the recognizer may silently use another language.
+     */
+    data class Ready(val languageTag: String, val confirmed: Boolean = true) : TranscriberAvailability
 }
 
 sealed interface TranscriptResult {
@@ -66,20 +71,20 @@ sealed interface TranscriptResult {
  */
 class SpeechTranscriber(private val context: Context) {
 
-    private val candidates: List<String>
-        get() {
-            // System language (not the app's, which AppLanguage.wrap already forces).
-            val device = Resources.getSystem().configuration.locales[0]
-            return TranscriptionSupport.candidateTags(AppLanguage.get(context).tag, device)
-        }
+    /** [language]: the one chosen in Settings, or null for the app's language. */
+    private fun candidates(language: Language?): List<String> {
+        // System locale (not the app's, which AppLanguage.wrap already forces), for the country.
+        val device = Resources.getSystem().configuration.locales[0]
+        return TranscriptionSupport.candidateTags((language ?: AppLanguage.get(context)).tag, device)
+    }
 
-    suspend fun availability(): TranscriberAvailability {
+    suspend fun availability(language: Language?): TranscriberAvailability {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return TranscriberAvailability.NotSupported
         val available = withContext(Dispatchers.Main) {
             runCatching { SpeechRecognizer.isOnDeviceRecognitionAvailable(context) }.getOrDefault(false)
         }
         if (!available) return TranscriberAvailability.NotSupported
-        val tags = candidates
+        val tags = candidates(language)
         val support = querySupport(tags.first())
         val choice = if (support == null) {
             LanguageChoice.Unknown(tags.first())
@@ -87,13 +92,15 @@ class SpeechTranscriber(private val context: Context) {
             TranscriptionSupport.chooseLanguage(tags, support.installed, support.pending, support.supported)
         }
         return when (choice) {
-            is LanguageChoice.Installed, is LanguageChoice.Unknown -> TranscriberAvailability.Ready(choice.tag)
+            is LanguageChoice.Installed -> TranscriberAvailability.Ready(choice.tag, confirmed = true)
+            is LanguageChoice.Unknown -> TranscriberAvailability.Ready(choice.tag, confirmed = false)
             is LanguageChoice.Downloadable -> TranscriberAvailability.NeedsDownload(choice.tag)
             LanguageChoice.Unsupported -> TranscriberAvailability.LanguageMissing
         }
     }
 
-    /** Asks the system to download the language (Android downloads it, not Murmur). */
+    /** Asks the system to download the language (Android downloads it, not Murmur). Also used to
+     *  make sure the model is there when the phone could not confirm it. */
     suspend fun downloadLanguage(languageTag: String) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
         withContext(Dispatchers.Main) {

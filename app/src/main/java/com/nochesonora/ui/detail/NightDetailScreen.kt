@@ -427,6 +427,21 @@ private fun IdentifiedSounds(counts: List<Pair<SoundType, Int>>) {
 @Composable
 private fun TranscriptionNote(ui: TranscriptionUi, onDownload: () -> Unit) {
     val availability = ui.availability ?: return
+    if (availability is TranscriberAvailability.Ready) {
+        val uiLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+        val language = java.util.Locale.forLanguageTag(availability.languageTag)
+        val name = language.getDisplayLanguage(uiLocale).replaceFirstChar { it.titlecase(uiLocale) }
+        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            MutedText(stringResource(R.string.transcript_language, name, availability.languageTag))
+            if (!availability.confirmed) {
+                MutedText(stringResource(if (ui.downloadRequested) R.string.transcript_downloading else R.string.transcript_unconfirmed))
+                if (!ui.downloadRequested) {
+                    SecondaryButton(stringResource(R.string.transcript_download), onClick = onDownload, height = 36.dp)
+                }
+            }
+        }
+        return
+    }
     val text = when {
         availability is TranscriberAvailability.NeedsDownload && ui.downloadRequested -> R.string.transcript_downloading
         availability is TranscriberAvailability.NeedsDownload -> R.string.transcript_needs_download

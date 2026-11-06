@@ -15,7 +15,7 @@ Everything runs on the phone. The APK does not declare the `INTERNET` permission
 
 - **Smart detection.** The first minute calibrates to the room. After that, only sounds louder than the room's baseline are recorded, each with 3 s of audio before and 2 s after.
 - **On-device classification.** [YAMNet](https://www.kaggle.com/models/google/yamnet) (Google's audio classifier, run with MediaPipe) sorts every clip into **Snoring**, **Talking**, **Coughing** or **Other**, and names other sounds (dog, door, rain, fan, TV…; 28 types). Background noise is discarded.
-- **Sleep-talk transcription.** Talking clips are transcribed with Android's on-device speech recognizer (Android 13+). Before recognition, each clip is trimmed, boosted to conversation level and split into phrases.
+- **Sleep-talk transcription.** Talking clips are transcribed with Android's on-device speech recognizer (Android 13+), in the language you choose (Spanish or English). Before recognition, each clip is trimmed, boosted to conversation level and split into phrases.
 - **Clean nights.**
   - **Repeated noises:** wind, a fan, rain or room noise are saved once and later repeats are only counted ("heard 123 more times, until 5:40").
   - **Ignored sounds:** any sound can be added to an ignore list from one of its clips, optionally deleting the clips already saved.
@@ -92,7 +92,7 @@ app/src/main/java/com/nochesonora/
 
 | What | Status |
 |---|---|
-| Version | **0.8.0** (versionCode 11) |
+| Version | **0.8.1** (versionCode 12) |
 | Unit tests | **140 JVM tests passing**, including a full session simulated with Robolectric, plus 15 screenshot tests (Spanish and English) |
 | Lint | 0 errors. 23 warnings, all known, including the deliberate `OldTargetApi` (targetSdk 36, see A28) and `BatteryLife` (A16); most of the rest are plural suggestions and library update notices |
 | APK permissions | No `INTERNET`, no `ACCESS_NETWORK_STATE` |
@@ -112,6 +112,7 @@ app/src/main/java/com/nochesonora/
 | 0.6.0 | Repeated ambient noises saved once; category filter in the night detail (DB v3) |
 | 0.7.0 | Ignored sounds, chosen from a clip, with optional cleanup of saved clips |
 | 0.8.0 | Code, comments and plan in English; stored values renamed to English with a migration that keeps existing nights (DB v4) |
+| 0.8.1 | Transcription language chosen in Settings, independent of the app language, and shown in the night detail; existing transcripts are redone |
 
 The full specification and the notes for each version are in [`plan.md`](plan.md) (in Spanish).
 

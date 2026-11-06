@@ -147,6 +147,26 @@ fun SettingsScreen(onOpenDiagnostics: () -> Unit) {
             checked = s.transcribeSpeech,
             onChange = vm::setTranscribeSpeech,
         )
+        if (s.transcribeSpeech) {
+            Spacer(Modifier.height(12.dp))
+            Text(stringResource(R.string.settings_transcription_language), style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(8.dp))
+            val speechLanguages = listOf(
+                null to stringResource(R.string.settings_transcription_language_app),
+                Language.ES to "Español",
+                Language.EN to "English",
+            )
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                speechLanguages.forEachIndexed { i, (value, label) ->
+                    SegmentedButton(
+                        selected = s.transcriptionLanguage == value,
+                        onClick = { vm.setTranscriptionLanguage(value) },
+                        shape = SegmentedButtonDefaults.itemShape(i, speechLanguages.size),
+                    ) { Text(label) }
+                }
+            }
+            MutedText(stringResource(R.string.settings_transcription_language_note))
+        }
 
         Spacer(Modifier.height(24.dp))
         SwitchRow(
